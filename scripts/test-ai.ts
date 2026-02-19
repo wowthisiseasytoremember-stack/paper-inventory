@@ -4,11 +4,8 @@
  * Generates a realistic receipt image and tests Anthropic extraction.
  */
 
+import 'dotenv/config'; // Load env vars FIRST
 import { analyzeImage } from '../src/lib/ai';
-import sharp from 'sharp';
-import path from 'path';
-import fs from 'fs';
-import 'dotenv/config'; // Load environment variables
 
 const TEST_IMAGE_PATH_AI = path.join(process.cwd(), 'data', 'test-ai-receipt.png');
 

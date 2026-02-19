@@ -150,6 +150,11 @@ To ensure project integrity, the following rules are non-negotiable for all gene
 > [!NOTE]
 > Timestamped newest at the top.
 
+- **2026-02-19 11:15**: Audited project health. Fixed "stuck IDE" issues by:
+    1.  Adding `data/` and `*.db*` to `.gitignore` to prevent indexing of binary files.
+    2.  Implementing singleton pattern in `lib/db/index.ts` to fix "database is locked" errors during hot reload.
+    3.  Removing dead `prisma/` directory.
+    4.  Re-initializing database schema.
 - **2026-02-19 11:00**: Integrated `SYSTEM_DOCTRINE.md` into project root and confirmed global memory persistence. Moved `IMPLEMENTATION_PLAN.md` to project root for permanence.
 - **2026-02-19 10:57**: Pivoted from Prisma to `better-sqlite3` due to environment-specific path resolution issues on Windows. Updated implementation plan and schema.
 - **2026-02-19 10:47**: Initialized local Git repository and made the first commit with Next.js foundation.

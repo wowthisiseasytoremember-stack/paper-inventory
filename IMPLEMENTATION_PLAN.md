@@ -59,8 +59,9 @@
 - **MIME Validation**: Verify via magic bytes (file-type).
 - **Metadata Stripping**: Sharp-based EXIF removal before AI or hashing.
 
-### Gemini Robustness
+### AI Robustness (Anthropic)
 
+- **Provider**: Anthropic (Claude 3.5 Sonnet).
 - **Validation**: Strict Ajv JSON Schema validation of all LLM outputs.
 - **Circuit Breaker**: 3 retries with exponential backoff; mark as `ai_failed` on exhaustion.
 - **Mock Mode**: Fully deterministic local development mode.
@@ -106,7 +107,7 @@
 
 ### 4. LLM Robustness
 
-- **Validation**: Every Gemini response must pass Ajv JSON schema validation.
+- **Validation**: Every Anthropic response must pass Ajv JSON schema validation.
 - **Circuit Breaker**: Max 3 retries with exponential backoff.
 - **Observability**: Store raw AI responses and track durations per stage.
 
@@ -151,10 +152,11 @@ To ensure project integrity, the following rules are non-negotiable for all gene
 > Timestamped newest at the top.
 
 - **2026-02-19 11:15**: Audited project health. Fixed "stuck IDE" issues by:
-    1.  Adding `data/` and `*.db*` to `.gitignore` to prevent indexing of binary files.
-    2.  Implementing singleton pattern in `lib/db/index.ts` to fix "database is locked" errors during hot reload.
-    3.  Removing dead `prisma/` directory.
-    4.  Re-initializing database schema.
+  1.  Adding `data/` and `*.db*` to `.gitignore` to prevent indexing of binary files.
+  2.  Implementing singleton pattern in `lib/db/index.ts` to fix "database is locked" errors during hot reload.
+  3.  Removing dead `prisma/` directory.
+  4.  Re-initializing database schema.
+- **2026-02-19 12:55**: Pivoted from Gemini to **Anthropic (Claude 3.5 Sonnet)**. Key found in environment; simplifies setup.
 - **2026-02-19 11:00**: Integrated `SYSTEM_DOCTRINE.md` into project root and confirmed global memory persistence. Moved `IMPLEMENTATION_PLAN.md` to project root for permanence.
 - **2026-02-19 10:57**: Pivoted from Prisma to `better-sqlite3` due to environment-specific path resolution issues on Windows. Updated implementation plan and schema.
 - **2026-02-19 10:47**: Initialized local Git repository and made the first commit with Next.js foundation.

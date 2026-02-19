@@ -1,56 +1,94 @@
+/**
+ * IMAGE PROCESSOR
+ * 
+ * Handles strict image transformations:
+ * 1. Metadata Stripping (Privacy)
+ * 2. Resizing/Thumbnails (Optimization)
+ * 3. Multi-stage Hashing (Integrity)
+ */
+
 import sharp from 'sharp';
-import path from 'path';
-import fs from 'fs/promises';
-import { existsSync, mkdirSync } from 'fs';
+import crypto from 'crypto';
+import fs from 'fs';
+import { StorageService } from '../storage';
 
-const UPLOAD_ROOT = path.join(process.cwd(), 'public', 'uploads');
-const RESIZED_DIR = path.join(UPLOAD_ROOT, 'resized');
-const THUMBNAIL_DIR = path.join(UPLOAD_ROOT, 'thumbnails');
-
-// Ensure directories exist
-[RESIZED_DIR, THUMBNAIL_DIR].forEach(dir => {
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-});
-
-interface ResizeResult {
+export interface ImageProcessingResult {
+  originalHash: string;
+  contentHash: string;
   resizedPath: string;
   thumbnailPath: string;
-  durationMs: number;
+  mimeType: string;
+  width: number;
+  height: number;
+  resizeDurationMs: number;
 }
 
-export async function processImage(
-  inputPath: string, 
-  originalFilename: string
-): Promise<ResizeResult> {
-  const start = Date.now();
-  const baseName = path.basename(originalFilename, path.extname(originalFilename));
-  const timestamp = Date.now();
+export const ImageProcessor = {
   
-  // naming convention: uuid-timestamp-size.webp
-  const resizedFilename = `${baseName}-${timestamp}-web.webp`;
-  const thumbnailFilename = `${baseName}-${timestamp}-thumb.webp`;
-  
-  const resizedPath = path.join(RESIZED_DIR, resizedFilename);
-  const thumbnailPath = path.join(THUMBNAIL_DIR, thumbnailFilename);
+  /**
+   * Processes an uploaded image:
+   * - Calculates hash of original file.
+   * - Strips metadata.
+   * - Resizes to WebP (max 1200px equivalent).
+   * - Generates Thumbnail.
+   * - Calculates hash of processed content (deduplication key).
+   */
+  process: async (id: string, originalPath: string): Promise<ImageProcessingResult> => {
+    const start = Date.now();
+    
+    // 1. Calculate Original Hash (Stream)
+    const originalHash = await calculateFileHash(originalPath);
 
-  // Parallel processing
-  await Promise.all([
-    // 1. Web Version (Max 1024px width, 80% quality WebP)
-    sharp(inputPath)
-      .resize({ width: 1024, withoutEnlargement: true })
+    // 2. Initialize Sharp Pipeline
+    const pipeline = sharp(originalPath, { failOnError: false });
+    const metadata = await pipeline.metadata();
+
+    // 3. Resize & Convert to WebP (Standard View)
+    // Strip metadata is default in Sharp unless .withMetadata() is called
+    const resizedBuffer = await pipeline
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
       .webp({ quality: 80 })
-      .toFile(resizedPath),
+      .toBuffer();
 
-    // 2. Thumbnail (Max 300px width, 60% quality WebP)
-    sharp(inputPath)
-      .resize({ width: 300, withoutEnlargement: true })
+    const resizedPath = StorageService.getResizedPath(id);
+    fs.writeFileSync(resizedPath, resizedBuffer);
+
+    // 4. Calculate Content Hash (Post-processing)
+    // This is the semantic hash for deduplication
+    const contentHash = crypto.createHash('sha256').update(resizedBuffer).digest('hex');
+
+    // 5. Generate Thumbnail
+    const thumbnailBuffer = await sharp(resizedBuffer)
+      .resize(300, 300, { fit: 'inside' })
       .webp({ quality: 60 })
-      .toFile(thumbnailPath)
-  ]);
+      .toBuffer();
+      
+    const thumbnailPath = StorageService.getThumbnailPath(id);
+    fs.writeFileSync(thumbnailPath, thumbnailBuffer);
 
-  return {
-    resizedPath: `/uploads/resized/${resizedFilename}`, // Store relative URL for frontend
-    thumbnailPath: `/uploads/thumbnails/${thumbnailFilename}`,
-    durationMs: Date.now() - start
-  };
+    return {
+      originalHash,
+      contentHash,
+      resizedPath,
+      thumbnailPath,
+      mimeType: 'image/webp', // We standardizing on WebP
+      width: metadata.width || 0,
+      height: metadata.height || 0,
+      resizeDurationMs: Date.now() - start
+    };
+  }
+};
+
+/**
+ * Helper: SHA-256 of file stream
+ */
+function calculateFileHash(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(filePath);
+    
+    stream.on('error', err => reject(err));
+    stream.on('data', chunk => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
 }

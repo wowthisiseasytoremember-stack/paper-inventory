@@ -15,7 +15,7 @@ async function ingest() {
 
   const files = fs.readdirSync(SOURCE_DIR)
     .filter(f => f.endsWith('.jpg') || f.endsWith('.png'))
-    .slice(0, 3); // Grab 3 for testing
+    .slice(0, 10); // Grab 10 for testing
 
   for (const filename of files) {
     const sourcePath = path.join(SOURCE_DIR, filename);

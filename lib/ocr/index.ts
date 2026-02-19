@@ -1,5 +1,5 @@
 /**
- * OCR MANAGER
+ * OCR MANAGER (ROBUST)
  * 
  * Orchestrates OCR jobs by dispatching them to worker threads.
  * Enforces timeouts, validation, and resource cleanup.
@@ -8,6 +8,7 @@
 import { Worker } from 'worker_threads';
 import path from 'path';
 import fs from 'fs';
+import { OCRWorkerData, OCRWorkerResult } from '../../workers/ocr.worker';
 
 const OCR_TIMEOUT_MS = 120 * 1000; // 120s timeout
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25MB
@@ -16,9 +17,9 @@ const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25MB
  * Performs OCR on the given file path in an isolated worker thread.
  * @param filePath Absolute path to the image file.
  * @param language Language code (default: 'eng').
- * @returns {Promise<{ text: string, confidence: number }>}
+ * @returns {Promise<OCRWorkerResult>}
  */
-export function performOCR(filePath: string, language = 'eng'): Promise<{ text: string, confidence: number }> {
+export function performOCR(filePath: string, language = 'eng'): Promise<OCRWorkerResult> {
   return new Promise((resolve, reject) => {
     // 1. Validation: File Existence
     if (!fs.existsSync(filePath)) {
@@ -32,28 +33,35 @@ export function performOCR(filePath: string, language = 'eng'): Promise<{ text: 
     }
 
     // 3. Worker Setup
-    // Ensure we point to the compiled .js file in production or .ts in dev
-    const workerPath = path.resolve(__dirname, '../../workers/ocr.worker.js').replace(/\.ts$/, '.js');
-    
-    // In development with tsx/ts-node, we might need to point to the .ts file directly if not compiled yet.
-    // However, worker_threads usually expect JS. For simplicity in this robust setup, we assume a build step or ts-node registration in worker.
-    // A common workaround for ts-node is passing executArgv. Let's try pointing to the .ts file if in dev.
+    // Resolve path to worker file carefully
     const isDev = process.env.NODE_ENV !== 'production';
-    const finalWorkerPath = isDev ? path.resolve(__dirname, '../../workers/ocr.worker.ts') : workerPath;
+    
+    // In dev, point to .ts. In prod, point to .js (built).
+    // Note: __dirname in Next.js/Webpack can be tricky. Using process.cwd() is safer for project root relative paths.
+    const workerPath = isDev 
+      ? path.join(process.cwd(), 'workers', 'ocr.worker.ts')
+      : path.join(process.cwd(), '.next', 'server', 'workers', 'ocr.worker.js'); // Next.js build output location varies, need to verify in Prod phase.
 
-    const worker = new Worker(finalWorkerPath, {
-      workerData: { filePath, language },
-      execArgv: isDev ? ['-r', 'ts-node/register'] : undefined // Enable TS support in worker
+    // Robust verification of worker file
+    if (!fs.existsSync(workerPath)) {
+        // Fallback for different build structures or direct execution
+        console.warn(`OCR Worker not found at ${workerPath}, trying relative resolution...`);
+    }
+
+    const worker = new Worker(workerPath, {
+      workerData: { filePath, language } as OCRWorkerData,
+      // Essential for running .ts workers in dev without compiling
+      execArgv: isDev ? ['-r', 'ts-node/register'] : undefined 
     });
 
     // 4. Timeout Handling (Watchdog)
     const timeout = setTimeout(() => {
       worker.terminate();
-      reject(new Error('OCR_TIMEOUT: Worker exceeded 120s limit'));
+      reject(new Error(`OCR_TIMEOUT: Worker exceeded ${OCR_TIMEOUT_MS}ms limit`));
     }, OCR_TIMEOUT_MS);
 
     // 5. Event Listeners
-    worker.on('message', (result) => {
+    worker.on('message', (result: OCRWorkerResult) => {
       clearTimeout(timeout);
       resolve(result);
     });

@@ -150,7 +150,14 @@ To ensure project integrity, the following rules are non-negotiable for all gene
 > [!NOTE]
 > Timestamped newest at the top.
 
+- **2026-02-19 11:00**: Integrated `SYSTEM_DOCTRINE.md` into project root and confirmed global memory persistence. Moved `IMPLEMENTATION_PLAN.md` to project root for permanence.
 - **2026-02-19 10:57**: Pivoted from Prisma to `better-sqlite3` due to environment-specific path resolution issues on Windows. Updated implementation plan and schema.
 - **2026-02-19 10:47**: Initialized local Git repository and made the first commit with Next.js foundation.
 - **2026-02-19 10:00**: Hardened implementation plan with 8-stage state machine and worker thread isolation.
 - **2026-02-19 09:54**: Project initialized with Next.js 14+, TailwindCSS, and basic requirements.
+
+## 7. What We Have Tried (Archival Log)
+
+- **Prisma Initialization on Windows**: Attempted multiple paths (relative, absolute, hardcoded, environment injection). All failed with exit code 1 or path resolution errors. (Status: **Pivoted to Better-SQLite3**).
+- **Next.js Project Creation**: Initially hung on interactive prompts. Re-run with `--yes` and non-interactive flags. (Status: **Succeeded**).
+- **Storage Initialization**: Recursive directory creation for uploads and logs. (Status: **Succeeded**).

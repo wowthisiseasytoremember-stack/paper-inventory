@@ -1,0 +1,17 @@
+C:\Users\wowth\Desktop\Projects\paper-inventory\src\lib\ai\google.ts:16
+  throw new Error("Missing GOOGLE_API_KEY or GEMINI_API_KEY");
+        ^
+
+Error: Missing GOOGLE_API_KEY or GEMINI_API_KEY
+    at fs (C:\Users\wowth\Desktop\Projects\paper-inventory\src\lib\ai\google.ts:16:9)
+    at Object.<anonymous> (C:\Users\wowth\Desktop\Projects\paper-inventory\src\lib\ai\google.ts:40:23)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object.transformer (C:\Users\wowth\Desktop\Projects\paper-inventory\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1504:12)
+    at require (node:internal/modules/helpers:152:16)
+
+Node.js v24.12.0

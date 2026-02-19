@@ -8,7 +8,7 @@
 import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
-import { performOCR } from '../lib/ocr';
+import { performOCR } from '../src/lib/ocr';
 
 const TEST_IMAGE_PATH = path.join(process.cwd(), 'data', 'test-receipt.png');
 

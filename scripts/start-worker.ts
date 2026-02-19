@@ -1,6 +1,6 @@
 
-import { startProcessingLoop } from '../lib/processing/scheduler';
-import { resetStaleLocks } from '../lib/db/items';
+import { startProcessingLoop } from '../src/lib/processing/scheduler';
+import { ItemService } from '../src/lib/db/items';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -10,7 +10,7 @@ dotenv.config({ path: path.join(process.cwd(), '.env') });
 console.log('Starting Worker Process...');
 
 // Cleanup any locks from crashed previous runs
-resetStaleLocks();
+ItemService.resetLocks();
 
 // Start the polling loop
 startProcessingLoop(2000); // Poll every 2 seconds

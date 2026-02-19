@@ -19,10 +19,13 @@ export interface Item {
   originalHash?: string;
   contentHash?: string;
   title?: string;
+  guessedId?: string;
   rawOcr?: string;
   cleanedTranscription?: string;
   confidence?: number;
   identifiedNames?: string; // JSON
+  historicalContext?: string;
+  collectorSignificance?: string;
   originalImagePath?: string;
   createdAt: string; // ISO
   // New fields

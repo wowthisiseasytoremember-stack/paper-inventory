@@ -3,7 +3,7 @@
  * Run this to initialize the hardened SQLite schema.
  */
 
-import { initSchema, db } from '../lib/db';
+import { initSchema, db } from '../src/lib/db';
 
 async function main() {
   try {

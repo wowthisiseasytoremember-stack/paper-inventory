@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { createItem } from '../lib/db/items';
+import { ItemService } from '../src/lib/db/items';
 
 const SOURCE_DIR = 'C:/Users/wowth/Downloads/Photos-1-0101';
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'original');
@@ -36,14 +36,8 @@ async function ingest() {
     const hexHash = hashSum.digest('hex');
 
     // Create DB entry
-    const id = createItem({
-      originalFilename: filename,
-      originalImagePath: targetPath,
-      mimeType: 'image/jpeg',
-      fileSize: stats.size,
-      originalHash: hexHash,
-      contentHash: hexHash,
-    });
+    // Create DB entry (id, filename, path, mime, size)
+    const id = ItemService.create(filename, targetPath, 'image/jpeg', stats.size);
 
     console.log(`Created item ${id}`);
   }

@@ -7,8 +7,8 @@
  * 3. OCR Worker runs -> 'ocr_complete'
  */
 
-import { queue } from '../lib/queue/manager';
-import { ItemService } from '../lib/db/items';
+import { queue } from '../src/lib/queue/manager';
+import { ItemService } from '../src/lib/db/items';
 import path from 'path';
 import sharp from 'sharp';
 import fs from 'fs';

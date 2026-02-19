@@ -1,0 +1,30 @@
+
+> paper-inventory@0.1.0 build
+> next build
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\wowth\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\wowth\Desktop\Projects\paper-inventory\package-lock.json
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.3s
+  Running TypeScript ...
+Failed to compile.
+
+./src/components/UploadDropzone.tsx:7:20
+Type error: Cannot find module '@/lib/utils' or its corresponding type declarations.
+
+[0m [90m  5 |[39m [36mimport[39m { [33mUploadCloud[39m[33m,[39m [33mFile[39m[33m,[39m [33mX[39m[33m,[39m [33mLoader2[39m } [36mfrom[39m [32m'lucide-react'[39m[33m;[39m
+ [90m  6 |[39m [36mimport[39m { toast } [36mfrom[39m [32m'sonner'[39m[33m;[39m
+[31m[1m>[22m[39m[90m  7 |[39m [36mimport[39m { cn } [36mfrom[39m [32m'@/lib/utils'[39m[33m;[39m [90m// Assumes utils exist, if not I'll define it or use clsx directly[39m
+ [90m    |[39m                    [31m[1m^[22m[39m
+ [90m  8 |[39m
+ [90m  9 |[39m [90m// Inline utils if lib/utils doesn't exist yet/not standard[39m
+ [90m 10 |[39m [36mimport[39m { clsx[33m,[39m type [33mClassValue[39m } [36mfrom[39m [32m"clsx"[39m[33m;[39m[0m
+Next.js build worker exited with code: 1 and signal: null

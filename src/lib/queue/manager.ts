@@ -71,9 +71,9 @@ export class QueueManager {
           // ItemService.unlock(item.id, 'complete');
           break;
         case 'resize_complete':
-          // await this.handleAI(item);
-           console.log(`[Queue] Item ${item.id} waiting for AI (Not Implemented)`);
-           ItemService.unlock(item.id, 'complete');
+          await this.handleAI(item);
+           // console.log(`[Queue] Item ${item.id} waiting for AI (Not Implemented)`);
+           // ItemService.unlock(item.id, 'complete');
           break;
         default:
           console.warn(`[Queue] Unknown state ${item.status} for item ${item.id}`);
@@ -134,6 +134,34 @@ export class QueueManager {
     });
 
     console.log(`[Queue] Resize & Hash Complete for ${item.id}`);
+  }
+
+  private async handleAI(item: any) {
+    if (!item.resizedImagePath) {
+      throw new Error('Missing resizedImagePath');
+    }
+
+    db.prepare('UPDATE items SET status = ? WHERE id = ?').run('processing_ai', item.id);
+    
+    const { analyzeImage } = await import('../ai');
+
+    // Use resized image for AI (faster upload, sufficient resolution)
+    // Pass rawOcr as hint
+    const metadata = await analyzeImage(item.resizedImagePath, item.rawOcr || '');
+
+    ItemService.unlock(item.id, 'complete', {
+      title: metadata.title,
+      guessedId: metadata.guessedId,
+      cleanedTranscription: metadata.cleanedTranscription,
+      confidence: metadata.confidence,
+      identifiedNames: JSON.stringify(metadata.identifiedNames),
+      historicalContext: metadata.historicalContext,
+      collectorSignificance: metadata.collectorSignificance,
+      // aiDurationMs: ... (Track in db/items if critical)
+      // totalProcessingMs: ... (Track total)
+    });
+
+    console.log(`[Queue] AI Analysis Complete for ${item.id}`);
   }
 }
 

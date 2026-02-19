@@ -1,71 +1,70 @@
+/**
+ * UPLOAD API ENDPOINT
+ * 
+ * Handles file uploads securely:
+ * 1. Validates file size and type (magic bytes).
+ * 2. Saves original file to secure storage.
+ * 3. Creates 'queued' item in DB.
+ * 4. Returns Item ID to client for polling.
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createItem } from '@/lib/db/items';
-import path from 'path';
+import { StorageService } from '@/lib/storage';
+import { ItemService } from '@/lib/db/items';
+import { queue } from '@/lib/queue/manager'; // Ensure queue is imported to start if needed (or start in instrumentation)
 import fs from 'fs';
-import { pipeline } from 'stream/promises';
-import crypto from 'crypto';
+import { fileTypeFromBuffer } from 'file-type';
 
-// Disable default body parser to handle streams manually if needed, 
-// but Next.js App Router handles FormData well.
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
 
-export async function POST(request: NextRequest) {
+// Ensure queue is running (lazy start)
+queue.start();
+
+export async function POST(req: NextRequest) {
   try {
-    const formData = await request.formData();
+    const formData = await req.formData();
     const file = formData.get('file') as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Validation
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Only images and PDFs allowed.' }, { status: 400 });
-    }
-    
-    if (file.size > 25 * 1024 * 1024) { // 25MB
-         return NextResponse.json({ error: 'File too large. Max 25MB.' }, { status: 400 });
+    // 1. Size Validation
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: 'File too large (Max 25MB)' }, { status: 413 });
     }
 
-    // Calculate Hash (for deduplication)
     const buffer = Buffer.from(await file.arrayBuffer());
-    const hashSum = crypto.createHash('sha256');
-    hashSum.update(buffer);
-    const hexHash = hashSum.digest('hex');
 
-    // Save File
-    // We use a simplified original name storage for now
-    const extension = path.extname(file.name) || '.bin';
-    const storageFilename = `${crypto.randomUUID()}${extension}`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'original');
-    
-    // Ensure dir exists (redundant if setup script ran, but safe)
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    // 2. Magic Byte Validation (Security)
+    const type = await fileTypeFromBuffer(buffer);
+    if (!type || !ALLOWED_MIMES.includes(type.mime)) {
+      return NextResponse.json({ 
+        error: `Invalid file type: ${type?.mime || 'unknown'}. Allowed: ${ALLOWED_MIMES.join(', ')}` 
+      }, { status: 415 });
     }
 
-    const filePath = path.join(uploadDir, storageFilename);
-    await fs.promises.writeFile(filePath, buffer);
+    // 3. Storage
+    const originalId = StorageService.generateId();
+    const extension = `.${type.ext}`;
+    const safePath = StorageService.getOriginalPath(originalId, extension);
 
-    // Create DB Entry
-    const itemId = createItem({
-      originalFilename: file.name,
-      originalImagePath: filePath,
-      mimeType: file.type,
-      fileSize: file.size,
-      originalHash: hexHash,
-      contentHash: hexHash, // Initially same as original, changed after strip
-    });
+    fs.writeFileSync(safePath, buffer);
+
+    // 4. DB Injection
+    const itemId = ItemService.create(file.name, safePath, type.mime, file.size);
+
+    console.log(`[API] Uploaded ${itemId} (${file.size} bytes)`);
 
     return NextResponse.json({ 
-      success: true, 
-      id: itemId,
-      message: 'File queued for processing' 
-    });
+      id: itemId, 
+      status: 'queued',
+      message: 'Upload successful, processing started.' 
+    }, { status: 201 });
 
-  } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Upload Error:', error);
+    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
 }

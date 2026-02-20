@@ -8,7 +8,7 @@
 import { Worker } from 'worker_threads';
 import path from 'path';
 import fs from 'fs';
-import { OCRWorkerData, OCRWorkerResult } from '../../workers/ocr.worker';
+import { OCRWorkerData, OCRWorkerResult } from '@/workers/ocr.worker';
 
 const OCR_TIMEOUT_MS = 120 * 1000; // 120s timeout
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25MB
@@ -38,9 +38,15 @@ export function performOCR(filePath: string, language = 'eng'): Promise<OCRWorke
     
     // In dev, point to .ts. In prod, point to .js (built).
     // Note: __dirname in Next.js/Webpack can be tricky. Using process.cwd() is safer for project root relative paths.
+    // UPDATED: Workers moved to src/workers
+    const stdDevPath = path.join(process.cwd(), 'src', 'workers', 'ocr.worker.ts');
+    // Check if we are running from root or somewhere else? process.cwd() is usually root.
+    
+    // For Production we need to know where Next puts it. Often we need to copy it manually or use a specific loader.
+    // For now, let's assume standard build output.
     const workerPath = isDev 
-      ? path.join(process.cwd(), 'workers', 'ocr.worker.ts')
-      : path.join(process.cwd(), '.next', 'server', 'workers', 'ocr.worker.js'); // Next.js build output location varies, need to verify in Prod phase.
+      ? stdDevPath
+      : path.join(process.cwd(), '.next', 'server', 'chunks', 'workers', 'ocr.worker.js'); // Placeholder for prod
 
     // Robust verification of worker file
     if (!fs.existsSync(workerPath)) {

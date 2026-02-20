@@ -1,9 +1,9 @@
-import { Worker } from 'worker_threads';
 import path from 'path';
 import fs from 'fs';
-import { lockNextPendingItem, updateItemStatus, failItem, releaseLock } from '../db/items';
-import { processImage } from './image-processor';
-import { analyzeItem } from '../ai/gemini-client';
+import { ItemService } from '../db/items';
+import { ImageProcessor } from './image-processor';
+import { analyzeImage } from '../ai';
+import { performOCR } from '../ocr';
 
 const LOG_FILE = path.join(process.cwd(), 'data', 'logs', 'worker.log');
 
@@ -23,7 +23,7 @@ function log(msg: string) {
 // and to avoid locking the main thread.
 
 export async function processNextItem() {
-  const item = lockNextPendingItem();
+  const item = ItemService.lockNext();
   
   if (!item) {
     return false; // No work found
@@ -35,34 +35,57 @@ export async function processNextItem() {
     switch (item.status) {
       case 'queued':
         // Move to OCR
-        updateItemStatus(item.id, 'processing_ocr');
+        ItemService.updateStatus(item.id, 'processing_ocr');
         break;
 
       case 'processing_ocr':
         log(`Running OCR for ${item.id}`);
-        await runOCR(item);
+        if (!item.originalImagePath) {
+           ItemService.fail(item.id, 'Missing originalImagePath for OCR');
+           break;
+        }
+
+        try {
+            const ocrResult = await performOCR(item.originalImagePath); // Language defaults to eng
+            
+             // OCR Complete: UNLOCK it so it can be picked up by next loop? 
+             // Actually, Scheduler loop picks it up if we just set status to ocr_complete?
+             // lockNext picks up 'ocr_complete'. So we should UNLOCK it here to let the loop re-lock it for next stage.
+             ItemService.unlock(item.id, 'ocr_complete', { 
+                rawOcr: ocrResult.text, 
+                confidence: ocrResult.confidence 
+             });
+        } catch (ocrErr: any) {
+            log(`OCR Failed: ${ocrErr.message}`);
+            ItemService.fail(item.id, `OCR Failed: ${ocrErr.message}`);
+        }
         break;
 
       case 'ocr_complete':
         // Ready for resize
-        updateItemStatus(item.id, 'processing_resize');
+        ItemService.updateStatus(item.id, 'processing_resize');
         break;
         
       case 'processing_resize':
         // Run Image Processing (Sharp)
         log(`Resizing for ${item.id}`);
-        const resizeResult = await processImage(item.originalImagePath, item.originalFilename);
+        if (!item.originalImagePath) {
+           ItemService.fail(item.id, 'Missing originalImagePath for Resize');
+           break;
+        }
+
+        const resizeResult = await ImageProcessor.process(item.id, item.originalImagePath);
         
-        updateItemStatus(item.id, 'resize_complete', { 
+        ItemService.unlock(item.id, 'resize_complete', { 
           resizedImagePath: resizeResult.resizedPath, 
           thumbnailPath: resizeResult.thumbnailPath,
-          resizeDurationMs: resizeResult.durationMs
+          resizeDurationMs: resizeResult.resizeDurationMs
         });
         break;
 
       case 'resize_complete':
         // Ready for AI
-        updateItemStatus(item.id, 'processing_ai');
+        ItemService.updateStatus(item.id, 'processing_ai');
         break;
 
       case 'processing_ai':
@@ -70,70 +93,41 @@ export async function processNextItem() {
         log(`AI Analysis for ${item.id}`);
         if (!process.env.GEMINI_API_KEY) {
            log(`[WARN] Skipping AI: GEMINI_API_KEY not set.`);
-           updateItemStatus(item.id, 'complete', { aiRawResponse: '{"error": "No API Key"}' });
+           log(`[WARN] Skipping AI: GEMINI_API_KEY not set.`);
+           ItemService.unlock(item.id, 'complete', { errorMessage: 'No API Key' }); // Just complete it to avoid loop
            break;
         }
 
-        const aiResult = await analyzeItem(item.rawOcr || '');
+        const aiResult = await analyzeImage(item.resizedImagePath || item.originalImagePath || '', item.rawOcr || '');
         
-        log(`AI Success for ${item.id}. Title: ${aiResult.parsedData.title}`);
-        updateItemStatus(item.id, 'complete', {
-          title: aiResult.parsedData.title,
-          cleanedTranscription: aiResult.parsedData.cleanedTranscription,
-          identifiedNames: JSON.stringify(aiResult.parsedData.identifiedNames),
-          historicalContext: aiResult.parsedData.historicalContext,
-          collectorSignificance: aiResult.parsedData.collectorSignificance,
-          confidence: aiResult.parsedData.confidence,
-          aiRawResponse: aiResult.rawResponse,
-          aiDurationMs: aiResult.durationMs
+        log(`AI Success for ${item.id}. Title: ${aiResult.title}`);
+        ItemService.unlock(item.id, 'complete', {
+          title: aiResult.title,
+          cleanedTranscription: aiResult.cleanedTranscription,
+          identifiedNames: JSON.stringify(aiResult.identifiedNames),
+          historicalContext: aiResult.historicalContext,
+          collectorSignificance: aiResult.collectorSignificance,
+          confidence: aiResult.confidence,
+          // aiRawResponse: aiResult.rawResponse,
+          // aiDurationMs: aiResult.durationMs
         });
         break;
 
       default:
         log(`Unknown status ${item.status} for item ${item.id}`);
-        releaseLock(item.id);
+        ItemService.unlock(item.id, 'error', { errorMessage: 'Unknown State' }); // Release lock on unknown
         break;
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     log(`[ERROR] Item ${item.id}: ${errorMsg}`);
-    failItem(item.id, errorMsg);
+    ItemService.fail(item.id, errorMsg);
   }
 
   return true;
 }
 
-function runOCR(item: any): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const workerPath = path.join(process.cwd(), 'workers', 'ocr.worker.ts');
-    
-    // In production (compiled), we might need to point to the JS version or use ts-node register
-    // Since we are in dev with tsx, this works.
-    
-    const worker = new Worker(workerPath, {
-      workerData: { filePath: item.originalImagePath }
-    });
-
-    worker.on('message', (result) => {
-      const { text, confidence } = result;
-      updateItemStatus(item.id, 'ocr_complete', { 
-        rawOcr: text, 
-        confidence: confidence 
-      });
-      resolve();
-    });
-
-    worker.on('error', (err) => {
-      reject(err);
-    });
-
-    worker.on('exit', (code) => {
-      if (code !== 0) {
-        reject(new Error(`OCR Worker stopped with exit code ${code}`));
-      }
-    });
-  });
-}
+// function runOCR(item: any): Promise<void> { ... } removed in favor of src/lib/ocr/index.ts
 
 /**
  * Starts the polling loop. 

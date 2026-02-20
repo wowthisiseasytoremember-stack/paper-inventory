@@ -136,5 +136,22 @@ export const ItemService = {
 
   getById: (id: string): Item | undefined => {
     return db.prepare('SELECT * FROM items WHERE id = ?').get(id) as Item | undefined;
+  },
+
+  /**
+   * Updates status/metadata WITHOUT releasing the lock.
+   */
+  updateStatus: (id: string, newStatus: ItemStatus, updates: Partial<Item> = {}) => {
+    const sets: string[] = ['status = ?'];
+    const args: any[] = [newStatus];
+
+    for (const [key, value] of Object.entries(updates)) {
+      sets.push(`${key} = ?`);
+      args.push(typeof value === 'object' ? JSON.stringify(value) : value);
+    }
+    args.push(id);
+
+    const stmt = db.prepare(`UPDATE items SET ${sets.join(', ')} WHERE id = ?`);
+    stmt.run(...args);
   }
 };

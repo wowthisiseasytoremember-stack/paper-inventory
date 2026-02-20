@@ -1,0 +1,9 @@
+src/components/UploadDropzone.tsx(7,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/lib/db/index.ts(6,22): error TS7016: Could not find a declaration file for module 'better-sqlite3'. 'C:/Users/wowth/Desktop/Projects/paper-inventory/node_modules/better-sqlite3/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/better-sqlite3` if it exists or add a new declaration (.d.ts) file containing `declare module 'better-sqlite3';`
+src/lib/ocr/index.ts(11,48): error TS2307: Cannot find module '../../workers/ocr.worker' or its corresponding type declarations.
+src/lib/processing/scheduler.ts(4,10): error TS2305: Module '"../db/items"' has no exported member 'lockNextPendingItem'.
+src/lib/processing/scheduler.ts(4,31): error TS2305: Module '"../db/items"' has no exported member 'updateItemStatus'.
+src/lib/processing/scheduler.ts(4,49): error TS2305: Module '"../db/items"' has no exported member 'failItem'.
+src/lib/processing/scheduler.ts(4,59): error TS2305: Module '"../db/items"' has no exported member 'releaseLock'.
+src/lib/processing/scheduler.ts(5,10): error TS2305: Module '"./image-processor"' has no exported member 'processImage'.

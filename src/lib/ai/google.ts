@@ -23,11 +23,13 @@ const genAI = new GoogleGenerativeAI(GEN_AI_KEY);
 // For robustness, we will prompt efficiently.)
 
 const PROMPT = `
-You are an expert archivist. Analyze this image (receipt, document, or object) and extract the following metadata in strict JSON format.
+You are an expert archivist and OCR engine. 
+1. Transcribe ALL visible text from this image into the 'cleanedTranscription' field. Be verbatim.
+2. Analyze the image and extract the following metadata in strict JSON format.
 
 1. title: A short, descriptive title (e.g., "Home Depot Receipt - Paint").
 2. guessedId: A likely unique ID printed on the document (e.g., Invoice #, Receipt #). If none, null.
-3. cleanedTranscription: A clean summary of the text.
+3. cleanedTranscription: The FULL text content of the document.
 4. confidence: 0-1 confidence score.
 5. identifiedNames: A list of names/companies found.
 6. historicalContext: Any detected date or location context.
@@ -44,12 +46,26 @@ export async function analyzeImage(imagePath: string, ocrHint: string): Promise<
     const imageBuffer = fs.readFileSync(imagePath);
     const imageBase64 = imageBuffer.toString("base64");
 
+    // Determine MIME type
+    const ext = imagePath.split('.').pop()?.toLowerCase();
+    let mimeType = "image/jpeg";
+    if (ext === 'png') mimeType = "image/png";
+    if (ext === 'webp') mimeType = "image/webp";
+    if (ext === 'heic') mimeType = "image/heic";
+
+    const promptParts = [PROMPT];
+    if (ocrHint && ocrHint.trim().length > 0) {
+        promptParts.push(`\nContext from previous OCR pass (use if helpful, but prioritize image): ${ocrHint}`);
+    } else {
+        promptParts.push(`\nNo previous OCR available. You are the sole source of text extraction.`);
+    }
+
     const result = await model.generateContent([
-      PROMPT + `\nWith OCR Context: ${ocrHint}`,
+      promptParts.join('\n'),
       {
         inlineData: {
           data: imageBase64,
-          mimeType: "image/jpeg", // Assuming JPEG for now, ideally detect
+          mimeType: mimeType,
         },
       },
     ]);

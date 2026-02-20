@@ -32,7 +32,7 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 export function initSchema() {
-  const schemaPath = path.join(process.cwd(), 'lib/db/schema.sql');
+  const schemaPath = path.join(process.cwd(), 'src/lib/db/schema.sql');
   const schema = fs.readFileSync(schemaPath, 'utf-8');
   
   console.log('Initializing Database Schema...');

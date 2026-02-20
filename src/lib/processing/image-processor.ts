@@ -37,7 +37,12 @@ export const ImageProcessor = {
     const start = Date.now();
     
     // 1. Calculate Original Hash (Stream)
+    // console.log(`[ImageProcessor] Hashing ${originalPath}...`);
     const originalHash = await calculateFileHash(originalPath);
+
+    // Debug file stats
+    const stats = fs.statSync(originalPath);
+    console.log(`[ImageProcessor] Processing ${originalPath} (${stats.size} bytes)`);
 
     // 2. Initialize Sharp Pipeline
     const pipeline = sharp(originalPath, { failOnError: false });

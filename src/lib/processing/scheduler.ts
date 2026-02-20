@@ -34,35 +34,14 @@ export async function processNextItem() {
   try {
     switch (item.status) {
       case 'queued':
-        // Move to OCR
-        ItemService.updateStatus(item.id, 'processing_ocr');
+        // SKIP OCR -> Go straight to Resize
+        // Gemini 1.5 Flash is multimodal and handles text extraction natively.
+        ItemService.updateStatus(item.id, 'processing_resize');
         break;
 
       case 'processing_ocr':
-        log(`Running OCR for ${item.id}`);
-        if (!item.originalImagePath) {
-           ItemService.fail(item.id, 'Missing originalImagePath for OCR');
-           break;
-        }
-
-        try {
-            const ocrResult = await performOCR(item.originalImagePath); // Language defaults to eng
-            
-             // OCR Complete: UNLOCK it so it can be picked up by next loop? 
-             // Actually, Scheduler loop picks it up if we just set status to ocr_complete?
-             // lockNext picks up 'ocr_complete'. So we should UNLOCK it here to let the loop re-lock it for next stage.
-             ItemService.unlock(item.id, 'ocr_complete', { 
-                rawOcr: ocrResult.text, 
-                confidence: ocrResult.confidence 
-             });
-        } catch (ocrErr: any) {
-            log(`OCR Failed: ${ocrErr.message}`);
-            ItemService.fail(item.id, `OCR Failed: ${ocrErr.message}`);
-        }
-        break;
-
       case 'ocr_complete':
-        // Ready for resize
+        // Legacy/Recovery states: Move to resize
         ItemService.updateStatus(item.id, 'processing_resize');
         break;
         

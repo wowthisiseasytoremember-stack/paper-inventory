@@ -62,7 +62,17 @@ export class QueueManager {
       // STATE MACHINE ROUTER
       switch (item.status) {
         case 'queued':
-          await this.handleOCR(item);
+          // await this.handleOCR(item); -> SKIP OCR
+          // Move directly to Resize. Gemini will handle text.
+          db.prepare('UPDATE items SET status = ? WHERE id = ?').run('processing_resize', item.id);
+          // Recurse or let loop catch it? Let loop catch it for simplicity/locking.
+          // But to be fast, we can just call handleResize immediately if we update status?
+          // Better: just set status and break. The loop will pick it up as 'processing_resize' (logic fix needed?)
+          // Actually, 'queued' -> 'processing_resize'. 
+          // But handleResize expects status to be 'processing_resize' or does it transition it?
+          // looking at handleResize: "db.prepare... run('processing_resize')"
+          // So we can just call handleResize directly?
+          await this.handleResize(item);
           break;
         case 'ocr_complete':
           await this.handleResize(item);
@@ -157,6 +167,10 @@ export class QueueManager {
       identifiedNames: JSON.stringify(metadata.identifiedNames),
       historicalContext: metadata.historicalContext,
       collectorSignificance: metadata.collectorSignificance,
+      
+      // BACKFILL rawOcr for search/compatibility since we skipped local OCR
+      rawOcr: metadata.cleanedTranscription 
+      
       // aiDurationMs: ... (Track in db/items if critical)
       // totalProcessingMs: ... (Track total)
     });

@@ -54,6 +54,15 @@ export function performOCR(filePath: string, language = 'eng'): Promise<OCRWorke
         console.warn(`OCR Worker not found at ${workerPath}, trying relative resolution...`);
     }
 
+    // MOCK MODE for E2E Testing or if Worker fails consistently
+    if (process.env.MOCK_OCR === 'true') {
+        console.log('[OCR] Using Mock Mode');
+        return Promise.resolve({
+            text: 'MOCK OCR TEXT: WALMART STORE #1234 DATE: 02/19/2026 TOTAL: $8.47',
+            confidence: 99.9
+        });
+    }
+
     const worker = new Worker(workerPath, {
       workerData: { filePath, language } as OCRWorkerData,
       // Essential for running .ts workers in dev without compiling
@@ -74,6 +83,7 @@ export function performOCR(filePath: string, language = 'eng'): Promise<OCRWorke
 
     worker.on('error', (err) => {
       clearTimeout(timeout);
+      console.error('[OCR Worker Error]', err);
       reject(new Error(`OCR_WORKER_ERROR: ${err.message}`));
     });
 

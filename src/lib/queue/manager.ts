@@ -56,67 +56,54 @@ export class QueueManager {
   }
 
   private async processItem(item: Item) {
-    console.log(`[Queue] Processing Item ${item.id} (Status: ${item.status})`);
+    const startTime = Date.now();
+    console.log(`[Queue] 🚀 Processing Item ${item.id} (Status: ${item.status})`);
     
     try {
       // STATE MACHINE ROUTER
       switch (item.status) {
         case 'queued':
-          // await this.handleOCR(item); -> SKIP OCR
           // Move directly to Resize. Gemini will handle text.
           db.prepare('UPDATE items SET status = ? WHERE id = ?').run('processing_resize', item.id);
-          // Recurse or let loop catch it? Let loop catch it for simplicity/locking.
-          // But to be fast, we can just call handleResize immediately if we update status?
-          // Better: just set status and break. The loop will pick it up as 'processing_resize' (logic fix needed?)
-          // Actually, 'queued' -> 'processing_resize'. 
-          // But handleResize expects status to be 'processing_resize' or does it transition it?
-          // looking at handleResize: "db.prepare... run('processing_resize')"
-          // So we can just call handleResize directly?
           await this.handleResize(item);
           break;
         case 'ocr_complete':
           await this.handleResize(item);
-          // console.log(`[Queue] Item ${item.id} waiting for Resize (Not Implemented)`);
-           // For now, just mark complete to test flow
-          // ItemService.unlock(item.id, 'complete');
           break;
         case 'resize_complete':
           await this.handleAI(item);
-           // console.log(`[Queue] Item ${item.id} waiting for AI (Not Implemented)`);
-           // ItemService.unlock(item.id, 'complete');
           break;
         default:
-          console.warn(`[Queue] Unknown state ${item.status} for item ${item.id}`);
+          console.warn(`[Queue] ⚠️ Unknown state ${item.status} for item ${item.id}`);
           ItemService.unlock(item.id, 'error', { errorMessage: 'Unknown State' });
       }
     } catch (error) {
-      console.error(`[Queue] Failed to process item ${item.id}:`, error);
+      const duration = Date.now() - startTime;
+      console.error(`[Queue] ❌ Failed to process item ${item.id} after ${duration}ms:`, error);
       ItemService.unlock(item.id, 'error', { 
         errorMessage: error instanceof Error ? error.message : String(error) 
+        // totalProcessingMs can be updated here too if partial progress was made
       });
     }
   }
 
   // --- HANDLERS ---
 
-  private async handleOCR(item: any) { // Type Item
+  private async handleOCR(item: any) {
     if (!item.originalImagePath) {
       throw new Error('Missing originalImagePath');
     }
     
-    // Update status to processing (keeping lock implicitly via ID)
     db.prepare('UPDATE items SET status = ? WHERE id = ?').run('processing_ocr', item.id);
 
     const result = await performOCR(item.originalImagePath);
     
-    // Success -> ocr_complete
     ItemService.unlock(item.id, 'ocr_complete', {
       rawOcr: result.text,
       confidence: result.confidence,
-      // ocrDurationMs: ... (Track in db/items if critical)
     });
     
-    console.log(`[Queue] OCR Complete for ${item.id}`);
+    console.log(`[Queue] ✅ OCR Complete for ${item.id}`);
   }
 
   private async handleResize(item: any) {
@@ -126,10 +113,7 @@ export class QueueManager {
 
     db.prepare('UPDATE items SET status = ? WHERE id = ?').run('processing_resize', item.id);
     
-    // Import dynamically to avoid circular dependency if laid out that way, 
-    // or just import at top if clean.
     const { ImageProcessor } = await import('../processing/image-processor');
-
     const result = await ImageProcessor.process(item.id, item.originalImagePath);
 
     ItemService.unlock(item.id, 'resize_complete', {
@@ -138,12 +122,10 @@ export class QueueManager {
       resizedImagePath: result.resizedPath,
       thumbnailPath: result.thumbnailPath,
       mimeType: result.mimeType,
-      // width: result.width,
-      // height: result.height,
       resizeDurationMs: result.resizeDurationMs
     });
 
-    console.log(`[Queue] Resize & Hash Complete for ${item.id}`);
+    console.log(`[Queue] ✅ Resize & Hash Complete for ${item.id} (${result.resizeDurationMs}ms)`);
   }
 
   private async handleAI(item: any) {
@@ -155,9 +137,13 @@ export class QueueManager {
     
     const { analyzeImage } = await import('../ai');
 
-    // Use resized image for AI (faster upload, sufficient resolution)
-    // Pass rawOcr as hint
+    const startTime = Date.now();
     const metadata = await analyzeImage(item.resizedImagePath, item.rawOcr || '');
+    const aiDurationMs = Date.now() - startTime;
+
+    // Calculate total processing time from creation
+    const createdDate = new Date(item.createdAt).getTime();
+    const totalProcessingMs = Date.now() - createdDate;
 
     ItemService.unlock(item.id, 'complete', {
       title: metadata.title,
@@ -168,14 +154,15 @@ export class QueueManager {
       historicalContext: metadata.historicalContext,
       collectorSignificance: metadata.collectorSignificance,
       
-      // BACKFILL rawOcr for search/compatibility since we skipped local OCR
-      rawOcr: metadata.cleanedTranscription 
-      
-      // aiDurationMs: ... (Track in db/items if critical)
-      // totalProcessingMs: ... (Track total)
+      // Metrics & Completion
+      aiDurationMs,
+      totalProcessingMs,
+      processedAt: new Date().toISOString(),
+      rawOcr: metadata.cleanedTranscription,
+      tags: JSON.stringify(metadata.tags || [])
     });
 
-    console.log(`[Queue] AI Analysis Complete for ${item.id}`);
+    console.log(`[Queue] 🏁 AI Analysis Complete for ${item.id} (AI: ${aiDurationMs}ms, Total: ${totalProcessingMs}ms)`);
   }
 }
 

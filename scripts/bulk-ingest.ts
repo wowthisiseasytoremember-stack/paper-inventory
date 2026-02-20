@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { ItemService } from '../src/lib/db/items';
+import { db } from '../src/lib/db';
 
 const SOURCE_DIR = 'C:/Users/wowth/Downloads/Photos-1-0101';
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'original');
@@ -28,18 +29,26 @@ async function ingest() {
     // Copy file
     fs.copyFileSync(sourcePath, targetPath);
 
-    // Get file info
+    // 3. Hash Calculation (for Deduplication)
+    const buffer = fs.readFileSync(sourcePath);
+    const originalHash = crypto.createHash('sha256').update(buffer).digest('hex');
+
+    // Check for duplicate
+    const existing = db.prepare('SELECT id FROM items WHERE originalHash = ?').get(originalHash) as { id: string } | undefined;
+    if (existing) {
+      console.log(`[Ingest] Skipping duplicate: ${filename} (Existing ID: ${existing.id})`);
+      continue;
+    }
+
+    // 4. Copy file
+    fs.copyFileSync(sourcePath, targetPath);
     const stats = fs.statSync(targetPath);
-    const buffer = fs.readFileSync(targetPath);
-    const hashSum = crypto.createHash('sha256');
-    hashSum.update(buffer);
-    const hexHash = hashSum.digest('hex');
 
-    // Create DB entry
-    // Create DB entry (id, filename, path, mime, size)
+    // 5. DB Injection
     const id = ItemService.create(filename, targetPath, 'image/jpeg', stats.size);
+    db.prepare('UPDATE items SET originalHash = ? WHERE id = ?').run(originalHash, id);
 
-    console.log(`Created item ${id}`);
+    console.log(`Created item ${id} for ${filename}`);
   }
 
   console.log('Bulk ingestion complete.');

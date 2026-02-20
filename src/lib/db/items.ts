@@ -36,6 +36,8 @@ export interface Item {
   resizeDurationMs?: number;
   aiDurationMs?: number;
   totalProcessingMs?: number;
+  processedAt?: string; // ISO
+  tags?: string; // JSON
 }
 
 export const ItemService = {
@@ -153,5 +155,31 @@ export const ItemService = {
 
     const stmt = db.prepare(`UPDATE items SET ${sets.join(', ')} WHERE id = ?`);
     stmt.run(...args);
+  },
+
+  /**
+   * Finds an item by its content hash (for deduplication).
+   */
+  getByContentHash: (hash: string): Item | undefined => {
+    return db.prepare('SELECT * FROM items WHERE contentHash = ? AND deletedAt IS NULL').get(hash) as Item | undefined;
+  },
+
+  /**
+   * Soft deletes an item.
+   */
+  softDelete: (id: string) => {
+    db.prepare('UPDATE items SET deletedAt = CURRENT_TIMESTAMP WHERE id = ?').run(id);
+  },
+
+  /**
+   * Returns all non-deleted items.
+   */
+  getAll: (limit = 100, offset = 0): Item[] => {
+    return db.prepare(`
+      SELECT * FROM items 
+      WHERE deletedAt IS NULL 
+      ORDER BY createdAt DESC 
+      LIMIT ? OFFSET ?
+    `).all(limit, offset) as Item[];
   }
 };

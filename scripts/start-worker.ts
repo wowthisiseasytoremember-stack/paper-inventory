@@ -1,22 +1,18 @@
-
-import { startProcessingLoop } from '../src/lib/processing/scheduler';
-import { ItemService } from '../src/lib/db/items';
+import { queue } from '../src/lib/queue/manager';
 import dotenv from 'dotenv';
 import path from 'path';
 
 // Load .env from project root
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-console.log('Starting Worker Process...');
+console.log('Starting Queue Manager Process...');
 
-// Cleanup any locks from crashed previous runs
-ItemService.resetLocks();
-
-// Start the polling loop
-startProcessingLoop(2000); // Poll every 2 seconds
+// Start the manager (it handles its own lock resets)
+queue.start();
 
 // Keep process alive
 process.on('SIGINT', () => {
   console.log('Worker stopping...');
+  queue.stop();
   process.exit(0);
 });

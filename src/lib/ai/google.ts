@@ -41,7 +41,7 @@ Output JSON only. No markdown code blocks.
 
 export async function analyzeImage(imagePath: string, ocrHint: string): Promise<ItemMetadata> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Use Flash for speed/cost, or Pro for quality
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // gemini-1.5-flash deprecated in v1beta; 2.0-flash is the active successor
 
     const imageBuffer = fs.readFileSync(imagePath);
     const imageBase64 = imageBuffer.toString("base64");

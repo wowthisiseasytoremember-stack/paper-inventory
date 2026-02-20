@@ -11,8 +11,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StorageService } from '@/lib/storage';
 import { ItemService } from '@/lib/db/items';
+import { db } from '@/lib/db';
 import { queue } from '@/lib/queue/manager'; // Ensure queue is imported to start if needed (or start in instrumentation)
 import fs from 'fs';
+import crypto from 'crypto';
 import { fileTypeFromBuffer } from 'file-type';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
@@ -45,15 +47,32 @@ export async function POST(req: NextRequest) {
       }, { status: 415 });
     }
 
-    // 3. Storage
+    // 3. Hash Calculation (for Deduplication)
+    const originalHash = crypto.createHash('sha256').update(buffer).digest('hex');
+    
+    // Check for duplicate original file
+    const existing = db.prepare('SELECT id FROM items WHERE originalHash = ? AND deletedAt IS NULL').get(originalHash) as { id: string } | undefined;
+    
+    if (existing) {
+      console.log(`[API] Duplicate file detected: ${existing.id}`);
+      return NextResponse.json({ 
+        id: existing.id, 
+        status: 'duplicate',
+        message: 'File already exists in inventory.' 
+      }, { status: 200 });
+    }
+
+    // 4. Storage
     const originalId = StorageService.generateId();
     const extension = `.${type.ext}`;
     const safePath = StorageService.getOriginalPath(originalId, extension);
 
     fs.writeFileSync(safePath, buffer);
 
-    // 4. DB Injection
+    // 5. DB Injection
+    // Updated ItemService.create to accept originalHash
     const itemId = ItemService.create(file.name, safePath, type.mime, file.size);
+    db.prepare('UPDATE items SET originalHash = ? WHERE id = ?').run(originalHash, itemId);
 
     console.log(`[API] Uploaded ${itemId} (${file.size} bytes)`);
 

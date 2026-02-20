@@ -45,13 +45,13 @@ export const ItemService = {
   /**
    * Creates a new item in 'queued' state.
    */
-  create: (filename: string, originalPath: string, mimeType: string, fileSize: number) => {
+  create: (filename: string, originalPath: string, mimeType: string, fileSize: number, originalHash?: string) => {
     const id = randomUUID();
     const stmt = db.prepare(`
-      INSERT INTO items (id, originalFilename, originalImagePath, mimeType, fileSize, status)
-      VALUES (?, ?, ?, ?, ?, 'queued')
+      INSERT INTO items (id, originalFilename, originalImagePath, mimeType, fileSize, status, originalHash)
+      VALUES (?, ?, ?, ?, ?, 'queued', ?)
     `);
-    stmt.run(id, filename, originalPath, mimeType, fileSize);
+    stmt.run(id, filename, originalPath, mimeType, fileSize, originalHash ?? null);
     return id;
   },
 
@@ -138,6 +138,32 @@ export const ItemService = {
 
   getById: (id: string): Item | undefined => {
     return db.prepare('SELECT * FROM items WHERE id = ?').get(id) as Item | undefined;
+  },
+
+  /**
+   * Finds an item by its original file hash (pre-processing dedup).
+   */
+  getByOriginalHash: (hash: string): Item | undefined => {
+    return db.prepare('SELECT * FROM items WHERE originalHash = ? AND deletedAt IS NULL').get(hash) as Item | undefined;
+  },
+
+  /**
+   * Updates user-editable metadata fields.
+   * Strict whitelist prevents mutation of system fields.
+   */
+  updateMetadata: (id: string, updates: Record<string, any>) => {
+    const EDITABLE = ['title', 'guessedId', 'cleanedTranscription', 'historicalContext', 'collectorSignificance', 'tags'];
+    const sets: string[] = [];
+    const args: any[] = [];
+    for (const [key, value] of Object.entries(updates)) {
+      if (EDITABLE.includes(key)) {
+        sets.push(`${key} = ?`);
+        args.push(value);
+      }
+    }
+    if (sets.length === 0) return { changes: 0 };
+    args.push(id);
+    return db.prepare(`UPDATE items SET ${sets.join(', ')} WHERE id = ?`).run(...args);
   },
 
   /**

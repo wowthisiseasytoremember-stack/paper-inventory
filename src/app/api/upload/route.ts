@@ -11,8 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StorageService } from '@/lib/storage';
 import { ItemService } from '@/lib/db/items';
-import { db } from '@/lib/db';
-import { queue } from '@/lib/queue/manager'; // Ensure queue is imported to start if needed (or start in instrumentation)
+import { queue } from '@/lib/queue/manager';
 import fs from 'fs';
 import crypto from 'crypto';
 import { fileTypeFromBuffer } from 'file-type';
@@ -51,10 +50,10 @@ export async function POST(req: NextRequest) {
     const originalHash = crypto.createHash('sha256').update(buffer).digest('hex');
     
     // Check for duplicate original file
-    const existing = db.prepare('SELECT id FROM items WHERE originalHash = ? AND deletedAt IS NULL').get(originalHash) as { id: string } | undefined;
+    const existing = ItemService.getByOriginalHash(originalHash);
     
     if (existing) {
-      console.log(`[API] Duplicate file detected: ${existing.id}`);
+      console.log(`[Upload] Duplicate detected: ${existing.id}`);
       return NextResponse.json({ 
         id: existing.id, 
         status: 'duplicate',
@@ -69,12 +68,10 @@ export async function POST(req: NextRequest) {
 
     fs.writeFileSync(safePath, buffer);
 
-    // 5. DB Injection
-    // Updated ItemService.create to accept originalHash
-    const itemId = ItemService.create(file.name, safePath, type.mime, file.size);
-    db.prepare('UPDATE items SET originalHash = ? WHERE id = ?').run(originalHash, itemId);
+    // 5. DB Entry (with hash for dedup)
+    const itemId = ItemService.create(file.name, safePath, type.mime, file.size, originalHash);
 
-    console.log(`[API] Uploaded ${itemId} (${file.size} bytes)`);
+    console.log(`[Upload] Created ${itemId} (${file.size} bytes)`);
 
     return NextResponse.json({ 
       id: itemId, 

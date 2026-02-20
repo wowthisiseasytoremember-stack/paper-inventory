@@ -28,8 +28,9 @@ export async function GET(req: NextRequest) {
       const searchSql = `
         SELECT i.* 
         FROM items i
-        JOIN item_fts fts ON fts.rowid = i.rowid
-        WHERE item_fts MATCH ? 
+        JOIN items_fts fts ON fts.rowid = i.rowid
+        WHERE items_fts MATCH ? 
+          AND i.deletedAt IS NULL
         ORDER BY rank
         LIMIT ? OFFSET ?
       `;
@@ -41,8 +42,10 @@ export async function GET(req: NextRequest) {
       
       const countSql = `
         SELECT COUNT(*) as count 
-        FROM item_fts 
-        WHERE item_fts MATCH ?
+        FROM items i
+        JOIN items_fts fts ON fts.rowid = i.rowid
+        WHERE items_fts MATCH ?
+          AND i.deletedAt IS NULL
       `;
       total = (db.prepare(countSql).get(safeQuery) as { count: number }).count;
 
@@ -50,18 +53,20 @@ export async function GET(req: NextRequest) {
       // Standard Listing
       items = db.prepare(`
         SELECT * FROM items 
+        WHERE deletedAt IS NULL
         ORDER BY createdAt DESC 
         LIMIT ? OFFSET ?
       `).all(limit, offset);
 
-      total = (db.prepare('SELECT COUNT(*) as count FROM items').get() as { count: number }).count;
+      total = (db.prepare('SELECT COUNT(*) as count FROM items WHERE deletedAt IS NULL').get() as { count: number }).count;
     }
 
     // Parse JSON fields
     items = items.map((item: any) => ({
       ...item,
       identifiedNames: item.identifiedNames ? JSON.parse(item.identifiedNames) : [],
-      processingLock: Boolean(item.processingLock) // boolean for client
+      tags: item.tags ? JSON.parse(item.tags) : [],
+      processingLock: Boolean(item.processingLock)
     }));
 
     return NextResponse.json({

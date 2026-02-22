@@ -1,0 +1,58 @@
+{
+  "comic": {
+    "V1": {
+      "error": "messages.0.content.0.image.source.base64: image exceeds 5 MB maximum: 5617536 bytes > 5242880 bytes"
+    },
+    "V2": {
+      "error": "messages.0.content.0.image.source.base64: image exceeds 5 MB maximum: 5617536 bytes > 5242880 bytes"
+    },
+    "V3": {
+      "error": "messages.0.content.0.image.source.base64: image exceeds 5 MB maximum: 5617536 bytes > 5242880 bytes"
+    },
+    "V4": {
+      "error": "messages.0.content.0.image.source.base64: image exceeds 5 MB maximum: 5617536 bytes > 5242880 bytes"
+    }
+  },
+  "freightReceipt": {
+    "V1": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    },
+    "V2": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    },
+    "V3": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    },
+    "V4": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    }
+  },
+  "railroadLetter": {
+    "V1": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    },
+    "V2": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    },
+    "V3": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    },
+    "V4": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    }
+  },
+  "mercantileLetter": {
+    "V1": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    },
+    "V2": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    },
+    "V3": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    },
+    "V4": {
+      "error": "model: claude-3-5-sonnet-20240620"
+    }
+  }
+}

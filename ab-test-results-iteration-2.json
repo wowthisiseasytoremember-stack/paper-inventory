@@ -1,0 +1,280 @@
+{
+  "comic": {
+    "V1_Baseline": {
+      "title": "Prophet Goes S.Platt!!! Comic Book",
+      "guessedId": null,
+      "cleanedTranscription": "PROPHET GOES S.PLATT!!!",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "S. Platt",
+          "type": "person",
+          "confidence": 0.8
+        }
+      ],
+      "historicalContext": "The comic book appears to be from the 1990s or early 2000s, based on the art style and cover design. The title 'Prophet Goes S.Platt!!!' suggests a crossover or special edition featuring the artist S. Platt.",
+      "collectorSignificance": "The comic's rarity depends on the specific issue and print run. The presence of S. Platt's name could increase its value, especially if it's a signed edition (though no signature is visible in the image). The condition of the comic (unseen) is a major factor in determining its value. It appears to be in a protective sleeve.",
+      "valuation": "$5 - $20, depending on the specific issue, condition, and whether it is signed. Without more information, it is difficult to provide a more precise estimate.",
+      "tags": [
+        "1990s",
+        "comic-book",
+        "ungraded",
+        "low-significance"
+      ]
+    },
+    "V2_Handwriting": {
+      "title": "Prophet Goes S.Platt Comic Book",
+      "guessedId": null,
+      "cleanedTranscription": "PROPHET GOES S.PLATT!!!",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "S. Platt",
+          "type": "person",
+          "confidence": 0.8
+        }
+      ],
+      "historicalContext": "The comic book appears to be from the 1990s or early 2000s, based on the art style and cover design. The title 'Prophet Goes S.Platt!!!' suggests a specific storyline or collaboration with the artist S. Platt.",
+      "collectorSignificance": "The comic's value depends on the issue number, condition, and the popularity of the 'Prophet' series and S. Platt's artwork. A key issue or a comic in near-mint condition would be more valuable. The presence of a protective sleeve suggests an attempt to preserve its condition.",
+      "valuation": "$5 - $20, depending on the specific issue, condition, and market demand. Without more information, it's difficult to provide a precise valuation.",
+      "tags": [
+        "1990s",
+        "comic-book",
+        "good-condition",
+        "low-significance"
+      ]
+    }
+  },
+  "freightReceipt": {
+    "V1_Baseline": {
+      "title": "Denver and Rio Grande Railway Freight Receipt, 1883",
+      "guessedId": null,
+      "cleanedTranscription": "FORM 200.-0-10-82-100M\nFREIGHT AGENT'S OFFICE,\nNo.\nDenver and Rio Grande Railway.\nSeby 5 1883\nReceived from Hett, Touckine to D.A. Belden\nin apparently good order, (contents and value unknown,) consigned to\nRed Cliff\nState of Cole\nthe following described property.\nmarked as noted in margin, to be\nand delivered in like good\ntransported over the line of the Railway to the Company's Freight Station at\norder to the consignee or owner, AT SAID STATION, or to such Company or Carrier (if the property is to be forwarded beyond said\nStation') whose line may be considered a part of the route to the place of destination of said goods or packages; it being distinctly\nunderstood that the responsibility of this Company as a common carrier shall cease at the Station where delivered to such Company\nor carrier; but it guarantees that the rate of freight for the transportation of said property from the place of shipment to the place\nswhere consigned, shall not exceed\nper\nand charges advanced by this Company,\nUPON THE FOLLOWING CONDITIONS:\nThis Receipt to be presented without Alteration or Erasure.\nAS CONSIGNED MARKS. DESCRIPTION OF ARTICLES.\nD.D. Belden 15 Box Candles\nR Cliff\nCols\nRates.\nSpecial per\nAmount Charges Advanced, $\n\nAgent",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "Hett, Touckine",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "D.A. Belden",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "Red Cliff",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Cole",
+          "type": "location",
+          "confidence": 0.8
+        },
+        {
+          "name": "D.D. Belden",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "R Cliff",
+          "type": "location",
+          "confidence": 0.7
+        },
+        {
+          "name": "Denver and Rio Grande Railway",
+          "type": "organization",
+          "confidence": 1
+        }
+      ],
+      "historicalContext": "This document is a freight receipt from the Denver and Rio Grande Railway, dated February 5, 1883. It details a shipment from 'Hett, Touckine' to 'D.A. Belden' of 'Box Candles' to 'Red Cliff', Colorado. The Denver and Rio Grande Railway was a prominent railway company in the late 19th century, crucial for transporting goods and people across the mountainous regions of Colorado and the American West. The form number '200.-0-10-82-100M' suggests a standardized form used by the railway. The mention of 'Seby 5' is likely a misspelling of 'Feby 5', indicating February 5th.",
+      "collectorSignificance": "This freight receipt is a relatively rare piece of ephemera from a significant railway company. The presence of handwritten details, including the consignee, consignor, and description of goods, adds to its historical interest. The signature of the agent enhances its value. The condition appears to be good, though there are some creases and possible discoloration. The presence of price stickers suggests it was previously offered for sale.",
+      "valuation": "$35 - $75. The value is based on its age, historical significance, the railway company's importance, and the presence of handwritten details and a signature. The condition and the fact that it is framed also contribute to the value. Similar railway ephemera can fetch prices in this range, depending on condition and specific details.",
+      "tags": [
+        "1880s",
+        "freight-receipt",
+        "good-condition",
+        "medium-significance"
+      ]
+    },
+    "V2_Handwriting": {
+      "title": "Denver and Rio Grande Railway Freight Receipt, 1883",
+      "guessedId": "FORM 200.-0-10-82-100M",
+      "cleanedTranscription": "PUGHES,\nLFREICHT AGENT,\nDENVER, COLO\n\nFORM 200.-0-10-82-100M\nFREIGHT AGENT'S OFFICE,\nNo.\n\nDenver and Rio Grande Railway.\n\nReceived from\n\nSeby 5\n1883\nin apparently good order, (contents and value unknown,) consigned to\nthe following described property.\nof\nState of\nmarked as noted in margin, to be\ntransported over the line of the Railway to the Company's Freight Station at\nand delivered in like good\norder to the consignee or owner, AT SAID STATION, or to such Company or Carrier (if the property is to be forwarded beyond said\nStation') whose line may be considered a part of the route to the place of destination of said goods or packages; it being distinctly\nunderstood that the responsibility of this Company as a common carrier shall cease at the Station where delivered to such Company\nor carrier; but it guarantees that the rate of freight for the transportation of said property from the place of shipment to the place\nwhere consigned, shall not exceed\nper\nand charges advanced by this Company,\nUPON THE FOLLOWING CONDITIONS:\n\nThis Receipt to be presented without Alteration or Erasure.\n\nAS CONSIGNED\nMARKS.\nDESCRIPTION OF ARTICLES.\n\nD.D. Belden\n& Cliff\nColo\n15\nBox Candles\n\n\n\n\n\nRates.\nSpecial\nper\nAmount Charges Advanced, $\n\nAgent",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "PUGHES",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "Denver and Rio Grande Railway",
+          "type": "organization",
+          "confidence": 1
+        },
+        {
+          "name": "Seby",
+          "type": "location",
+          "confidence": 0.6
+        },
+        {
+          "name": "D.D. Belden",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "Cliff",
+          "type": "location",
+          "confidence": 0.7
+        },
+        {
+          "name": "Colo",
+          "type": "location",
+          "confidence": 0.9
+        }
+      ],
+      "historicalContext": "This document is a freight receipt from the Denver and Rio Grande Railway, dated February 5, 1883. It originates from Denver, Colorado, and reflects the transportation of goods (a box of candles) to D.D. Belden & Cliff in Colo. The form number suggests it was a standardized document used by the railway company. The text indicates the common carrier responsibilities and limitations of the railway at the time.",
+      "collectorSignificance": "The document is a tangible piece of railroad history, specifically related to the Denver and Rio Grande Railway, a significant player in the development of the American West. The presence of handwritten details, including the consignee, destination, and description of goods, adds to its uniqueness. The condition appears to be fair, given its age. The presence of a signature (likely the agent) enhances its collectibility.",
+      "valuation": "$25 - $50. The value is based on its age, historical significance as a railroad document, and the presence of handwritten details. The condition and the specific railway company involved also influence the price. The presence of the price tag suggests it was previously offered for $15.",
+      "tags": [
+        "1880s",
+        "freight-receipt",
+        "fair-condition",
+        "medium-significance"
+      ]
+    }
+  },
+  "railroadLetter": {
+    "V1_Baseline": {
+      "title": "Delta Mercantile Co. Letter, September 10, 1890",
+      "guessedId": null,
+      "cleanedTranscription": "THE DELTA MERCANTILE CO.,\n(Successors to MCGRAHANAR & BUTLER,)\n-DEALERS IN-\nGeneral Merchandise.\n\nGEO. STEPHAN, Pres't\nA. C. BUTLER, Vice-Pres't\nFRANKE. DODGE, Sec'y and Treas.\n\nDelta, Colo., Sep 10 1890\n\nS.V.R.G.\nCypress\n\n\nGentlemen\n\nCan you give us\na Special rate on Laundry\nProper Shipped from this People\nto Arvour Laundries & return\nWhat rate Can you give us\nAwaiting your Earliest Convenience\nIte remain your Props\n\nTHE DELTA MERCANTILE CO\nPer. M Stephan",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "GEO. STEPHAN",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "A. C. BUTLER",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "FRANKE. DODGE",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "MCGRAHANAR & BUTLER",
+          "type": "organization",
+          "confidence": 0.8
+        },
+        {
+          "name": "Delta",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Colo",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Cypress",
+          "type": "location",
+          "confidence": 0.7
+        },
+        {
+          "name": "Arvour Laundries",
+          "type": "organization",
+          "confidence": 0.7
+        },
+        {
+          "name": "M Stephan",
+          "type": "person",
+          "confidence": 0.8
+        }
+      ],
+      "historicalContext": "This is a letter from The Delta Mercantile Co. in Delta, Colorado, dated September 10, 1890. The letter is addressed to S.V.R.G. Cypress, likely a business or individual involved in laundry services. The Delta Mercantile Co. is inquiring about special rates for shipping laundry to Arvour Laundries and back. The letterhead indicates that the company was a successor to McGrahanar & Butler and dealt in general merchandise. The officers of the company are listed as Geo. Stephan (President), A.C. Butler (Vice-President), and Franke Dodge (Secretary and Treasurer).",
+      "collectorSignificance": "The letter is a tangible piece of late 19th-century commercial correspondence. The presence of a printed letterhead with the company's name, officers, and business type adds to its historical value. The handwritten content provides insight into the business practices of the time. The signature of 'M Stephan' adds a personal touch. The condition appears to be good, though there is some fading and wear consistent with age. The fact that it is framed suggests it was considered valuable enough to preserve.",
+      "valuation": "$25 - $45. The value is based on its age, historical context, and the presence of a printed letterhead and handwritten content. The good condition and framing enhance its value. The specific content related to laundry services might appeal to collectors interested in the history of that industry or the local history of Delta, Colorado.",
+      "tags": [
+        "1890s",
+        "letter",
+        "good-condition",
+        "moderate-significance"
+      ]
+    },
+    "V2_Handwriting": {
+      "title": "Delta Mercantile Co. Letter, September 10, 1890",
+      "guessedId": null,
+      "cleanedTranscription": "THE DELTA MERCANTILE CO.,\n(Successors to MCGRAHANAR & BUTLER,)\n-DEALERS IN-\nGeneral Merchandise.\n\nDelta, Colo., Sep 10 1890\n\nS.V.R.G.\nCypress\n\nShuvy Cow\n\nGentlemen\n\nCan you give us\na Special rate on Laundry\nProper Shipped from this People\nto Armor Laundries & return\nWhat rate Can you give us\nAwaiting your Earliest Convenience\nWe remain your Props\n\nTHE DELTA MERCANTILE CO\nGeo Stephan\nPres",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "GEO. STEPHAN",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "A. C. BUTLER",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "FRANKE DODGE",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "MCGRAHANAR & BUTLER",
+          "type": "organization",
+          "confidence": 0.8
+        },
+        {
+          "name": "Delta",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Colo.",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Cypress",
+          "type": "location",
+          "confidence": 0.7
+        },
+        {
+          "name": "Shuvy Cow",
+          "type": "location",
+          "confidence": 0.6
+        },
+        {
+          "name": "Armor Laundries",
+          "type": "organization",
+          "confidence": 0.7
+        },
+        {
+          "name": "Geo Stephan",
+          "type": "person",
+          "confidence": 0.9
+        }
+      ],
+      "historicalContext": "This is a letter from The Delta Mercantile Co. in Delta, Colorado, dated September 10, 1890. It is addressed to S.V.R.G. Cypress Shuvy Cow, inquiring about special rates for shipping laundry to Armor Laundries. The letterhead indicates that Delta Mercantile Co. was the successor to McGrahanar & Butler and dealt in general merchandise. The letter is signed by Geo Stephan, President.",
+      "collectorSignificance": "The letter is a tangible piece of late 19th-century commercial correspondence. The letterhead provides information about the company's history and business. The handwriting is typical of the period. The presence of the company name and the signature of the president adds to its historical value. The condition appears to be good, though there is some fading and wear. The framing may add to the value.",
+      "valuation": "$25 - $50. The value is based on the age, historical content, and the presence of a company letterhead and signature. The condition and framing also contribute to the value. The price tag of $15.00 suggests a lower bound, but the historical significance could justify a higher price.",
+      "tags": [
+        "1890s",
+        "letter",
+        "good condition",
+        "moderate significance"
+      ]
+    }
+  }
+}

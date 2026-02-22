@@ -10,6 +10,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { generateObject } from 'ai';
 import { ItemMetadataSchema, ItemMetadata } from './schema';
 import fs from 'fs';
+import { BASELINE_SYSTEM_PROMPT } from './prompts';
 
 const MAX_RETRIES = 3;
 const INITIAL_BACKOFF_MS = 1000;
@@ -24,10 +25,11 @@ export async function analyzeImage(
   let attempt = 0;
   while (attempt <= MAX_RETRIES) {
     try {
-      console.log(`[AI] Analyzing image (Attempt ${attempt + 1}/${MAX_RETRIES + 1})...`);
+      const modelName = process.env.BASELINE_MODEL || 'claude-3-5-sonnet-20240620';
+      console.log(`[AI] Analyzing image with ${modelName} (Attempt ${attempt + 1}/${MAX_RETRIES + 1})...`);
       
       const result = await generateObject({
-        model: anthropic('claude-3-5-sonnet-20240620'),
+        model: anthropic(modelName),
         schema: ItemMetadataSchema,
         messages: [
           {
@@ -35,10 +37,10 @@ export async function analyzeImage(
             content: [
               { 
                 type: 'text', 
-                text: `Analyze this image of paper ephemera. Use the provided OCR text as a hint but correct any obvious errors based on the visual evidence.
+                text: `${BASELINE_SYSTEM_PROMPT}
                 
-                OCR HINT:
-                ${ocrText.substring(0, 5000)}` 
+OCR HINT:
+${ocrText.substring(0, 5000)}` 
               },
               { 
                 type: 'image', 

@@ -27,7 +27,8 @@ export async function analyzeImage(
   let attempt = 0;
   while (attempt <= MAX_RETRIES) {
     try {
-      console.log(`[AI-Manual] Analyzing image with OpenAI (Attempt ${attempt + 1}/${MAX_RETRIES + 1})...`);
+      const modelName = process.env.DEEP_DIVE_MODEL || 'gpt-4o';
+      console.log(`[AI-Manual] Analyzing image with ${modelName} (Attempt ${attempt + 1}/${MAX_RETRIES + 1})...`);
 
       const response = await fetch(OPENAI_API_URL, {
         method: 'POST',
@@ -36,7 +37,7 @@ export async function analyzeImage(
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: modelName,
           response_format: { type: 'json_object' },
           messages: [
             {
@@ -113,4 +114,103 @@ export async function analyzeImage(
   }
 
   throw new Error('AI_ANALYSIS_FAILED: Unknown error');
+}
+
+export interface DeepDiveResult {
+  title: string;
+  historicalContext: string;
+  collectorSignificance: string;
+  valuation: string;
+  identifiedNames: Array<{
+    name: string;
+    type: string;
+    confidence: number;
+    historicalNote?: string;
+  }>;
+  tags: string[];
+}
+
+export async function enrichDeepDive(
+  imagePath: string, 
+  baselineData: any
+): Promise<DeepDiveResult> {
+  const imageBuffer = fs.readFileSync(imagePath);
+  const base64Image = imageBuffer.toString('base64');
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is missing');
+  }
+
+  const { DEEP_DIVE_SYSTEM_PROMPT } = require('./prompts');
+
+  let attempt = 0;
+  while (attempt <= MAX_RETRIES) {
+    try {
+      const modelName = process.env.DEEP_DIVE_MODEL || 'gpt-4o';
+      console.log(`[AI-DeepDive] Running exhaustive research with ${modelName} (Attempt ${attempt + 1}/${MAX_RETRIES + 1})...`);
+
+      const response = await fetch(OPENAI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: modelName,
+          response_format: { type: 'json_object' },
+          messages: [
+            {
+              role: 'system',
+              content: DEEP_DIVE_SYSTEM_PROMPT
+            },
+            {
+              role: 'user',
+              content: [
+                { 
+                  type: 'text', 
+                  text: `BASELINE EXTRACTION:\n${JSON.stringify(baselineData, null, 2)}` 
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/jpeg;base64,${base64Image}` // Standardizing to jpeg as fallback for sharp processed images
+                  }
+                }
+              ]
+            }
+          ],
+          temperature: 0.2, // Low temp for more factual analysis
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error ${response.status}: ${await response.text()}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+
+      if (!content) {
+        throw new Error('Empty response from OpenAI');
+      }
+
+      const result = JSON.parse(content);
+      
+      console.log('[AI-DeepDive] Analysis Successful.');
+      return result as DeepDiveResult;
+
+    } catch (error: any) {
+      attempt++;
+      if (attempt > MAX_RETRIES) {
+        throw new Error(`DEEP_DIVE_FAILED: Max retries exceeded. Last error: ${error.message}`);
+      }
+      
+      const delay = INITIAL_BACKOFF_MS * Math.pow(2, attempt - 1);
+      console.warn(`[AI-DeepDive] Attempt ${attempt} failed. Retrying in ${delay}ms...`, error.message);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw new Error('DEEP_DIVE_FAILED: Unknown error');
 }

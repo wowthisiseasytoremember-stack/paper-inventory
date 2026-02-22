@@ -14,7 +14,7 @@ import * as googleClient from './google';
 type AIProvider = 'anthropic' | 'openai' | 'google';
 
 // Configuration
-const PROVIDER: AIProvider = (process.env.AI_PROVIDER as AIProvider) || 'google'; // Defaulting to Google now
+const PROVIDER: AIProvider = (process.env.AI_PROVIDER as AIProvider) || 'anthropic'; // Defaulting to Anthropic Sonnet 3.5
 
 console.log(`[AI] Using Provider: ${PROVIDER}`);
 

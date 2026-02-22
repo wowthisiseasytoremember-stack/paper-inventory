@@ -1,0 +1,719 @@
+{
+  "comic": {
+    "V1": {
+      "title": "Prophet Goes S.Platt!!! Comic Book",
+      "guessedId": null,
+      "cleanedTranscription": "PROPHET GOES S.PLATT!!!\n",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "S.Platt",
+          "type": "person",
+          "confidence": 0.8
+        }
+      ],
+      "historicalContext": "The image shows a comic book titled 'Prophet Goes S.Platt!!!'. The art style suggests it's likely from the late 20th or early 21st century, possibly the 1990s, given the emphasis on exaggerated musculature and detailed weaponry. The presence of the title 'Prophet' indicates that it is part of the Rob Liefeld's Extreme Studios imprint from Image Comics era.",
+      "collectorSignificance": "The comic book appears to be in good condition, potentially bagged and boarded. The title indicates it is either a rare issue or a special variant cover. The presence of 'S.Platt' in the title could refer to a specific artist or creator involved with the comic, potentially increasing its collectibility. Condition and rarity determine value.",
+      "valuation": "$15 - $35",
+      "tags": [
+        "1990s",
+        "comic book",
+        "good condition",
+        "moderate significance"
+      ]
+    },
+    "V2": {
+      "title": "Prophet Goes S.Platt Comic Book",
+      "guessedId": null,
+      "cleanedTranscription": "PROPHET GOES S.PLATT!!!\n",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "S.Platt",
+          "type": "person",
+          "confidence": 0.8
+        }
+      ],
+      "historicalContext": "Based on the visual style and title, this appears to be a comic book from the 1990s or early 2000s, likely from an independent publisher or a creator-owned series. The phrase 'GOES S.PLATT!!!' suggests a variant cover or special edition featuring art by a specific artist, possibly named S. Platt. The style is indicative of the Image Comics era, known for its dynamic artwork and independent creator ownership.",
+      "collectorSignificance": "The presence of the artist's name prominently on the cover suggests that this comic is likely a variant or special edition. Condition is very important for valuing comic books. The comic appears to be sleeved which offers some protection and may boost value if in excellent condition. The abundance suggests it isn't extremely rare but condition and S. Platt's reputation could impact collector interest.",
+      "valuation": "$5 - $20. Value will vary significantly based on condition, whether S. Platt is a significant artist, and if this is a known rare variant. Unopened condition could greatly increase value.",
+      "tags": [
+        "1990s-2000s",
+        "comic-book",
+        "good-condition",
+        "medium-significance"
+      ]
+    },
+    "V3": {
+      "title": "Prophet Goes S.Platt!!! Comic Book",
+      "guessedId": null,
+      "cleanedTranscription": "PROPHET GOES S.PLATT!!!",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "Prophet",
+          "type": "organization",
+          "confidence": 0.7
+        },
+        {
+          "name": "S.Platt",
+          "type": "person",
+          "confidence": 0.8
+        }
+      ],
+      "historicalContext": "Based on the style and title, this is likely a comic book from the 1990s or early 2000s, part of the \"extreme\" comic book aesthetic popular at the time. Rob Liefeld's work is often associated with this style.",
+      "collectorSignificance": "The comic book is in what appears to be good condition, sleeved in plastic. The presence of 'S.Platt' in the title could indicate a special edition featuring artwork or writing by Simon Platt. Further details (issue number, publisher) are needed for a definitive assessment. A signature by the artist would increase value.",
+      "valuation": "Without knowing the issue number or publisher, and assuming it's a regular edition, a fair auction estimate would be $5 - $15. If it is a special edition or contains a signature by a well-known artist (e.g., Simon Platt or Rob Liefeld), the value could be significantly higher, potentially $20 - $50 or more, especially if graded.",
+      "tags": [
+        "1990s",
+        "comic-book",
+        "good-condition",
+        "low-significance"
+      ]
+    },
+    "V4": {
+      "title": "Prophet Goes S.Platt!!! Comic Book",
+      "guessedId": null,
+      "cleanedTranscription": "PROPHET GOES S.PLATT!!!",
+      "confidence": 0.95,
+      "identifiedNames": [],
+      "historicalContext": "The image shows a comic book titled 'Prophet Goes S.Platt!!!'. Given the artistic style, it is likely from the late 20th or early 21st century, a period known for dynamic comic book art. The comic appears to be part of a larger collection.",
+      "collectorSignificance": "The comic book appears to be in good condition, potentially graded. S. Platt likely refers to the artist or writer involved in the book. The value is contingent on the popularity of the Prophet series and the significance of the particular issue. The '!!!' suggests that this comic is a unique or variant cover.",
+      "valuation": "$10 - $50, dependent on condition, rarity, and demand. If this is a rare variant cover or signed by a significant creator, the value could be significantly higher. Check for confirmed signature.",
+      "tags": [
+        "modern-era",
+        "comic-book",
+        "good-condition",
+        "medium-significance"
+      ]
+    }
+  },
+  "freightReceipt": {
+    "V1": {
+      "title": "Denver and Rio Grande Railway Freight Bill, 1883",
+      "guessedId": null,
+      "cleanedTranscription": "FORM 200.-0-10-82-100M\nFREIGHT AGENT'S OFFICE,\nNo.\nDenver and Rio Grande Railway.\nReceived from Hett, Fouchkune to D.D. Belden\nin apparently good order, (contents and value unknown,) consigned to \nState of Cole\nSeby 5 1883\nthe following described property.\nRed Cliff marked as noted in margin, to be\ntransported over the line of the Railway to the Company's Freight Station at and delivered in like good\norder to the consignee or owner, AT SAID STATION, or to such Company or Carrier (if the property is to be forwarded beyond said\nStation') whose line may be considered a part of the route to the place of destination of said goods or packages; it being distinctly\nunderstood that the responsibility of this Company as a common carrier shall cease at the Station where delivered to such Company\nor carrier; but it guarantees that the rate of freight for the transportation of said property from the place of shipment to the place\nswhere consigned, shall not exceed per and charges advanced by this Company,\nUPON THE FOLLOWING CONDITIONS:\nThis Receipt to be presented without Alteration or Erasure.\nAS CONSIGNED MARKS. DESCRIPTION OF ARTICLES.\nD.D. Belden 15 Bof Candles\nR Cliff\nCols\n\nRates.\nSpecial per\nAmount Charges Advanced, $\n\nAgent",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "Denver and Rio Grande Railway",
+          "type": "organization",
+          "confidence": 0.9
+        },
+        {
+          "name": "Hett, Fouchkune",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "D.D. Belden",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "Red Cliff",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Cols",
+          "type": "location",
+          "confidence": 0.5
+        }
+      ],
+      "historicalContext": "This document is a freight bill from the Denver and Rio Grande Railway, dated Sibley 5, 1883. It documents the receipt of goods from 'Hett, Fouchkune' consigned to 'D.D. Belden' to 'Red Cliff'. The item shipped is 'Bof Candles'. The Denver and Rio Grande Railway was a prominent railroad company in the late 19th century, crucial for connecting the mountainous regions of Colorado and providing transport for goods and passengers. The printed form indicates mass production of these forms, a standard practice for railway companies of the era.",
+      "collectorSignificance": "The document's significance lies in its representation of late 19th-century commerce and transportation. Its condition appears to be fair; the paper shows signs of age. The presence of a handwritten agent signature enhances its value. The form number '200.-0-10-82-100M' could potentially lead to discovering production run information which might affect the rarity. The watermarks if present would also contribute to its significance and authentication.",
+      "valuation": "$25 - $50. Due to the historical significance of the Denver and Rio Grande Railway and the relative availability of such documents, the value is moderate. A well-preserved example with clear signatures would be at the higher end of the range.",
+      "tags": [
+        "1880s",
+        "freight bill",
+        "fair condition",
+        "moderate significance",
+        "railroadiana"
+      ]
+    },
+    "V2": {
+      "title": "Denver and Rio Grande Railway Freight Bill, 1883",
+      "guessedId": null,
+      "cleanedTranscription": "FORM 200.-0-10-82-100M\nFREIGHT AGENT'S OFFICE,\nNo.\nDenver and Rio Grande Railway.\nSeby 5 1883\nReceived from Weft Toushime to D.A. Belden the following described property,\nin apparently good order, (contents and value unknown,) consigned to State of Colo marked as noted in margin, to be\nRed Cliff and delivered in like good\ntransported over the line of the Railway to the Company's Freight Station at\norder to the consignee or owner, AT SAID STATION, or to such Company or Carrier (if the property is to be forwarded beyond said\nStation') whose line may be considered a part of the route to the place of destination of said goods or packages; it being distinctly\nunderstood that the responsibility of this Company as a common carrier shall cease at the Station where delivered to such Company\nor carrier; but it guarantees that the rate of freight for the transportation of said property from the place of shipment to the place\nwhere consigned, shall not exceed per and charges advanced by this Company,\nUPON THE FOLLOWING CONDITIONS:\nAS CONSIGNED MARKS. DESCRIPTION OF ARTICLES.\nD.D. Belden 15 Box Candles\n& Cliff\nColo\nRates.\nSpecial per\nAmount Charges Advanced, $\nCow Cook\nAgent.",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "D.A. Belden",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "Cow Cook",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "Red Cliff",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Denver and Rio Grande Railway",
+          "type": "organization",
+          "confidence": 0.9
+        },
+        {
+          "name": "Weft Toushime",
+          "type": "person",
+          "confidence": 0.8
+        }
+      ],
+      "historicalContext": "This document is a freight bill from the Denver and Rio Grande Railway, dated Seby 5, 1883. It details a shipment from 'Weft Toushime' to 'D.A. Belden' in Red Cliff, Colorado. The bill specifies the consignment of 15 boxes of candles. The form number suggests it was a standardized document used by the railway company during that period. The printed date on the form includes a series of numbers. This indicates it may have been updated and printed at different times. Pughes is likely the freight agent that handled the shipment.",
+      "collectorSignificance": "The document is a historical artifact of the Denver and Rio Grande Railway, a significant player in the development of transportation in the American West. The presence of handwritten details and the agent's signature, 'Cow Cook' adds to its uniqueness. The condition appears to be fair, with some discoloration and potential foxing. The 'Seby' date is likely an abbreviation for February.",
+      "valuation": "$25 - $50. Historical railway documents have moderate collector interest, with value dependent on the specific railway, location, date, and notable details. Given the relatively common nature of such documents and the condition, the value is estimated in this range.",
+      "tags": [
+        "1880s",
+        "freight-bill",
+        "fair-condition",
+        "moderate-significance",
+        "colorado",
+        "railway-memorabilia"
+      ]
+    },
+    "V3": {
+      "title": "Denver and Rio Grande Railway Freight Bill, 1883",
+      "guessedId": null,
+      "cleanedTranscription": "FORM 200.-0-10-82-100M\nFREIGHT AGENT'S OFFICE,\nNo.\nDenver and Rio Grande Railway.\nSeby 5 1883\nReceived from Nett, Pouckine to D.A. Belden\nin apparently good order, (contents and value unknown,) consigned to \nof Red Cliff State of Colo the following described property,\ntransported over the line of the Railway to the Company's Freight Station at\nmarked as noted in margin, to be\nand delivered in like good\norder to the consignee or owner, AT SAID STATION, or to such Company or Carrier (if the property is to be forwarded beyond said\nStation') whose line may be considered a part of the route to the place of destination of said goods or packages; it being distinctly\nunderstood that the responsibility of this Company as a common carrier shall cease at the Station where delivered to such Company\nor carrier; but it guarantees that the rate of freight for the transportation of said property from the place of shipment to the place\nand charges advanced by this Company,\nwhere consigned, shall not exceed per\nUPON THE FOLLOWING CONDITIONS:\n\nThis Receipt to be presented without Alteration or Erasure.\nAS CONSIGNED MARKS. DESCRIPTION OF ARTICLES. Weight Subject\nto Correction\nD.D. Belden 15 Boy Candles\nR Cliff Colo R\nRates.\nSpecial per\nAmount Charges Advanced, $\nCowCook\nAgent.",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "Nett Pouckine",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "D.A. Belden",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "Denver and Rio Grande Railway",
+          "type": "organization",
+          "confidence": 1
+        },
+        {
+          "name": "Red Cliff",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Colorado",
+          "type": "location",
+          "confidence": 1
+        },
+        {
+          "name": "CowCook",
+          "type": "person",
+          "confidence": 0.7
+        }
+      ],
+      "historicalContext": "This document is a freight bill from the Denver and Rio Grande Railway, dated February 5, 1883. It details a shipment from Nett Pouckine to D.A. Belden, originating from Red Cliff, Colorado. The shipment consists of 15 boxes of candles. The Denver and Rio Grande Railway was a major railway company in the western United States during the late 19th century, instrumental in connecting remote areas and facilitating trade. The form number (200.-0-10-82-100M) provides some insight into internal document control at the time. The date suggests it's from the era of rapid railroad expansion and industrial growth in the American West.",
+      "collectorSignificance": "This freight bill represents a tangible piece of railroad history, specifically linked to the Denver and Rio Grande Railway.  The handwriting adds to its uniqueness.  The condition appears to be fair, with some possible discoloration and wear. The handwritten entries and the agent's signature ('CowCook') add to its appeal for collectors. Such ephemera is relatively scarce and provides a window into the commercial activities of the time.",
+      "valuation": "$30 - $60.  Signed railroad documents have moderate value.  Factors increasing its value include the clarity of the handwriting, the completeness of the document, and the connection to a specific location (Red Cliff).  The condition is good. A collector of railroad or Colorado historical ephemera would find this item desirable.",
+      "tags": [
+        "1880s",
+        "freight bill",
+        "good condition",
+        "moderate significance"
+      ]
+    },
+    "V4": {
+      "title": "Denver and Rio Grande Railway Freight Receipt, Sibley, Colorado, 1883",
+      "guessedId": "FORM 200.-0-10-82-100M",
+      "cleanedTranscription": "FORM 200.-0-10-82-100M.\nFREIGHT AGENT'S OFFICE,\nNo.\nDenver and Rio Grande Railway.\nSibley 5 1883\nReceived from Mett. Fouchive to D.A. Belden the following described property,\nin apparently good order, (contents and value unknown,) consigned to\nRed Cliff State of Cole\nmarked as noted in margin, to be\ntransported over the line of the Railway to the Company's Freight Station at and delivered in like good\norder to the consignee or owner, AT SAID STATION, or to such Company or Carrier (if the property is to be forwarded beyond said\nStation') whose line may be considered a part of the route to the place of destination of said goods or packages; it being distinctly\nunderstood that the responsibility of this Company as a common carrier shall cease at the Station where delivered to such Company\nor carrier; but it guarantees that the rate of freight for the transportation of said property from the place of shipment to the place\nwhere consigned, shall not exceed per\nand charges advanced by this Company,\nUPON THE FOLLOWING CONDITIONS:\nThis Receipt to be presented without Alteration or Erasure.\nAS CONSIGNEE\nMARKS.\nDESCRIPTION OF ARTICLES.\nD.D. Belden\nR Cliff\nCole\n15 Box Candles\nRates.\nSpecial per\nAmount Charges Advanced, $\nGeo W Cook\nAgent.",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "Mett. Fouchive",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "D.A. Belden",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "Red Cliff",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Cole",
+          "type": "location",
+          "confidence": 0.8
+        },
+        {
+          "name": "Denver and Rio Grande Railway",
+          "type": "organization",
+          "confidence": 0.9
+        },
+        {
+          "name": "D.D. Belden",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "R Cliff",
+          "type": "location",
+          "confidence": 0.7
+        },
+        {
+          "name": "Geo W Cook",
+          "type": "person",
+          "confidence": 0.8
+        }
+      ],
+      "historicalContext": "This is a freight receipt from the Denver and Rio Grande Railway, dated February 5, 1883, issued in Sibley, Colorado. It documents the receipt of goods, specifically 15 boxes of candles, for transport from Red Cliff to D.A. Belden, residing in the state of Cole. The Denver and Rio Grande Railway was a significant railway company in the late 19th century, crucial for connecting communities and transporting goods across the Rocky Mountains. The mention of 'Cole' might be an abbreviated reference to Colorado, typical of the period.",
+      "collectorSignificance": "The receipt is a piece of paper ephemera, offering insight into the freight operations of the Denver and Rio Grande Railway. The presence of handwritten entries, including the names of the consignor and consignee, enhances its collectible value. The signature of the agent, 'Geo W Cook,' could add further interest, depending on the agent's significance (needs further research). Condition is good, although framed, with some fading typical for documents of this age.",
+      "valuation": "$30 - $75. The value is based on the historical significance of the Denver and Rio Grande Railway, the presence of handwritten elements and signatures, and the document's age. Given the rarity of specific railroad documents signed by station agents and its generally good condition, the upper end of the range is more likely. The addition of a COA could increase the value.",
+      "tags": [
+        "1880s",
+        "freight-receipt",
+        "good-condition",
+        "medium-significance"
+      ]
+    }
+  },
+  "railroadLetter": {
+    "V1": {
+      "title": "Delta Mercantile Co. Letter, September 10, 1890",
+      "guessedId": null,
+      "cleanedTranscription": "THE DELTA MERCANTILE CO.,\n(Successors to MOGBANAHAN & BUTLER,)\n-DEALERS IN-\nGeneral Merchandise.\n\nGEO. STEPHAN, Prest.\nA. C. BUTLER, Vice-Prest.\nFRANKE. DODGE, Sec'y and Treas.\n\nDelta, Colo.,. Sep 10 1890\n\nMr. R. G. Comfrex\nShuory Cow\n\nGentlemen.\n\nCan you give us\na Special rate on Laundry\nProper Shiped from this People.\nto Arvon Laundries & return\nWhat rate Can you give us\n\nAwaiting Your Earliest Convenience\nWe remain your Props\n\nTHE DELTA MERCANTILE CO\nPer: Stephan",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "GEO. STEPHAN",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "A. C. BUTLER",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "FRANK E. DODGE",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "R.G. Comfrex",
+          "type": "person",
+          "confidence": 0.85
+        },
+        {
+          "name": "MOGBANAHAN & BUTLER",
+          "type": "organization",
+          "confidence": 0.8
+        },
+        {
+          "name": "THE DELTA MERCANTILE CO",
+          "type": "organization",
+          "confidence": 0.9
+        },
+        {
+          "name": "Delta",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Colo.",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Arvon Laundries",
+          "type": "organization",
+          "confidence": 0.7
+        }
+      ],
+      "historicalContext": "This is a letter from The Delta Mercantile Co. of Delta, Colorado, dated September 10, 1890. The letter is addressed to Mr. R.G. Comfrex of Shuory Cow, presumably another business. It inquires about special rates for shipping laundry, possibly indicating The Delta Mercantile Co. was involved in supplying goods or services related to laundry businesses in the region. The letterhead identifies Geo. Stephan as President, A.C. Butler as Vice-President, and Frank E. Dodge as Secretary and Treasurer. It also notes the company's status as successors to Mogbanahan & Butler. The letter provides a glimpse into business correspondence and supply chains in late 19th-century Colorado.",
+      "collectorSignificance": "This letter is significant due to its age, origin from a specific company in a specific location (Delta, Colorado), and the presence of signatures (possibly autopen) from company officers. The condition of the paper (presumably fragile) impacts its value. The unique typography and the letterhead's information about the company's lineage as successors to Mogbanahan & Butler contribute to its historical interest. The content regarding laundry services provides a unique insight into the business landscape of the time.",
+      "valuation": "$35 - $75. The value is based on the age of the document (1890), its connection to a specific place and business (Delta Mercantile Co. in Delta, Colorado), and the presence of signatures. The subject matter (laundry rates) is relatively mundane, which somewhat limits the appeal. The condition, if fragile, could also slightly decrease the value.",
+      "tags": [
+        "1890s",
+        "letter",
+        "fair condition",
+        "moderate significance"
+      ]
+    },
+    "V2": {
+      "title": "Delta Mercantile Co. Letter, September 10, 1890",
+      "guessedId": null,
+      "cleanedTranscription": "THE DELTA MERCANTILE CO.,\n(Successors to MOGHANAHAN & BUTLER,)\nDEALERS IN\nGeneral Merchandise.\n\nGEO. STEPHAN, Pres't\nA. C. BUTLER, Vice Pres't\nFRANK E. DODGE, Sec'y and Treas.\n\nDelta, Colo., Sep 10 1890\n\nMr. R.G. Caprees\n[illegible] Survy Co.\n\nGentlemen\n\nCan you give us\na Special rate on Laundry\nProper Shipped from this place\nto Armour Laundries & return.\nWhat rate Can you give us\nAwaiting Your Earliest Convenience\nWe remain Your Resps.\n\nTHE DELTA MERCANTILE CO\nPer M Stephan",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "GEO. STEPHAN",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "A. C. BUTLER",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "FRANK E. DODGE",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "MOGHANAHAN & BUTLER",
+          "type": "organization",
+          "confidence": 0.8
+        },
+        {
+          "name": "Delta",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Colo.",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "R.G. Caprees",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "Armour Laundries",
+          "type": "organization",
+          "confidence": 0.7
+        },
+        {
+          "name": "M Stephan",
+          "type": "person",
+          "confidence": 0.9
+        }
+      ],
+      "historicalContext": "This is a letter from the Delta Mercantile Co. in Delta, Colorado, dated September 10, 1890. The letter is addressed to Mr. R.G. Caprees [illegible] Survy Co., regarding rates for shipping laundry to Armour Laundries. Delta Mercantile Co. was a general merchandise business, formerly Moghanahan & Butler. This letter provides a glimpse into the commercial activity and business correspondence of the late 19th century in a developing Western town. Geo Stephan was the President and the letter is signed by him.",
+      "collectorSignificance": "This letter is significant because it features letterhead from Delta Mercantile Co., including the names of its officers. The letterhead details the company's business (general merchandise) and its location (Delta, Colorado). The handwritten content and signature, together with the date, increase the item's historical and collectible value. The condition appears to be good for its age, with some expected wear and tear. The presence of names like Stephan, Butler, and Dodge could be valuable to local historical societies or individuals researching family history in the Delta, Colorado, area.",
+      "valuation": "$35 - $75. The value is based on the letter's age (1890), its intact letterhead, signature, and the content revealing commercial activity of the era. Prices may vary based on collector demand.",
+      "tags": [
+        "1890s",
+        "letter",
+        "good-condition",
+        "medium-significance"
+      ]
+    },
+    "V3": {
+      "title": "Delta Mercantile Co. Letter, September 10, 1890",
+      "guessedId": null,
+      "cleanedTranscription": "THE DELTA MERCANTILE CO.,\n(Successors to MCGRAHANAN & BUTLER,)\n-DEALERS IN-\nGeneral Merchandise.\n\nGEO. STEPHAN, Pres't\nA. C. BUTLER, Vice-Pres't\nFRANKE. DODGE, Sec'y and Treas.\n\nDelta, Colo., Sep 10 1890\n\nMr. R.G. Cipress\nor Ivory Cow\nGentlemen\n\nCan you give us\na Special rate on Laundry\nProper Shipped from this point.\nto Armour Laundries & return.\nWhat rate can you give us\nAwaiting your earliest convenience\nWe remain your Props.\n\nTHE DELTA MERCANTILE CO\nper G. Stephan",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "GEO. STEPHAN",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "A. C. BUTLER",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "FRANKE. DODGE",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "MCGRAHANAN & BUTLER",
+          "type": "organization",
+          "confidence": 0.8
+        },
+        {
+          "name": "R.G. Cipress",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "Armour Laundries",
+          "type": "organization",
+          "confidence": 0.8
+        },
+        {
+          "name": "Delta",
+          "type": "location",
+          "confidence": 0.9
+        }
+      ],
+      "historicalContext": "This document is a letter from The Delta Mercantile Co. of Delta, Colorado, dated September 10, 1890. The letter is addressed to 'Mr. R.G. Cipress or Ivory Cow' and inquires about special shipping rates for laundry to and from Armour Laundries. The Delta Mercantile Co. identifies itself as successors to McGrahanan & Butler and deals in 'General Merchandise'. The letterhead identifies Geo. Stephan as President, A. C. Butler as Vice-President, and Franke Dodge as Secretary and Treasurer.",
+      "collectorSignificance": "This is a nice example of late 19th-century business correspondence. The presence of a printed letterhead with named officers, combined with the handwritten text, is typical for the era. The subject matter relates to shipping rates, giving insight into the commercial landscape of the time. Condition will play a role in value. An intact, clean copy will be worth more. The relative obscurity of The Delta Mercantile Co. makes it somewhat less desirable than if it were associated with a major national company. However, letters relating to the laundry and shipping industry from this era are of interest to specialists.",
+      "valuation": "$25 - $50. The letter has some collector interest due to its age, origin, and the identifiable company and officers. The specific rate query regarding laundry and shipping makes it a niche interest. The value is relatively modest because the company itself is not particularly famous.",
+      "tags": [
+        "1890s",
+        "letter",
+        "good-condition",
+        "medium-significance"
+      ]
+    },
+    "V4": {
+      "title": "Delta Mercantile Co. Letter, September 10, 1890",
+      "guessedId": null,
+      "cleanedTranscription": "THE DELTA MERCANTILE CO.,\n(Successors to MCGRAHANAN & BUTLER,)\n-DEALERS IN-\nGeneral Merchandise.\n\nGEO. STEPHAN, Pres't.\nA. C. BUTLER, Vice Pres't.\nFRANK E. DODGE, Sec'y and Treas.\n\nDelta, Colo., Sep 10 1890\n\nMr. R. G.\nCypress & Lowry Co.\n\nGentlemen:\n\nCan you give us\na Special rate on Laundry\nproper Shipped from this place\nto Denver Laundries & return.\nwhat rate Can you give us\nAwaiting your earliest Convenience\nWe remain your Respt.\n\nTHE DELTA MERCANTILE CO\nBy Stephan",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "GEO. STEPHAN",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "A. C. BUTLER",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "FRANK E. DODGE",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "DELTA MERCANTILE CO.",
+          "type": "organization",
+          "confidence": 0.9
+        },
+        {
+          "name": "MCGRAHANAN & BUTLER",
+          "type": "organization",
+          "confidence": 0.8
+        },
+        {
+          "name": "Delta",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Colo.",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "R. G. Cypress & Lowry Co.",
+          "type": "organization",
+          "confidence": 0.8
+        },
+        {
+          "name": "Denver Laundries",
+          "type": "organization",
+          "confidence": 0.7
+        },
+        {
+          "name": "Stephan",
+          "type": "person",
+          "confidence": 0.8
+        }
+      ],
+      "historicalContext": "This document is a business letter from The Delta Mercantile Co. in Delta, Colorado, dated September 10, 1890. It is addressed to R. G. Cypress & Lowry Co., regarding shipping rates for laundry to Denver laundries. Delta Mercantile Co. was a general merchandise store and the letterhead indicates the firm was previously known as McGrahanan & Butler. The letter is signed by a representative of the Delta Mercantile Co., By Stephan, likely a reference to Geo. Stephan, the company's president.",
+      "collectorSignificance": "This is a nice example of 19th-century business correspondence. The letterhead is intact and the content gives insight into commerce in Colorado during that period. The condition appears to be good. The document features a printed letterhead and handwritten text and signature, giving it added value.",
+      "valuation": "$30 - $50. The letter is well-preserved. The letterhead and clear date add to the historical interest. The presence of handwritten elements enhances the collectible value.",
+      "tags": [
+        "1890s",
+        "business-letter",
+        "good-condition",
+        "medium-significance"
+      ]
+    }
+  },
+  "mercantileLetter": {
+    "V1": {
+      "title": "Denver and Rio Grande Railroad Company Letter, 1890",
+      "guessedId": "2201",
+      "cleanedTranscription": "2201\n\nTHE DENVER AND RIO GRANDE RAILROAD CO.\n\nEXPRESS DEPARTMENT.\n\nDenver, Colorado, Sept. 15th 1890\n\nD. D. MAYO, GENERAL AGENT,\n1609 LAWRENCE STREET.\n\nMr. M. M. Hastings\nAgent Delta\nDear Sir\nPlease notify Mr. Stephan that\nour rate on laundry matter, is\n\"pound rate\" or 3/4c per pound No\ncharge less than 75c. Same must\nbe used to show what it is\n\nYours truly\nD. D. Mayo",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "D. D. Mayo",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "M. M. Hastings",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "Stephan",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "Denver and Rio Grande Railroad Co.",
+          "type": "organization",
+          "confidence": 0.9
+        },
+        {
+          "name": "Denver",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Delta",
+          "type": "location",
+          "confidence": 0.7
+        }
+      ],
+      "historicalContext": "This is a letter from the Denver and Rio Grande Railroad Company, Express Department, dated September 15th, 1890. The letter informs Mr. M. M. Hastings, Agent Delta, about the rate for laundry matter: 3/4 of a cent per pound, with a minimum charge of 75 cents. The letter mentions that it should be used to show what it is, suggesting the letter serves as documentation or authorization of these shipping rates. D. D. Mayo signs the letter.",
+      "collectorSignificance": "This letter is significant for a few reasons. It provides a snapshot of the business operations of a major railroad company in the late 19th century. The original company letterhead with the vignette logo, the date and content is valuable, particularly if the signatures are authentic. Also, the physical condition contributes to the overall value. The printing quality is important as well.",
+      "valuation": "$50 - $150. The letter is historical and from a well-known railroad. The value is affected by the condition, presence of the original company letterhead, and the signature's authenticity. Expert appraisal would be needed for higher confidence.",
+      "tags": [
+        "1890s",
+        "letter",
+        "good condition",
+        "moderate significance"
+      ]
+    },
+    "V2": {
+      "title": "Denver and Rio Grande Railroad Co. Letter, 1890",
+      "guessedId": "2201",
+      "cleanedTranscription": "THE DENVER AND RIO GRANDE RAILROAD CO.\nEXPRESS DEPARTMENT.\nDenver, Colorado, Sept. 15th 1890.\nD. D. MAYO, GENERAL AGENT, \n1608 LAWRENCE STREET\nMr. M. M. Hastings.\nAgent Delta\nDear Sir\nPlease notify Mr. Stephan that\nour rate on [illegible]ndry matter is\npound rate or 3/4c per pound no\nChange less than 75c. Same must\nbe wßd to show what it is.\nYours Truly D. D. Mayo",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "D. D. Mayo",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "M. M. Hastings",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "Stephan",
+          "type": "person",
+          "confidence": 0.8
+        },
+        {
+          "name": "Denver",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Delta",
+          "type": "location",
+          "confidence": 0.8
+        },
+        {
+          "name": "Denver and Rio Grande Railroad Co.",
+          "type": "organization",
+          "confidence": 0.9
+        }
+      ],
+      "historicalContext": "This document is a letter from the Denver and Rio Grande Railroad Company's Express Department, dated September 15th, 1890. It outlines shipping rates for laundry, specifying a charge of 3/4 cent per pound with a minimum charge of 75 cents. The letter is addressed to Mr. M. M. Hastings, Agent Delta. The Denver and Rio Grande Railroad was a major player in the development of the American West, and this letter provides insight into the business operations and freight rates of the period. The address '1608 Lawrence Street' places D.D. Mayo's office in a commercial area of Denver. Lawrence Street was a prominent business address in the late 19th century.",
+      "collectorSignificance": "The document is significant for its historical context and the letterhead of the Denver and Rio Grande Railroad Company. The letter features a seal that describes the railroad as the \"Scenic Line of the World.\" The signature of D. D. Mayo, General Agent, adds to its collector value. Condition appears good, though framing prevents full evaluation. The handwritten text and date enhance its uniqueness.",
+      "valuation": "$75 - $150. The value is based on the historical significance of the Denver and Rio Grande Railroad, the clarity of the text, the presence of the company letterhead and seal, the signature of a company official, and the context it provides to the economic activity of the late 19th century. Railroadiana is a popular collecting area, and original documents such as this command a premium.",
+      "tags": [
+        "1890s",
+        "railroad-memorabilia",
+        "good-condition",
+        "medium-significance"
+      ]
+    },
+    "V3": {
+      "title": "Denver and Rio Grande Railroad Co. Express Department Letter, 1890",
+      "guessedId": "2201",
+      "cleanedTranscription": "THE DENVER AND RIO GRANDE RAILROAD CO.\nEXPRESS DEPARTMENT.\nDenver, Colorado, Sept 15th, 1890\nD. D. MAYO, GENERAL AGENT,\n1609 LAWRENCE STREET\nMr. M.M. Hastings\nAgent Delta\nDear Sir\nPlease notify Mr. Stephan that\nour rate on [illegible]ndry matter is\n\"pound rate\" or 3/4 per pound No\nCharge less than 75¢. Same must\nbe used to show what it is.\nFraternally, D.D. Mayo",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "D.D. Mayo",
+          "type": "person",
+          "confidence": 0.95
+        },
+        {
+          "name": "M.M. Hastings",
+          "type": "person",
+          "confidence": 0.95
+        },
+        {
+          "name": "Mr. Stephan",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "Denver",
+          "type": "location",
+          "confidence": 0.95
+        },
+        {
+          "name": "Colorado",
+          "type": "location",
+          "confidence": 0.95
+        },
+        {
+          "name": "Denver and Rio Grande Railroad Co.",
+          "type": "organization",
+          "confidence": 0.95
+        }
+      ],
+      "historicalContext": "This is a letter from the Denver and Rio Grande Railroad Company, Express Department, dated September 15th, 1890. It originates from Denver, Colorado, and is addressed to Mr. M.M. Hastings, Agent Delta. The letter discusses shipping rates for laundry. The Denver & Rio Grande Railroad was a prominent railroad company that played a significant role in the development of the American West, particularly Colorado and surrounding regions.",
+      "collectorSignificance": "This document is significant because it is a piece of ephemera from a major railroad company during the late 19th century. The letterhead is clearly printed with the company's name and logo (\"Scenic Line of the World\"), which adds to its collectibility. The presence of a signature, while not of a nationally renowned figure, does add some value. The condition appears to be good, but being framed helps to preserve the integrity of the paper. The number '2201' and the phrase '1609 Lawrence Street' is likely an office or location code which might be of high interest to a local Denver historical society.",
+      "valuation": "$75 - $150. This item has some value as railroadiana and ephemera. The fact that it is a signed letter from an employee of the Denver and Rio Grande Railroad adds some premium, but it is not a very high-profile signature. If authenticated it could be worth more to a local collector, the location of the original mailing and office are likely known to local area collectors. The framed presentation adds to perceived value.",
+      "tags": [
+        "1890s",
+        "railroad-ephemera",
+        "good-condition",
+        "medium-significance"
+      ]
+    },
+    "V4": {
+      "title": "Denver and Rio Grande Railroad Express Department Letter, 1890",
+      "guessedId": "2201",
+      "cleanedTranscription": "THE DENVER AND RIO GRANDE RAILROAD CO.\nEXPRESS DEPARTMENT.\nDenver, Colorado, Sept 15th 1890\nD. D. MAYO, GENERAL AGENT,\n1609 LAWRENCE STREET\nMr. M.M. Hastings\nAgent Delta\nDear Sir\nPlease notify Mr. Stephan that\nour rate on daundry matter is\n\"pound rate\" or 3/4¢ per pound no\nchange less than 75¢. Same must\nbe wßd to show what it is.\nFraternally D.D. Mayo",
+      "confidence": 0.95,
+      "identifiedNames": [
+        {
+          "name": "Denver and Rio Grande Railroad",
+          "type": "organization",
+          "confidence": 0.9
+        },
+        {
+          "name": "D. D. Mayo",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "M.M. Hastings",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "Mr. Stephan",
+          "type": "person",
+          "confidence": 0.9
+        },
+        {
+          "name": "Denver",
+          "type": "location",
+          "confidence": 0.9
+        },
+        {
+          "name": "Delta",
+          "type": "location",
+          "confidence": 0.8
+        }
+      ],
+      "historicalContext": "This is a letter from the Express Department of The Denver and Rio Grande Railroad Company, dated September 15th, 1890. It is from D. D. Mayo, General Agent, located at 1609 Lawrence Street, Denver, Colorado, to Mr. M.M. Hastings, Agent at Delta. The letter concerns the rate for 'daundry' (laundry) matter, setting it at 3/4 of a cent per pound, with a minimum charge of 75 cents. This provides insight into the operations and pricing of express services offered by railroads during the late 19th century.",
+      "collectorSignificance": "This document is significant due to its association with The Denver and Rio Grande Railroad, a prominent railroad company in the American West. The letterhead with the company logo and the handwritten signature of D. D. Mayo adds to its collectibility. The condition appears good despite its age. Ephemeral documents like this offer insight into the business practices of the era. Specific railroad ephemera tends to be of interest to a focused segment of collectors.",
+      "valuation": "$50 - $100. The value is based on the historical significance of the Denver and Rio Grande Railroad, the presence of a handwritten signature, and the intact condition of the document. Railroad ephemera is sought after, and the clear, legible content boosts the desirability. Framing adds slight value.",
+      "tags": [
+        "1890s",
+        "railroad-ephemera",
+        "good-condition",
+        "medium-significance"
+      ]
+    }
+  }
+}

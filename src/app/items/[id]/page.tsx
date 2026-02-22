@@ -27,6 +27,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
 
 interface Entity {
   name: string;
@@ -108,6 +109,33 @@ export default function ItemDetail() {
     navigator.clipboard.writeText(item?.id || '');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDeepDive = async () => {
+    if (!item) return;
+    
+    // We use a custom toast ID so we can update it in-place since this takes ~20s
+    const toastId = toast.loading('Initiating Deep Dive...', {
+      description: 'Consulting high-end archival reasoning engine. This may take 15-30 seconds.'
+    });
+
+    try {
+      const res = await fetch(`/api/items/${item.id}/enrich`, { method: 'POST' });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || 'Deep Dive Failed');
+      
+      toast.success('Deep Dive Complete', { 
+        id: toastId,
+        description: 'New historical context and premium valuation unlocked.' 
+      });
+      fetchItem(); // Refresh UI with new massive Markdown blocks
+    } catch (err: any) {
+      toast.error('Neural Enrichment Failed', { 
+        id: toastId,
+        description: err.message 
+      });
+    }
   };
 
   if (loading) {
@@ -277,15 +305,19 @@ export default function ItemDetail() {
                   transition={{ delay: 0.3 }}
                   className="glass rounded-[2.5rem] p-8 border border-white/5 space-y-4 shadow-xl"
                 >
-                  <div className="flex items-center gap-3 text-blue-400">
+                  <div className="flex items-center gap-3 text-blue-400 pb-2 border-b border-white/5">
                     <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
                       <History size={20} />
                     </div>
                     <h3 className="text-sm font-black uppercase tracking-[0.1em]">Historical Synthesis</h3>
                   </div>
-                  <p className="text-slate-300 text-sm leading-relaxed font-medium">
-                    {item.historicalContext || (isProcessing ? "Reconstructing era-appropriate context..." : "Context synthesis unavailable.")}
-                  </p>
+                  <div className="text-slate-300 text-sm leading-relaxed font-medium prose prose-invert prose-blue max-w-none prose-p:mb-4 prose-li:mb-1 prose-ul:my-4">
+                    {item.historicalContext ? (
+                      <ReactMarkdown>{item.historicalContext}</ReactMarkdown>
+                    ) : (
+                      <p>{isProcessing ? "Reconstructing era-appropriate context..." : "Context synthesis unavailable."}</p>
+                    )}
+                  </div>
                 </motion.div>
 
                 {/* Collector Significance */}
@@ -295,15 +327,19 @@ export default function ItemDetail() {
                   transition={{ delay: 0.4 }}
                   className="glass rounded-[2.5rem] p-8 border border-white/5 space-y-4 shadow-xl"
                 >
-                  <div className="flex items-center gap-3 text-indigo-400">
+                  <div className="flex items-center gap-3 text-indigo-400 pb-2 border-b border-white/5">
                     <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
                       <Sparkles size={20} />
                     </div>
                     <h3 className="text-sm font-black uppercase tracking-[0.1em]">Archival Value</h3>
                   </div>
-                  <p className="text-slate-300 text-sm leading-relaxed font-medium">
-                    {item.collectorSignificance || (isProcessing ? "Evaluating rarity and uniqueness factors..." : "Significance patterns not detected.")}
-                  </p>
+                  <div className="text-slate-300 text-sm leading-relaxed font-medium prose prose-invert prose-indigo max-w-none prose-p:mb-4 prose-li:mb-1 prose-ul:my-4">
+                    {item.collectorSignificance ? (
+                      <ReactMarkdown>{item.collectorSignificance}</ReactMarkdown>
+                    ) : (
+                      <p>{isProcessing ? "Evaluating rarity and uniqueness factors..." : "Significance patterns not detected."}</p>
+                    )}
+                  </div>
                 </motion.div>
             </div>
 
@@ -365,6 +401,16 @@ export default function ItemDetail() {
                         {item.valuation || (isProcessing ? "Evaluating..." : "TBD")}
                       </div>
                    </div>
+
+                   <button 
+                      onClick={handleDeepDive}
+                      disabled={isProcessing}
+                      className="w-full relative group/deep flex items-center justify-between py-4 px-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-black rounded-2xl transition-all duration-300 shadow-xl shadow-purple-900/40 hover:shadow-purple-700/60 disabled:opacity-50 overflow-hidden"
+                   >
+                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/deep:translate-y-0 transition-transform duration-300 ease-out" />
+                     <span className="relative z-10">DEEP DIVE ANALYSIS</span>
+                     <Sparkles size={18} className="relative z-10 text-purple-200 group-hover/deep:rotate-12 transition-transform" />
+                   </button>
 
                    <div className="h-[1px] w-full bg-white/5" />
 

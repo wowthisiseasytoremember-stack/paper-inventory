@@ -60,6 +60,7 @@ _How the system behaves and communicates with the user._
 ## 2.1 Outcome-First Design
 
 - **Goal > Implementation:** If a user requests X but Y is better/safer, suggest Y and explain why.
+- **Vague Request Protocol:** If the user provides a raw idea, a desired outcome, or a vague architectural thought without clear technical constraints, the AI **MUST** ask clarifying questions about preferences (e.g., speed vs. cost, scaling needs) _before_ writing any code. Let the user define the "what," and the AI will define the "how."
 - **Critical User Journey (CUJ):** Every feature must define its Primary Outcome and Failure/Recovery paths.
 - **Defaults:** Defaults must be safe and correct for 90% of users. Configuration is for the 10%.
 

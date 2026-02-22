@@ -1,5 +1,5 @@
 
-import { analyzeImage } from "./src/lib/ai/google";
+import { analyzeImage } from "../src/lib/ai/google";
 import * as dotenv from "dotenv";
 
 dotenv.config();

@@ -16,6 +16,7 @@ export class QueueManager {
   private isRunning = false;
   private activeJobs = 0;
   private interval: NodeJS.Timeout | null = null;
+  private watchdogInterval: NodeJS.Timeout | null = null;
 
   start() {
     if (this.isRunning) return;
@@ -23,8 +24,12 @@ export class QueueManager {
     console.log('Queue Manager Started.');
     
     // Reset any stale locks from previous crash
-    const stmt = db.prepare('UPDATE items SET processingLock = 0, watchdogLockedAt = NULL WHERE processingLock = 1');
-    stmt.run();
+    ItemService.resetLocks();
+
+    // Start Runtime Watchdog (checks every 1 minute)
+    this.watchdogInterval = setInterval(() => {
+      ItemService.resetStaleLocks(5); // Reset locks older than 5 minutes
+    }, 60 * 1000);
 
     this.loop();
   }
@@ -32,6 +37,7 @@ export class QueueManager {
   stop() {
     this.isRunning = false;
     if (this.interval) clearTimeout(this.interval);
+    if (this.watchdogInterval) clearInterval(this.watchdogInterval);
     console.log('Queue Manager Stopped.');
   }
 

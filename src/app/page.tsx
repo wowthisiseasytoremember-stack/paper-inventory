@@ -217,7 +217,6 @@ export default function Dashboard() {
                 /* Tiny List View */
                 <div className="space-y-1">
                     {sortedItems.map((item, idx) => {
-                        const tags = item.tags ? JSON.parse(item.tags) : [];
                         return (
                             <motion.div
                               key={item.id}

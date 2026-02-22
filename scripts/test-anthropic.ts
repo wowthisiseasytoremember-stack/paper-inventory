@@ -9,7 +9,7 @@ dotenv.config();
 
 async function testAnthropic() {
   console.log("--- Testing Anthropic (Claude 3.5 Sonnet) via AI SDK ---");
-  const imagePath = "public/uploads/original/0a44bf64-3a87-484b-ab61-de1659a950ac.jpg";
+  const imagePath = "public/training-data/dd_mayo_denver.jpg";
   
   if (!fs.existsSync(imagePath)) {
     console.error(`Image not found: ${imagePath}`);

@@ -74,6 +74,7 @@ export const ItemService = {
         WHERE processingLock = 0 
           AND status IN ('queued', 'ocr_complete', 'resize_complete')
           AND retryCount < 3
+          AND deletedAt IS NULL
         ORDER BY createdAt ASC
         LIMIT 1
       `).get() as Item | undefined;
@@ -131,10 +132,31 @@ export const ItemService = {
   resetLocks: () => {
     const info = db.prepare(`
       UPDATE items 
-      SET processingLock = 0, watchdogLockedAt = NULL 
+      SET processingLock = 0, watchdogLockedAt = NULL, status = 'error', errorMessage = 'System crash detected during processing'
       WHERE processingLock = 1
     `).run();
     console.log(`[CrashRecovery] Reset ${info.changes} locked items.`);
+  },
+
+  /**
+   * Resets locks that have been held for too long (Runtime Watchdog).
+   * @param timeoutMinutes Minutes after which a lock is considered stale.
+   */
+  resetStaleLocks: (timeoutMinutes = 5) => {
+    const info = db.prepare(`
+      UPDATE items 
+      SET processingLock = 0, 
+          watchdogLockedAt = NULL, 
+          status = 'error', 
+          errorMessage = 'Processing timed out (Watchdog)',
+          retryCount = retryCount + 1
+      WHERE processingLock = 1 
+        AND watchdogLockedAt IS NOT NULL
+        AND watchdogLockedAt < datetime('now', '-${timeoutMinutes} minutes')
+    `).run();
+    if (info.changes > 0) {
+      console.warn(`[Watchdog] Reset ${info.changes} stale locked items.`);
+    }
   },
 
   getById: (id: string): Item | undefined => {

@@ -28,7 +28,7 @@ export async function analyzeImage(
       const modelName = process.env.BASELINE_MODEL || 'claude-3-5-sonnet-20240620';
       console.log(`[AI] Analyzing image with ${modelName} (Attempt ${attempt + 1}/${MAX_RETRIES + 1})...`);
       
-      const result = await generateObject({
+      const apiCall = generateObject({
         model: anthropic(modelName),
         schema: ItemMetadataSchema,
         messages: [
@@ -51,6 +51,13 @@ ${ocrText.substring(0, 5000)}`
         ],
         temperature: 0, // Deterministic
       });
+
+      // 60-second hard timeout for the AI call
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('AI Context Timeout (60s)')), 60000)
+      );
+
+      const result = await Promise.race([apiCall, timeoutPromise]);
 
       console.log('[AI] Analysis Successful.');
       return result.object;

@@ -1,7 +1,7 @@
-import { BulkUpload } from '@/components/BulkUpload';
-// ... existing imports ...
-// (Searching for UploadDropzone and replacing it)
+"use client";
 
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { BulkUpload } from '@/components/BulkUpload';
 import { ItemCard } from '@/components/ItemCard';
 import { 
   Loader2, 
@@ -9,7 +9,7 @@ import {
   Archive, 
   Plus, 
   LayoutGrid, 
-  List, 
+  List,
   ArrowUpDown,
   Calendar,
   DollarSign,
@@ -173,7 +173,7 @@ export default function Dashboard() {
               className="overflow-hidden"
             >
                 <div className="pb-4">
-                  <UploadDropzone onUploadComplete={() => { fetchItems(); setShowUpload(false); }} />
+                  <BulkUpload />
                 </div>
             </motion.section>
           )}

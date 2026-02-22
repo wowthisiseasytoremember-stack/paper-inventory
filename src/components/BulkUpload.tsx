@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 interface UploadFile {
   file: File;
@@ -18,7 +18,6 @@ export function BulkUpload() {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -28,11 +27,7 @@ export function BulkUpload() {
   const addFiles = (newFiles: File[]) => {
     const validFiles = newFiles.filter(f => f.type.startsWith('image/'));
     if (validFiles.length < newFiles.length) {
-        toast({
-            title: "Invalid files ignored",
-            description: "Only image files are supported.",
-            variant: "destructive"
-        });
+        toast.error("Invalid files ignored. Only image files are supported.");
     }
 
     setFiles(prev => [
@@ -81,8 +76,7 @@ export function BulkUpload() {
     const idleIndices = files.map((f, i) => f.status === 'idle' ? i : -1).filter(i => i !== -1);
     await Promise.all(idleIndices.map(uploadFile));
 
-    toast({
-        title: "Bulk upload complete",
+    toast.success("Bulk upload complete", {
         description: `Successfully queued ${files.filter(f => f.status === 'success').length} items.`,
     });
   };

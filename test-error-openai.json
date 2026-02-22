@@ -1,4 +1,0 @@
-{
-  "stack": "Error: AI_ANALYSIS_FAILED: Max retries exceeded. Last error: Incomplete JSON response\n    at analyzeImage (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\src\\lib\\ai\\openai-manual.ts:108:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async test (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\scripts\\test-openai-direct.ts:12:20)",
-  "message": "AI_ANALYSIS_FAILED: Max retries exceeded. Last error: Incomplete JSON response"
-}

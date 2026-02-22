@@ -49,3 +49,17 @@ next-env.d.ts
 *.db
 *.db-shm
 *.db-wal
+
+# nested duplicate repo
+/paper-inventory
+
+# large binaries & test images
+*.jpg
+*.traineddata
+
+# debug & build logs
+*.log
+/worker-threads
+/tsc.log
+/build.log
+/tsconfig.tsbuildinfo

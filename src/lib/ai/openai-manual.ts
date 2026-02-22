@@ -94,7 +94,8 @@ export async function analyzeImage(
       const result = JSON.parse(content);
       
       // Basic validation (or use Zod parse if strictness needed here, but keeping it simple/crash-free)
-      if (!result.title || !result.cleanedTranscription) {
+      if (typeof result.title !== 'string' || typeof result.cleanedTranscription !== 'string') {
+          console.error("Validation failed. Raw content:", content);
           throw new Error('Incomplete JSON response');
       }
 

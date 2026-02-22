@@ -1,7 +1,7 @@
-"use client";
+import { BulkUpload } from '@/components/BulkUpload';
+// ... existing imports ...
+// (Searching for UploadDropzone and replacing it)
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { UploadDropzone } from '@/components/UploadDropzone';
 import { ItemCard } from '@/components/ItemCard';
 import { 
   Loader2, 

@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ItemService } from '@/lib/db/items';
 import fs from 'fs';
+import path from 'path';
 import mime from 'mime';
 
 export async function GET(
@@ -26,14 +27,16 @@ export async function GET(
     // Let's assume this endpoint is for the detailed view, so resized is better for performance 
     // unless they specifically request download.
     // Let's serve resized if available, else original.
-    const pathToSend = item.resizedImagePath || item.originalImagePath;
+    const relativePath = item.resizedImagePath || item.originalImagePath;
+    
+    const absolutePath = path.join(process.cwd(), 'public', relativePath.replace(/^\//, ''));
 
-    if (!fs.existsSync(pathToSend)) {
+    if (!fs.existsSync(absolutePath)) {
         return NextResponse.json({ error: 'File missing on disk' }, { status: 410 });
     }
 
-    const fileBuffer = fs.readFileSync(pathToSend);
-    const mimeType = mime.getType(pathToSend) || item.mimeType || 'application/octet-stream';
+    const fileBuffer = fs.readFileSync(absolutePath);
+    const mimeType = mime.getType(absolutePath) || item.mimeType || 'application/octet-stream';
 
     return new NextResponse(fileBuffer, {
       headers: {

@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ItemService } from '@/lib/db/items';
 import fs from 'fs';
+import path from 'path';
 import mime from 'mime';
 
 export async function GET(
@@ -21,12 +22,15 @@ export async function GET(
       return NextResponse.json({ error: 'Thumbnail not found' }, { status: 404 });
     }
 
-    if (!fs.existsSync(item.thumbnailPath)) {
+    const relativePath = item.thumbnailPath;
+    const absolutePath = path.join(process.cwd(), 'public', relativePath.replace(/^\//, ''));
+
+    if (!fs.existsSync(absolutePath)) {
         return NextResponse.json({ error: 'File missing on disk' }, { status: 410 });
     }
 
-    const fileBuffer = fs.readFileSync(item.thumbnailPath);
-    const mimeType = mime.getType(item.thumbnailPath) || 'image/jpeg';
+    const fileBuffer = fs.readFileSync(absolutePath);
+    const mimeType = mime.getType(absolutePath) || 'image/jpeg';
 
     return new NextResponse(fileBuffer, {
       headers: {

@@ -1,0 +1,12 @@
+{
+  "stack": "AI_APICallError: model: claude-3-5-sonnet-20240620\n    at <anonymous> (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\node_modules\\@ai-sdk\\provider-utils\\src\\response-handler.ts:56:16)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async postToApi (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\node_modules\\@ai-sdk\\provider-utils\\src\\post-to-api.ts:118:28)\n    at async AnthropicMessagesLanguageModel.doGenerate (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\node_modules\\@ai-sdk\\anthropic\\src\\anthropic-messages-language-model.ts:753:9)\n    at async fn (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\node_modules\\ai\\src\\generate-object\\generate-object.ts:338:30)\n    at async <anonymous> (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\node_modules\\ai\\src\\telemetry\\record-span.ts:32:24)\n    at async _retryWithExponentialBackoff (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\node_modules\\ai\\src\\util\\retry-with-exponential-backoff.ts:96:12)\n    at async fn (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\node_modules\\ai\\src\\generate-object\\generate-object.ts:309:32)\n    at async <anonymous> (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\node_modules\\ai\\src\\telemetry\\record-span.ts:32:24)\n    at async generateObject (C:\\Users\\wowth\\Desktop\\Projects\\paper-inventory\\node_modules\\ai\\src\\generate-object\\generate-object.ts:263:12)",
+  "message": "model: claude-3-5-sonnet-20240620",
+  "name": "AI_APICallError",
+  "url": "https://api.anthropic.com/v1/messages",
+  "requestBodyValues": {},
+  "statusCode": 404,
+  "responseHeaders": {},
+  "responseBody": "{\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-20240620\"},\"request_id\":\"req_011CYNxcKPLRPJbSfuegLMK7\"}",
+  "isRetryable": false,
+  "data": {}
+}

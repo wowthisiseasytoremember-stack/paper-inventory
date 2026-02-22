@@ -143,7 +143,7 @@ export default function ItemDetail() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 gap-6">
         <div className="relative">
           <div className="h-16 w-16 rounded-3xl border-4 border-blue-500/10 border-t-blue-500 animate-spin" />
-          <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500 w-6 h-6 animate-pulse" />
+          <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500 w-6 h-6 animate-pulse" suppressHydrationWarning />
         </div>
         <p className="text-slate-500 text-xs font-black uppercase tracking-[0.3em] animate-pulse">Initializing Interface...</p>
       </div>

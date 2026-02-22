@@ -28,14 +28,16 @@ export async function POST(
       return NextResponse.json({ error: 'Cannot enrich item without an image' }, { status: 400 });
     }
 
-    // Since we resize aggressively on upload now, the resized image is safer for token limits,
-    // but the original image has maximum detail. We will use the resized image by default to 
-    // prevent massive payload timeouts, falling back to original.
+    // 2. Resolve image path
     const imagePathToUse = item.resizedImagePath || item.originalImagePath;
     if (!imagePathToUse) {
        return NextResponse.json({ error: 'Cannot enrich item without an image' }, { status: 400 });
     }
-    const absoluteImagePath = path.join(process.cwd(), 'public', imagePathToUse.replace(/^\//, ''));
+    
+    // Support both absolute and relative paths
+    const absoluteImagePath = path.isAbsolute(imagePathToUse)
+      ? imagePathToUse
+      : path.join(process.cwd(), 'public', imagePathToUse.replace(/^\//, ''));
 
     // 2. Prepare Baseline Context for the AI
     const baselineData = {

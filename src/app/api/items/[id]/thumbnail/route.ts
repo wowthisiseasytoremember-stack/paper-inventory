@@ -22,8 +22,15 @@ export async function GET(
       return NextResponse.json({ error: 'Thumbnail not found' }, { status: 404 });
     }
 
-    const relativePath = item.thumbnailPath;
-    const absolutePath = path.join(process.cwd(), 'public', relativePath.replace(/^\//, ''));
+    const thumbnailPath = item.thumbnailPath;
+    if (!thumbnailPath) {
+        return NextResponse.json({ error: 'Thumbnail file not found' }, { status: 404 });
+    }
+
+    // Resolve absolute path
+    const absolutePath = path.isAbsolute(thumbnailPath)
+      ? thumbnailPath
+      : path.join(process.cwd(), 'public', thumbnailPath.replace(/^\//, ''));
 
     if (!fs.existsSync(absolutePath)) {
         return NextResponse.json({ error: 'File missing on disk' }, { status: 410 });

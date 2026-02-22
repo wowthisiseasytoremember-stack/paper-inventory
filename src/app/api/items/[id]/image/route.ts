@@ -27,9 +27,15 @@ export async function GET(
     // Let's assume this endpoint is for the detailed view, so resized is better for performance 
     // unless they specifically request download.
     // Let's serve resized if available, else original.
-    const relativePath = item.resizedImagePath || item.originalImagePath;
+    const imagePath = item.resizedImagePath || item.originalImagePath;
+    if (!imagePath) {
+        return NextResponse.json({ error: 'Image file not found' }, { status: 404 });
+    }
     
-    const absolutePath = path.join(process.cwd(), 'public', relativePath.replace(/^\//, ''));
+    // Resolve absolute path
+    const absolutePath = path.isAbsolute(imagePath) 
+      ? imagePath 
+      : path.join(process.cwd(), 'public', imagePath.replace(/^\//, ''));
 
     if (!fs.existsSync(absolutePath)) {
         return NextResponse.json({ error: 'File missing on disk' }, { status: 410 });

@@ -17,27 +17,31 @@ if (!GEN_AI_KEY) {
 const genAI = new GoogleGenerativeAI(GEN_AI_KEY);
 
 const PROMPT = `
-You are a master archivist, ephemera historian, and valuation expert.
-Analyze this document image with extreme precision.
+You are a master archivist, ephemera historian, and forensic document analyst.
+Analyze this document image with extreme precision and structural awareness.
+
+CRITICAL INSTRUCTION: ORIENTATION
+Determine the correct 'Upright' orientation of the document based on the text flow and structural markers. 
+If the text is sideways or upside down in the image, your analysis must still treat the logical 'Top' of the document as the reference point for transcription and identification.
 
 Your tasks:
-1. Verbatim Transcription: Extract ALL text. Maintain hierarchy and line breaks in 'cleanedTranscription'.
-2. Historical Synthesis: Determine the era, origin, and cultural context. Be detailed.
-3. Collector Significance: Evaluate why this is unique or rare. Look for signatures, stamps, unusual branding, or historical markers.
-4. Valuation: Estimate a fair market value for a collector (e.g., "$10-25" or "Priceless Historical Record"). Provide brief reasoning based on condition and rarity.
-5. Entity Extraction: Identify all people, businesses, and specific locations.
+1. Verbatim Transcription: Extract ALL text in its logical reading order. Maintain exact hierarchy, line breaks, and whitespace in 'cleanedTranscription'.
+2. Historical Synthesis: Determine the era, origin, and cultural context. Be detailed and specific about dates or printing methods found.
+3. Collector Significance: Evaluate rarity. Look for specific signatures, stamps, unique typography, or watermark markers.
+4. Valuation: Estimate current market value (e.g., "$15 - $35" or "Institutional Value"). Justify based on historical importance and physical condition observed.
+5. Entity Extraction: Identify people, organizations, and specific geographic locations.
 
 Output the analysis in strict JSON format:
 {
-  "title": "Concise descriptive title",
-  "guessedId": "Any unique ID found or null",
-  "cleanedTranscription": "Verbatim text content",
-  "confidence": 0-1 score,
-  "identifiedNames": [{"name": "Name", "type": "person|business|location", "confidence": 0.9}],
-  "historicalContext": "Deep historical analysis",
-  "collectorSignificance": "Significance to collectors",
-  "valuation": "Value estimate with reasoning",
-  "tags": ["era-tag", "item-type", "condition-tag"]
+  "title": "Concise definitive title (Archival Format)",
+  "guessedId": "Unique ID / Serial Number found, or null",
+  "cleanedTranscription": "Verbatim reconstruction of all text",
+  "confidence": 0-1,
+  "identifiedNames": [{"name": "Name", "type": "person|organization|location", "confidence": 0.9}],
+  "historicalContext": "Detailed historic narrative",
+  "collectorSignificance": "Rarity and condition factors",
+  "valuation": "Estimated value with logical reasoning",
+  "tags": ["era-tag", "item-type", "condition-tag", "significance-level"]
 }
 
 Output JSON ONLY. No markdown.

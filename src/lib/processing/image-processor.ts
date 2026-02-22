@@ -32,22 +32,25 @@ export const ImageProcessor = {
     // 1. Calculate Original Hash (Stream)
     const originalHash = await calculateFileHash(originalPath);
 
-    // 2. Initialize Sharp Pipeline with Auto-rotation
-    // failOnError: false prevents crashes on slightly corrupted mobile JPEGs
-    const pipeline = sharp(originalPath, { failOnError: false }).rotate().trim(); 
+    // 2. Initialize Sharp Pipeline
+    const pipeline = sharp(originalPath, { failOnError: false });
     
-    const metadata = await pipeline.metadata();
-
+    // Auto-rotate based on EXIF orientation
+    // We do this BEFORE trim and metadata to ensure dimensions are correct
+    const rotated = pipeline.rotate();
+    
+    const metadata = await rotated.metadata();
+    
     // 3. Normalize & Pre-process for AI/OCR
-    // - Resize to 1600px max (up from 1200 for 'Pro' models to see more detail)
-    // - Sharpen to help with text extraction
-    // - Convert to WebP for efficient storage
-    const resizedBuffer = await pipeline
+    // - Resize to 1600px max
+    // - Trim edges AFTER rotation
+    const resizedBuffer = await rotated
       .resize(1600, 1600, { 
         fit: 'inside', 
         withoutEnlargement: true,
         kernel: sharp.kernel.lanczos3 // High quality scaling
       })
+      .trim()
       .sharpen({ sigma: 1.2 }) // Slight sharpen for text legibility
       .webp({ quality: 85, effort: 4 })
       .toBuffer();

@@ -153,6 +153,7 @@ export class QueueManager {
       identifiedNames: JSON.stringify(metadata.identifiedNames),
       historicalContext: metadata.historicalContext,
       collectorSignificance: metadata.collectorSignificance,
+      valuation: metadata.valuation,
       
       // Metrics & Completion
       aiDurationMs,

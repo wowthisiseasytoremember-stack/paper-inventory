@@ -26,6 +26,7 @@ export interface Item {
   identifiedNames?: string; // JSON
   historicalContext?: string;
   collectorSignificance?: string;
+  valuation?: string;
   originalImagePath?: string;
   createdAt: string; // ISO
   // New fields

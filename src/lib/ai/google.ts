@@ -1,14 +1,12 @@
 /**
- * GOOGLE GEMINI CLIENT
+ * GOOGLE GEMINI PRO CLIENT (Upgraded)
  * 
- * Handles interaction with Google Gemini Pro Vision (or Flash) API.
- * Returns structured metadata matching the Zod schema.
+ * Using Gemini 2.0 Pro Experimental for high-accuracy archival analysis.
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
-import { ItemMetadata, IdentifiedNameSchema } from "./schema"; // Reuse schema
-import { z } from "zod";
+import { ItemMetadata } from "./schema";
 
 const GEN_AI_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
 
@@ -18,46 +16,49 @@ if (!GEN_AI_KEY) {
 
 const genAI = new GoogleGenerativeAI(GEN_AI_KEY);
 
-// Schema Definition for Prompt (Gemini doesn't support strict JSON schema enforcement in the same way as OpenAI yet, 
-// strictly speaking, but we can prompt for it. Or use the new responseSchema if available.
-// For robustness, we will prompt efficiently.)
-
 const PROMPT = `
-You are an expert archivist and OCR engine. 
-1. Transcribe ALL visible text from this image into the 'cleanedTranscription' field. Be verbatim.
-2. Analyze the image and extract the following metadata in strict JSON format.
+You are a master archivist, ephemera historian, and valuation expert.
+Analyze this document image with extreme precision.
 
-1. title: A short, descriptive title (e.g., "Home Depot Receipt - Paint").
-2. guessedId: A likely unique ID printed on the document (e.g., Invoice #, Receipt #). If none, null.
-3. cleanedTranscription: The FULL text content of the document.
-4. confidence: 0-1 confidence score.
-5. identifiedNames: A list of names/companies found.
-6. historicalContext: Any detected date or location context.
-7. collectorSignificance: Why this might be important?
-8. tags: A list of relevant tags (e.g. "receipt", "hardware", "paint").
+Your tasks:
+1. Verbatim Transcription: Extract ALL text. Maintain hierarchy and line breaks in 'cleanedTranscription'.
+2. Historical Synthesis: Determine the era, origin, and cultural context. Be detailed.
+3. Collector Significance: Evaluate why this is unique or rare. Look for signatures, stamps, unusual branding, or historical markers.
+4. Valuation: Estimate a fair market value for a collector (e.g., "$10-25" or "Priceless Historical Record"). Provide brief reasoning based on condition and rarity.
+5. Entity Extraction: Identify all people, businesses, and specific locations.
 
-Output JSON only. No markdown code blocks.
+Output the analysis in strict JSON format:
+{
+  "title": "Concise descriptive title",
+  "guessedId": "Any unique ID found or null",
+  "cleanedTranscription": "Verbatim text content",
+  "confidence": 0-1 score,
+  "identifiedNames": [{"name": "Name", "type": "person|business|location", "confidence": 0.9}],
+  "historicalContext": "Deep historical analysis",
+  "collectorSignificance": "Significance to collectors",
+  "valuation": "Value estimate with reasoning",
+  "tags": ["era-tag", "item-type", "condition-tag"]
+}
+
+Output JSON ONLY. No markdown.
 `;
 
 export async function analyzeImage(imagePath: string, ocrHint: string): Promise<ItemMetadata> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // gemini-1.5-flash deprecated in v1beta; 2.0-flash is the active successor
+    // Upgrading to gemini-2.0-pro-exp-02-05 (or similar Pro model)
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-pro-exp-02-05" });
 
     const imageBuffer = fs.readFileSync(imagePath);
     const imageBase64 = imageBuffer.toString("base64");
 
-    // Determine MIME type
     const ext = imagePath.split('.').pop()?.toLowerCase();
     let mimeType = "image/jpeg";
     if (ext === 'png') mimeType = "image/png";
     if (ext === 'webp') mimeType = "image/webp";
-    if (ext === 'heic') mimeType = "image/heic";
 
     const promptParts = [PROMPT];
-    if (ocrHint && ocrHint.trim().length > 0) {
-        promptParts.push(`\nContext from previous OCR pass (use if helpful, but prioritize image): ${ocrHint}`);
-    } else {
-        promptParts.push(`\nNo previous OCR available. You are the sole source of text extraction.`);
+    if (ocrHint) {
+        promptParts.push(`\nOCR Hint (Tesseract): ${ocrHint}`);
     }
 
     const result = await model.generateContent([
@@ -73,31 +74,29 @@ export async function analyzeImage(imagePath: string, ocrHint: string): Promise<
     const response = await result.response;
     const text = response.text();
     
-    // Clean code blocks if present
+    // Clean JSON response
     const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
     
     try {
       const data = JSON.parse(jsonStr);
-      // Map to ItemMetadata interface
       return {
         title: data.title || "Untitled",
         guessedId: data.guessedId,
         cleanedTranscription: data.cleanedTranscription,
-        confidence: data.confidence || 0.5,
-        identifiedNames: Array.isArray(data.identifiedNames) 
-            ? data.identifiedNames.map((n: string | {name: string}) => typeof n === 'string' ? { name: n, type: 'organization', confidence: 0.8 } : n)
-            : [],
+        confidence: data.confidence || 0.8,
+        identifiedNames: Array.isArray(data.identifiedNames) ? data.identifiedNames : [],
         historicalContext: data.historicalContext,
         collectorSignificance: data.collectorSignificance,
+        valuation: data.valuation,
         tags: Array.isArray(data.tags) ? data.tags : []
       };
     } catch (parseError) {
-        console.error("Gemini JSON Parse Error:", text);
-        throw new Error("Failed to parse Gemini response");
+        console.error("Gemini Pro JSON Parse Error:", text);
+        throw new Error("AI output was non-parseable");
     }
 
   } catch (error) {
-    console.error("Gemini Analysis Failed:", error);
+    console.error("Gemini Pro Analysis Failed:", error);
     throw error;
   }
 }

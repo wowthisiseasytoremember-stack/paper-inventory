@@ -1,10 +1,11 @@
 /**
- * IMAGE PROCESSOR
+ * IMAGE PROCESSOR (Hardened)
  * 
  * Handles strict image transformations:
- * 1. Metadata Stripping (Privacy)
- * 2. Resizing/Thumbnails (Optimization)
- * 3. Multi-stage Hashing (Integrity)
+ * 1. EXIF Auto-rotation
+ * 2. Metadata Stripping (Privacy)
+ * 3. Perspective Correction (Manual/Future) & Normalization
+ * 4. Multi-stage Hashing (Integrity)
  */
 
 import sharp from 'sharp';
@@ -25,47 +26,42 @@ export interface ImageProcessingResult {
 
 export const ImageProcessor = {
   
-  /**
-   * Processes an uploaded image:
-   * - Calculates hash of original file.
-   * - Strips metadata.
-   * - Resizes to WebP (max 1200px equivalent).
-   * - Generates Thumbnail.
-   * - Calculates hash of processed content (deduplication key).
-   */
   process: async (id: string, originalPath: string): Promise<ImageProcessingResult> => {
     const start = Date.now();
     
     // 1. Calculate Original Hash (Stream)
-    // console.log(`[ImageProcessor] Hashing ${originalPath}...`);
     const originalHash = await calculateFileHash(originalPath);
 
-    // Debug file stats
-    const stats = fs.statSync(originalPath);
-    console.log(`[ImageProcessor] Processing ${originalPath} (${stats.size} bytes)`);
-
-    // 2. Initialize Sharp Pipeline
-    const pipeline = sharp(originalPath, { failOnError: false });
+    // 2. Initialize Sharp Pipeline with Auto-rotation
+    // failOnError: false prevents crashes on slightly corrupted mobile JPEGs
+    const pipeline = sharp(originalPath, { failOnError: false }).rotate().trim(); 
+    
     const metadata = await pipeline.metadata();
 
-    // 3. Resize & Convert to WebP (Standard View)
-    // Strip metadata is default in Sharp unless .withMetadata() is called
+    // 3. Normalize & Pre-process for AI/OCR
+    // - Resize to 1600px max (up from 1200 for 'Pro' models to see more detail)
+    // - Sharpen to help with text extraction
+    // - Convert to WebP for efficient storage
     const resizedBuffer = await pipeline
-      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 80 })
+      .resize(1600, 1600, { 
+        fit: 'inside', 
+        withoutEnlargement: true,
+        kernel: sharp.kernel.lanczos3 // High quality scaling
+      })
+      .sharpen({ sigma: 1.2 }) // Slight sharpen for text legibility
+      .webp({ quality: 85, effort: 4 })
       .toBuffer();
 
     const resizedPath = StorageService.getResizedPath(id);
     fs.writeFileSync(resizedPath, resizedBuffer);
 
-    // 4. Calculate Content Hash (Post-processing)
-    // This is the semantic hash for deduplication
+    // 4. Calculate Content Hash (Deduplication)
     const contentHash = crypto.createHash('sha256').update(resizedBuffer).digest('hex');
 
-    // 5. Generate Thumbnail
+    // 5. Generate High-perf Thumbnail
     const thumbnailBuffer = await sharp(resizedBuffer)
-      .resize(300, 300, { fit: 'inside' })
-      .webp({ quality: 60 })
+      .resize(400, 400, { fit: 'cover' }) // Square cover is better for grid UI
+      .webp({ quality: 70 })
       .toBuffer();
       
     const thumbnailPath = StorageService.getThumbnailPath(id);
@@ -76,7 +72,7 @@ export const ImageProcessor = {
       contentHash,
       resizedPath,
       thumbnailPath,
-      mimeType: 'image/webp', // We standardizing on WebP
+      mimeType: 'image/webp',
       width: metadata.width || 0,
       height: metadata.height || 0,
       resizeDurationMs: Date.now() - start
@@ -84,14 +80,10 @@ export const ImageProcessor = {
   }
 };
 
-/**
- * Helper: SHA-256 of file stream
- */
 function calculateFileHash(filePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash('sha256');
     const stream = fs.createReadStream(filePath);
-    
     stream.on('error', err => reject(err));
     stream.on('data', chunk => hash.update(chunk));
     stream.on('end', () => resolve(hash.digest('hex')));

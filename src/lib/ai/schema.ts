@@ -19,8 +19,9 @@ export const ItemMetadataSchema = z.object({
   cleanedTranscription: z.string().describe("Corrected and formatted full text of the item"),
   confidence: z.number().min(0).max(1).describe("Overall confidence in the extraction"),
   identifiedNames: z.array(IdentifiedNameSchema).describe("List of people, businesses, or locations found"),
-  historicalContext: z.string().optional().describe("Any inferred historical context or interesting notes"),
-  collectorSignificance: z.string().optional().describe("Why this might be interesting to a collector"),
+  historicalContext: z.string().optional().describe("Detailed historical context, origin, or detected era"),
+  collectorSignificance: z.string().optional().describe("Why this is significant to collectors, including rarity or uniqueness"),
+  valuation: z.string().optional().describe("An estimated market value or collector value if applicable, with brief reasoning"),
   tags: z.array(z.string()).describe("List of relevant tags (e.g., 'receipt', '1990s', 'grocery')")
 });
 

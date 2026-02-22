@@ -1,43 +1,34 @@
 "use client";
 
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns'; // Need to install date-fns
-import { CheckCircle, Clock, FileText, AlertTriangle } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { CheckCircle, Clock, FileText, AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Item {
   id: string;
   title?: string;
   status: string;
-  thumbnailPath?: string; // We need to serve this via an API or static file
+  thumbnailPath?: string;
   createdAt: string;
-  detectedType?: string; // Mime
 }
 
-// Map status to icons/colors
 const StatusBadge = ({ status }: { status: string }) => {
   switch (status) {
     case 'complete':
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle size={12} /> Ready</span>;
+      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-900/50 text-emerald-400 border border-emerald-800/50"><CheckCircle size={10} /> Ready</span>;
     case 'error':
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><AlertTriangle size={12} /> Error</span>;
+      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-900/50 text-red-400 border border-red-800/50"><AlertTriangle size={10} /> Error</span>;
     default:
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 animate-pulse"><Clock size={12} /> Processing</span>;
+      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-900/50 text-blue-400 border border-blue-800/50 animate-pulse"><Clock size={10} /> {status.replace(/_/g, ' ')}</span>;
   }
 };
 
 export function ItemCard({ item }: { item: Item }) {
-  // Thumbnail serving: tricky with local files outside public.
-  // We need a route like /api/items/[id]/thumbnail or just use a placeholder for now if robust serving isn't ready.
-  // Implementation Plan says "Serve via Next.js Image Optimization or static"
-  // Let's assume we can serve it later. For now, use a flexible placeholder.
-
   return (
     <Link href={`/items/${item.id}`} className="block group">
-      <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-        <div className="aspect-[3/4] bg-slate-100 dark:bg-slate-800 relative flex items-center justify-center overflow-hidden">
-             {/* Placeholder or Real Image */}
+      <div className="border rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all bg-slate-900 border-slate-800 hover:border-slate-700 active:scale-[0.98]">
+        <div className="aspect-[3/4] bg-slate-800 relative flex items-center justify-center overflow-hidden">
              {item.thumbnailPath ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img 
                     src={`/api/items/${item.id}/thumbnail`} 
                     alt={item.title || "Document"} 
@@ -45,22 +36,26 @@ export function ItemCard({ item }: { item: Item }) {
                     loading="lazy"
                 />
              ) : (
-                <FileText className="text-slate-300 w-16 h-16" />
+                <div className="flex flex-col items-center gap-2">
+                  <FileText className="text-slate-600 w-10 h-10" />
+                  {!['complete', 'error'].includes(item.status) && (
+                    <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />
+                  )}
+                </div>
              )}
              
-             <div className="absolute top-2 right-2">
+             <div className="absolute top-1.5 right-1.5">
                 <StatusBadge status={item.status} />
              </div>
         </div>
         
-        <div className="p-3">
-            <h3 className="text-sm font-semibold truncate text-slate-900 dark:text-slate-100" title={item.title}>
-                {item.title || "Untitled Document"}
+        <div className="p-2.5">
+            <h3 className="text-xs font-semibold truncate text-slate-200" title={item.title}>
+                {item.title || "Processing..."}
             </h3>
-            <div className="flex justify-between items-center mt-2 text-xs text-slate-500">
-                <span>{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}</span>
-                <span className="uppercase">{item.detectedType?.split('/')[1] || 'FILE'}</span>
-            </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+                {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+            </p>
         </div>
       </div>
     </Link>

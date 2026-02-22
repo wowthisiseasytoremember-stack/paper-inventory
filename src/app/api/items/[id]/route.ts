@@ -22,10 +22,11 @@ export async function GET(
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
 
-    // Parse JSON for client
+    // Parse JSON fields for client
     const parsedItem = {
       ...item,
       identifiedNames: item.identifiedNames ? JSON.parse(item.identifiedNames) : [],
+      tags: item.tags ? JSON.parse(item.tags as string) : [],
       processingLock: Boolean(item.processingLock)
     };
 

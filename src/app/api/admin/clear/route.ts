@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     })();
 
     // 2. Clear upload directories
-    const uploadDirs = ['public/uploads', 'public/uploads/thumbnails', 'public/uploads/resized'];
+    const uploadDirs = ['public/uploads', 'public/uploads/original', 'public/uploads/thumbnails', 'public/uploads/resized'];
     
     for (const dir of uploadDirs) {
       const fullPath = path.join(process.cwd(), dir);

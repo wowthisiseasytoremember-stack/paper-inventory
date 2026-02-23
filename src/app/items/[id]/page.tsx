@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
@@ -28,10 +28,12 @@ import {
   Layers,
   Plus,
   FolderPlus,
-  X
+  X,
+  Pencil,
+  Save,
+  Lock
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Toaster } from '@/components/ui/toaster';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -73,6 +75,7 @@ interface Item {
   aiDurationMs?: number;
   totalProcessingMs?: number;
   collection_id?: string;
+  lockedFields?: string[];
 }
 
 export default function ItemDetail() {
@@ -86,6 +89,8 @@ export default function ItemDetail() {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState('');
+  const [editing, setEditing] = useState<string | null>(null); // field name being edited
+  const [editValue, setEditValue] = useState('');
 
   const fetchItem = async () => {
     try {
@@ -145,32 +150,6 @@ export default function ItemDetail() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDeepDive = async () => {
-    if (!item) return;
-    
-    const toastId = toast.loading('Initiating Deep Dive...', {
-      description: 'Consulting Senior Auction House Specialist. Analyzing niche market data...'
-    });
-
-    try {
-      const res = await fetch(`/api/items/${item.id}/enrich`, { method: 'POST' });
-      const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.error || 'Deep Dive Failed');
-      
-      toast.success('Deep Dive Complete', { 
-        id: toastId,
-        description: 'Premium valuation and museum-grade narrative unlocked.' 
-      });
-      fetchItem();
-    } catch (err: any) {
-      toast.error('Neural Enrichment Failed', { 
-        id: toastId,
-        description: err.message 
-      });
-    }
-  };
-
   const handleAssignCollection = async (collectionId: string | null) => {
     try {
       const res = await fetch(`/api/items/${id}`, {
@@ -203,6 +182,40 @@ export default function ItemDetail() {
       handleAssignCollection(data.id);
     } catch (err) {
       toast.error('Failed to create collection');
+    }
+  };
+
+  const startEdit = (field: string, currentValue: string) => {
+    setEditing(field);
+    setEditValue(currentValue || '');
+  };
+
+  const cancelEdit = () => {
+    setEditing(null);
+    setEditValue('');
+  };
+
+  const saveEdit = async (field: string) => {
+    if (!item) return;
+    try {
+      const payload: Record<string, any> = {};
+      if (field === 'tags') {
+        payload.tags = JSON.stringify(editValue.split(',').map(t => t.trim()).filter(Boolean));
+      } else {
+        payload[field] = editValue;
+      }
+      const res = await fetch(`/api/items/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Save failed');
+      toast.success('Field updated');
+      setEditing(null);
+      setEditValue('');
+      fetchItem();
+    } catch (err) {
+      toast.error('Failed to save edit');
     }
   };
 
@@ -244,6 +257,15 @@ export default function ItemDetail() {
   const isError = item.status === 'error';
   const isProcessing = !isComplete && !isError;
   const currentCollection = collections.find(c => c.id === item.collection_id);
+  const displayValue = (() => {
+    if (!item.valuation) return '— —';
+    const likelyMatch = item.valuation.match(/(?:Most Likely|eBay Sale)[^$]*(\$[\d,]+(?:\.\d{2})?)/i);
+    if (likelyMatch) return likelyMatch[1];
+    const rangeMatch = item.valuation.match(/(\$[\d,]+(?:\.\d{2})?)\s*[-–]\s*(\$[\d,]+(?:\.\d{2})?)/);
+    if (rangeMatch) return `${rangeMatch[1]}–${rangeMatch[2]}`;
+    const firstMatch = item.valuation.match(/\$[\d,]+(?:\.\d{2})?/);
+    return firstMatch ? firstMatch[0] : '— —';
+  })();
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-32 overflow-x-hidden selection:bg-blue-500/30">
@@ -281,27 +303,96 @@ export default function ItemDetail() {
                     ID: {item.id.split('-')[0].toUpperCase()}
                   </span>
                 </div>
-                <h1 className="text-xl md:text-2xl font-bold text-slate-300 truncate max-w-xl">
+                {editing === 'title' ? (
+                  <div className="flex items-center gap-2 max-w-xl">
+                    <input
+                      autoFocus
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') saveEdit('title'); if (e.key === 'Escape') cancelEdit(); }}
+                      className="text-xl font-bold text-white bg-slate-900 border border-blue-500/50 rounded-xl px-3 py-1 outline-none flex-grow"
+                    />
+                    <button onClick={() => saveEdit('title')} className="p-1.5 bg-blue-600 rounded-lg text-white hover:bg-blue-500"><Save size={14} /></button>
+                    <button onClick={cancelEdit} className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:bg-slate-700"><X size={14} /></button>
+                  </div>
+                ) : (
+                  <h1
+                    className="text-xl md:text-2xl font-bold text-slate-300 truncate max-w-xl group/title cursor-pointer flex items-center gap-2"
+                    onClick={() => isComplete && startEdit('title', item.title || '')}
+                  >
                     {item.title || "Unidentified Record"}
-                </h1>
+                    {isComplete && <Pencil size={14} className="text-slate-700 opacity-0 group-hover/title:opacity-100 transition-opacity" />}
+                    {item.lockedFields?.includes('title') && <Lock size={12} className="text-amber-500/50" />}
+                  </h1>
+                )}
               </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-               {isComplete && !item.valuation && (
-                 <button 
-                    onClick={handleDeepDive}
-                    className="flex items-center gap-3 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-black rounded-2xl transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(37,99,235,0.4)] active:scale-95"
-                 >
-                   <Sparkles size={16} />
-                   INITIALIZE DEEP DIVE
-                 </button>
-               )}
             </div>
           </div>
 
+          {/* KEY METRICS (ID / CONFIDENCE / VALUE) */}
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="mb-10"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="glass rounded-2xl px-5 py-4 border border-white/10 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Item ID</p>
+                  <p className="text-sm font-bold text-slate-200 mt-1">{item.id}</p>
+                </div>
+                <button
+                  onClick={handleCopyId}
+                  className="p-2 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all"
+                  aria-label="Copy item ID"
+                >
+                  {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-slate-400" />}
+                </button>
+              </div>
+
+              <div className="glass rounded-2xl px-5 py-4 border border-white/10">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Confidence</p>
+                <p className="text-sm font-bold text-slate-200 mt-1 flex items-center gap-2">
+                  <ShieldCheck className="text-blue-400 w-4 h-4" />
+                  {((item.confidence || 0.85) * 100).toFixed(0)}%
+                </p>
+              </div>
+
+              <div className="glass rounded-2xl px-5 py-4 border border-white/10">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Value</p>
+                <p className="text-2xl font-black text-white tracking-tight tabular-nums mt-1">{displayValue}</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ERROR CALLOUT */}
+          {isError && item.errorMessage && (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="mb-8 p-8 rounded-[2rem] bg-red-500/5 border border-red-500/20 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 text-red-400 font-black text-xs uppercase tracking-widest">
+                  <AlertCircle size={18} /> Processing Failed
+                </div>
+                <button
+                  onClick={handleRetry}
+                  disabled={retrying}
+                  className="flex items-center gap-2 px-5 py-2 bg-red-500/10 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-red-500/20 hover:bg-red-500/20 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  <RefreshCw size={12} className={retrying ? 'animate-spin' : ''} />
+                  {retrying ? 'RETRYING...' : 'RETRY'}
+                </button>
+              </div>
+              <p className="text-sm text-red-300/80 font-mono leading-relaxed break-all">
+                {item.errorMessage}
+              </p>
+            </motion.div>
+          )}
+
           {/* VALUATION DASHBOARD (High Visibility) */}
-          <motion.div 
+          <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             className="mb-12 relative group"
@@ -312,7 +403,7 @@ export default function ItemDetail() {
                    <DollarSign size={300} strokeWidth={0.5} />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-center gap-12">
+                <div className="grid grid-cols-1 lg:items-center gap-8">
                    <div className="space-y-6">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -320,45 +411,32 @@ export default function ItemDetail() {
                            <p className="text-[11px] font-black text-emerald-500 uppercase tracking-[0.4em]">Expert Market Appraisal</p>
                         </div>
                         <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-white tracking-tighter tabular-nums leading-none">
-                           {item.valuation?.match(/\$\d+(\.\d{2})?/g)?.[item.valuation?.match(/\$\d+(\.\d{2})?/g)!.length - 1] || item.valuation || "– –"}
+                           {displayValue}
                         </h2>
                       </div>
                       <div className="flex flex-wrap gap-6 pt-4">
                          <div className="space-y-1">
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Market Status</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</p>
                             <p className="text-sm font-bold text-white flex items-center gap-2">
-                               <Check className="text-emerald-500 w-4 h-4" /> HIGH DEMAND
+                               {item.valuation ? (
+                                 <><Check className="text-emerald-500 w-4 h-4" /> APPRAISED</>
+                               ) : isComplete ? (
+                                 <><Clock className="text-amber-400 w-4 h-4" /> AUTO APPRAISAL</>
+                               ) : isError ? (
+                                 <><AlertCircle className="text-red-400 w-4 h-4" /> ERROR</>
+                               ) : (
+                                 <><RefreshCw className="text-blue-400 w-4 h-4 animate-spin" /> PROCESSING</>
+                               )}
                             </p>
                          </div>
                          <div className="w-[1px] h-10 bg-white/10" />
                          <div className="space-y-1">
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Confidence Score</p>
                             <p className="text-sm font-bold text-white uppercase flex items-center gap-2">
-                               <ShieldCheck className="text-blue-400 w-4 h-4" /> {(item.confidence || 0.85 * 100).toFixed(0)}% ANALYTIC
+                              <ShieldCheck className="text-blue-400 w-4 h-4" /> {((item.confidence || 0.85) * 100).toFixed(0)}% ANALYTIC
                             </p>
                          </div>
                       </div>
-                   </div>
-
-                   <div className="glass bg-white/5 rounded-3xl p-8 border border-white/10 space-y-4">
-                      <div className="flex items-center gap-2 text-slate-300">
-                         <Target size={18} className="text-indigo-400" />
-                         <span className="text-xs font-black uppercase tracking-widest">Pricing Strategy</span>
-                      </div>
-                      <div className="text-slate-400 text-sm font-medium leading-relaxed prose prose-invert prose-blue prose-p:mb-0 prose-strong:text-emerald-400">
-                         <ReactMarkdown>
-                           {item.valuation?.includes('**') ? item.valuation : "Perform a Deep Dive to unlock detailed market logic and specialized pricing tiers for this asset."}
-                         </ReactMarkdown>
-                      </div>
-                      {isComplete && (
-                        <div className="flex gap-2 pt-2">
-                           {item.tags?.slice(0, 3).map(tag => (
-                             <span key={tag} className="text-[9px] font-black px-3 py-1 bg-white/5 border border-white/5 rounded-full text-slate-500 uppercase tracking-widest">
-                               #{tag}
-                             </span>
-                           ))}
-                        </div>
-                      )}
                    </div>
                 </div>
              </div>
@@ -454,20 +532,74 @@ export default function ItemDetail() {
                >
                   <div className="flex items-center gap-4">
                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
-                     <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.5em]">Historical Research</h3>
+                     <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.5em] flex items-center gap-2">
+                       Historical Research
+                       {item.lockedFields?.includes('historicalContext') && <Lock size={10} className="text-amber-500/50" />}
+                     </h3>
                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
-                  </div>
-
-                  <div className="prose prose-invert prose-blue max-w-none prose-p:text-slate-400 prose-p:leading-[1.8] prose-p:text-lg prose-headings:text-white prose-strong:text-blue-400 prose-li:text-slate-400">
-                     {item.historicalContext ? (
-                        <ReactMarkdown>{item.historicalContext}</ReactMarkdown>
-                     ) : (
-                        <div className="flex flex-col items-center justify-center p-20 glass bg-white/5 rounded-[3rem] border border-dashed border-white/10 opacity-50">
-                           <History className="w-12 h-12 text-slate-700 mb-4" />
-                           <p className="text-sm font-black uppercase tracking-widest text-slate-600">Narrative Pending Deep Dive</p>
-                        </div>
+                     {isComplete && editing !== 'historicalContext' && item.historicalContext && (
+                       <button
+                         onClick={() => startEdit('historicalContext', item.historicalContext || '')}
+                         className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 flex items-center gap-1 transition-colors"
+                       >
+                         <Pencil size={10} /> Edit
+                       </button>
                      )}
                   </div>
+
+                  {editing === 'historicalContext' ? (
+                    <div className="space-y-3">
+                      <textarea
+                        autoFocus
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="w-full glass bg-slate-950/80 rounded-[2.5rem] p-10 border border-blue-500/30 text-sm text-slate-300 leading-[1.8] outline-none resize-none min-h-[300px]"
+                      />
+                      <p className="text-[10px] text-slate-600">Supports Markdown formatting</p>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={cancelEdit} className="px-4 py-2 bg-slate-800 text-slate-400 text-[10px] font-black rounded-xl uppercase tracking-widest">Cancel</button>
+                        <button onClick={() => saveEdit('historicalContext')} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest"><Save size={12} className="inline mr-1" />Save</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="prose prose-invert prose-blue max-w-none prose-p:text-slate-400 prose-p:leading-[1.8] prose-p:text-lg prose-headings:text-white prose-strong:text-blue-400 prose-li:text-slate-400">
+                       {item.historicalContext ? (
+                          <ReactMarkdown>{item.historicalContext}</ReactMarkdown>
+                       ) : (
+                          <div className="flex flex-col items-center justify-center p-20 glass bg-white/5 rounded-[3rem] border border-dashed border-white/10 opacity-50">
+                             <History className="w-12 h-12 text-slate-700 mb-4" />
+                             <p className="text-sm font-black uppercase tracking-widest text-slate-600">Narrative Pending Deep Dive</p>
+                          </div>
+                       )}
+                    </div>
+                  )}
+               </motion.section>
+
+               {/* PRICING STRATEGY (MOVED DOWN) */}
+               <motion.section
+                 initial={{ y: 20, opacity: 0 }}
+                 animate={{ y: 0, opacity: 1 }}
+                 transition={{ delay: 0.25 }}
+                 className="glass rounded-[2.5rem] p-10 border border-white/10 bg-white/5 space-y-4"
+               >
+                  <div className="flex items-center gap-2 text-slate-300">
+                     <Target size={18} className="text-indigo-400" />
+                     <span className="text-xs font-black uppercase tracking-widest">Pricing Strategy</span>
+                  </div>
+                  <div className="text-slate-400 text-sm font-medium leading-relaxed prose prose-invert prose-blue prose-p:mb-0 prose-strong:text-emerald-400">
+                     <ReactMarkdown>
+                       {item.valuation?.includes('**') ? item.valuation : "Auto appraisals run after ingest. Refresh later for the detailed pricing logic."}
+                     </ReactMarkdown>
+                  </div>
+                  {isComplete && (
+                    <div className="flex gap-2 pt-2">
+                       {item.tags?.slice(0, 3).map(tag => (
+                         <span key={tag} className="text-[9px] font-black px-3 py-1 bg-white/5 border border-white/5 rounded-full text-slate-500 uppercase tracking-widest">
+                           #{tag}
+                         </span>
+                       ))}
+                    </div>
+                  )}
                </motion.section>
 
                {/* SIGNIFICANCE & MARKET POSITION */}
@@ -478,31 +610,89 @@ export default function ItemDetail() {
                   className="grid grid-cols-1 md:grid-cols-2 gap-8"
                >
                   <div className="glass rounded-[2.5rem] p-10 border border-white/10 bg-indigo-500/5 shadow-xl space-y-6">
-                     <div className="flex items-center gap-3 text-indigo-400">
-                        <Sparkles size={20} />
-                        <h4 className="text-sm font-black uppercase tracking-widest">Collector Significance</h4>
-                     </div>
-                     <div className="text-slate-400 text-sm font-medium leading-[1.7] prose prose-invert prose-indigo prose-p:mb-0">
-                        {item.collectorSignificance ? (
-                           <ReactMarkdown>{item.collectorSignificance}</ReactMarkdown>
-                        ) : (
-                           <p>Establishing rarity fingerprints and niche market demand patterns...</p>
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-indigo-400">
+                           <Sparkles size={20} />
+                           <h4 className="text-sm font-black uppercase tracking-widest">Collector Significance</h4>
+                           {item.lockedFields?.includes('collectorSignificance') && <Lock size={10} className="text-amber-500/50" />}
+                        </div>
+                        {isComplete && editing !== 'collectorSignificance' && item.collectorSignificance && (
+                          <button
+                            onClick={() => startEdit('collectorSignificance', item.collectorSignificance || '')}
+                            className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-indigo-400 flex items-center gap-1 transition-colors"
+                          >
+                            <Pencil size={10} /> Edit
+                          </button>
                         )}
                      </div>
+                     {editing === 'collectorSignificance' ? (
+                       <div className="space-y-3">
+                         <textarea
+                           autoFocus
+                           value={editValue}
+                           onChange={(e) => setEditValue(e.target.value)}
+                           className="w-full bg-slate-950 border border-indigo-500/30 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 leading-[1.7] outline-none resize-none min-h-[150px]"
+                         />
+                         <div className="flex gap-2 justify-end">
+                           <button onClick={cancelEdit} className="px-4 py-2 bg-slate-800 text-slate-400 text-[10px] font-black rounded-xl uppercase tracking-widest">Cancel</button>
+                           <button onClick={() => saveEdit('collectorSignificance')} className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest"><Save size={12} className="inline mr-1" />Save</button>
+                         </div>
+                       </div>
+                     ) : (
+                       <div className="text-slate-400 text-sm font-medium leading-[1.7] prose prose-invert prose-indigo prose-p:mb-0">
+                          {item.collectorSignificance ? (
+                             <ReactMarkdown>{item.collectorSignificance}</ReactMarkdown>
+                          ) : (
+                             <p>Establishing rarity fingerprints and niche market demand patterns...</p>
+                          )}
+                       </div>
+                     )}
                   </div>
 
                   <div className="glass rounded-[2.5rem] p-10 border border-white/10 space-y-6">
-                     <div className="flex items-center gap-3 text-blue-400">
-                        <Layers size={20} />
-                        <h4 className="text-sm font-black uppercase tracking-widest">Niche Categorization</h4>
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-blue-400">
+                           <Layers size={20} />
+                           <h4 className="text-sm font-black uppercase tracking-widest">Niche Categorization</h4>
+                           {item.lockedFields?.includes('tags') && <Lock size={10} className="text-amber-500/50" />}
+                        </div>
+                        {isComplete && editing !== 'tags' && (
+                          <button
+                            onClick={() => startEdit('tags', (item.tags || []).join(', '))}
+                            className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 flex items-center gap-1 transition-colors"
+                          >
+                            <Pencil size={10} /> Edit
+                          </button>
+                        )}
                      </div>
-                     <div className="flex flex-wrap gap-2">
-                         {item.tags?.map((tag, i) => (
-                           <span key={i} className="px-4 py-2 bg-slate-900 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 hover:border-blue-400/30 transition-all cursor-default">
-                              {tag}
-                           </span>
-                         ))}
-                     </div>
+                     {editing === 'tags' ? (
+                       <div className="space-y-3">
+                         <input
+                           autoFocus
+                           value={editValue}
+                           onChange={(e) => setEditValue(e.target.value)}
+                           onKeyDown={(e) => { if (e.key === 'Enter') saveEdit('tags'); if (e.key === 'Escape') cancelEdit(); }}
+                           placeholder="tag1, tag2, tag3..."
+                           className="w-full bg-slate-950 border border-blue-500/30 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 outline-none focus:border-blue-500"
+                         />
+                         <p className="text-[10px] text-slate-600">Separate tags with commas</p>
+                         <div className="flex gap-2 justify-end">
+                           <button onClick={cancelEdit} className="px-4 py-2 bg-slate-800 text-slate-400 text-[10px] font-black rounded-xl uppercase tracking-widest">Cancel</button>
+                           <button onClick={() => saveEdit('tags')} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest"><Save size={12} className="inline mr-1" />Save</button>
+                         </div>
+                       </div>
+                     ) : (
+                       <div className="flex flex-wrap gap-2">
+                           {item.tags?.map((tag, i) => (
+                             <span key={i} className="px-4 py-2 bg-slate-900 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 hover:border-blue-400/30 transition-all cursor-default">
+                                {tag}
+                             </span>
+                           ))}
+                           {(!item.tags || item.tags.length === 0) && (
+                             <p className="text-slate-700 text-[10px] font-black uppercase italic">No tags assigned</p>
+                           )}
+                       </div>
+                     )}
                      <div className="pt-4 border-t border-white/5">
                         <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">Portfolio Management</p>
                         {currentCollection ? (
@@ -538,22 +728,50 @@ export default function ItemDetail() {
                   className="space-y-6"
                >
                   <div className="flex items-center justify-between">
-                     <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em]">Neural Transcription & Entities</h3>
-                     <button 
-                        onClick={() => {
-                           navigator.clipboard.writeText(item.cleanedTranscription || '');
-                           toast.success('System: Digital record copied');
-                        }}
-                        className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white flex items-center gap-2 transition-colors"
-                     >
-                        <Copy size={12} /> Copy Tape
-                     </button>
+                     <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                        Neural Transcription & Entities
+                        {item.lockedFields?.includes('cleanedTranscription') && <Lock size={10} className="text-amber-500/50" />}
+                     </h3>
+                     <div className="flex items-center gap-3">
+                        {isComplete && editing !== 'cleanedTranscription' && (
+                          <button
+                            onClick={() => startEdit('cleanedTranscription', item.cleanedTranscription || '')}
+                            className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 flex items-center gap-1 transition-colors"
+                          >
+                            <Pencil size={10} /> Edit
+                          </button>
+                        )}
+                        <button
+                           onClick={() => {
+                              navigator.clipboard.writeText(item.cleanedTranscription || '');
+                              toast.success('System: Digital record copied');
+                           }}
+                           className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white flex items-center gap-2 transition-colors"
+                        >
+                           <Copy size={12} /> Copy Tape
+                        </button>
+                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                     <div className="md:col-span-2 glass bg-slate-950/80 rounded-[2.5rem] p-10 border border-white/5 font-mono text-sm text-slate-400 selection:bg-blue-500/40 leading-[1.8] max-h-[400px] overflow-y-auto custom-scrollbar whitespace-pre-wrap">
-                        {item.cleanedTranscription || "Initiating digital reconstruction..."}
-                     </div>
+                     {editing === 'cleanedTranscription' ? (
+                       <div className="md:col-span-2 space-y-3">
+                         <textarea
+                           autoFocus
+                           value={editValue}
+                           onChange={(e) => setEditValue(e.target.value)}
+                           className="w-full glass bg-slate-950/80 rounded-[2.5rem] p-10 border border-blue-500/30 font-mono text-sm text-slate-300 leading-[1.8] max-h-[400px] overflow-y-auto custom-scrollbar outline-none resize-none min-h-[200px]"
+                         />
+                         <div className="flex gap-2 justify-end">
+                           <button onClick={cancelEdit} className="px-4 py-2 bg-slate-800 text-slate-400 text-[10px] font-black rounded-xl uppercase tracking-widest">Cancel</button>
+                           <button onClick={() => saveEdit('cleanedTranscription')} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest"><Save size={12} className="inline mr-1" />Save</button>
+                         </div>
+                       </div>
+                     ) : (
+                       <div className="md:col-span-2 glass bg-slate-950/80 rounded-[2.5rem] p-10 border border-white/5 font-mono text-sm text-slate-400 selection:bg-blue-500/40 leading-[1.8] max-h-[400px] overflow-y-auto custom-scrollbar whitespace-pre-wrap">
+                          {item.cleanedTranscription || "Initiating digital reconstruction..."}
+                       </div>
+                     )}
                      <div className="space-y-4">
                         <div className="p-8 glass rounded-[2rem] border border-white/5 space-y-6">
                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Detected Entities</p>
@@ -671,10 +889,36 @@ export default function ItemDetail() {
                   </div>
                   <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
                   <div className="flex items-center gap-3">
-                     <button className="hidden sm:flex items-center gap-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 rounded-2xl text-[11px] font-black text-slate-300 transition-all border border-white/5">
-                        <Check size={14} className="text-emerald-500" /> SYSTEM ARCHIVED
+                     <button
+                        onClick={() => {
+                           navigator.clipboard.writeText(JSON.stringify({
+                             id: item.id, title: item.title, valuation: item.valuation,
+                             tags: item.tags, historicalContext: item.historicalContext,
+                           }, null, 2));
+                           toast.success('Item data copied to clipboard');
+                        }}
+                        className="hidden sm:flex items-center gap-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 rounded-2xl text-[11px] font-black text-slate-300 transition-all border border-white/5 active:scale-95"
+                     >
+                        <Copy size={14} className="text-emerald-500" /> COPY DATA
                      </button>
-                     <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black rounded-2xl transition-all shadow-xl shadow-blue-500/20">
+                     <button
+                        onClick={() => {
+                           const listing = [
+                             item.title || 'Untitled Item',
+                             '',
+                             item.historicalContext || '',
+                             '',
+                             item.collectorSignificance ? `COLLECTOR NOTE: ${item.collectorSignificance}` : '',
+                             '',
+                             item.valuation ? `PRICING: ${item.valuation}` : '',
+                             '',
+                             item.tags?.length ? `Tags: ${item.tags.join(', ')}` : '',
+                           ].filter(Boolean).join('\n');
+                           navigator.clipboard.writeText(listing);
+                           toast.success('eBay listing draft copied to clipboard');
+                        }}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95"
+                     >
                         <ExternalLink size={14} /> EBAY TEMPLATE
                      </button>
                   </div>
@@ -683,7 +927,6 @@ export default function ItemDetail() {
          )}
       </AnimatePresence>
 
-      <Toaster />
     </main>
   );
 }

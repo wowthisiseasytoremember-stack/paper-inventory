@@ -42,21 +42,13 @@ export default function CollectionDetailPage() {
 
   const fetchData = async () => {
     try {
-      // 1. Fetch Collection Info
-      const cRes = await fetch(`/api/collections`);
-      const collections = await cRes.json();
-      const found = collections.find((c: any) => c.id === id);
-      if (!found) throw new Error('Collection not found');
-      setCollection(found);
-
-      // 2. Fetch Items (Currently we don't have a direct "get items by collection" API endpoint)
-      // I'll create one or filter all items if count is small.
-      // Better: Create /api/collections/[id]/items
-      const iRes = await fetch(`/api/collections/${id}/items`);
-      if (iRes.ok) {
-        const data = await iRes.json();
-        setItems(data);
-      }
+      const [cRes, iRes] = await Promise.all([
+        fetch(`/api/collections/${id}`),
+        fetch(`/api/collections/${id}/items`),
+      ]);
+      if (!cRes.ok) throw new Error('Collection not found');
+      setCollection(await cRes.json());
+      if (iRes.ok) setItems(await iRes.json());
     } catch (err) {
       toast.error('Could not retrieve collection sequence');
     } finally {

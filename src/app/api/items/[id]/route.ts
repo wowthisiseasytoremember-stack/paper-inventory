@@ -28,6 +28,8 @@ export async function GET(
       identifiedNames: item.identifiedNames ? JSON.parse(item.identifiedNames) : [],
       tags: item.tags ? JSON.parse(item.tags as string) : [],
       verification_questions: item.verification_questions ? JSON.parse(item.verification_questions) : [],
+      analysis_history: item.analysis_history ? JSON.parse(item.analysis_history) : [],
+      lockedFields: (item as any).lockedFields ? JSON.parse((item as any).lockedFields) : [],
       processingLock: Boolean(item.processingLock)
     };
 
@@ -51,6 +53,18 @@ export async function PATCH(
     const item = ItemService.getById(id);
     if (!item) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+    }
+
+    // Auto-lock user-edited fields so AI won't overwrite them
+    const LOCKABLE = ['title', 'cleanedTranscription', 'historicalContext', 'collectorSignificance', 'valuation', 'tags'];
+    const editedFields = Object.keys(body).filter(k => LOCKABLE.includes(k));
+
+    if (editedFields.length > 0) {
+      const existing: string[] = (item as any).lockedFields
+        ? JSON.parse((item as any).lockedFields)
+        : [];
+      const merged = [...new Set([...existing, ...editedFields])];
+      body.lockedFields = JSON.stringify(merged);
     }
 
     const result = ItemService.updateMetadata(id, body);

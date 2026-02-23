@@ -179,9 +179,10 @@ export const ItemService = {
    */
   updateMetadata: (id: string, updates: Record<string, any>) => {
     const EDITABLE = [
-      'title', 'guessedId', 'cleanedTranscription', 'historicalContext', 
-      'collectorSignificance', 'tags', 'valuation', 'verification_questions', 
-      'collection_id', 'analysis_history'
+      'title', 'guessedId', 'cleanedTranscription', 'confidence',
+      'identifiedNames', 'historicalContext', 'collectorSignificance',
+      'tags', 'valuation', 'verification_questions',
+      'collection_id', 'analysis_history', 'lockedFields'
     ];
     const sets: string[] = [];
     const args: any[] = [];

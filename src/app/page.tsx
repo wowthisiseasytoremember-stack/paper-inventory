@@ -18,7 +18,6 @@ import {
   Filter,
   Layers3
 } from 'lucide-react';
-import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
@@ -51,6 +50,16 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
 
+  const formatValue = (valuation?: string) => {
+    if (!valuation) return null;
+    const likelyMatch = valuation.match(/(?:Most Likely|Likely|eBay Sale)[^$]*(\$[\d,]+(?:\.\d{2})?)/i);
+    if (likelyMatch) return likelyMatch[1];
+    const rangeMatch = valuation.match(/(\$[\d,]+(?:\.\d{2})?)\s*[-–]\s*(\$[\d,]+(?:\.\d{2})?)/);
+    if (rangeMatch) return `${rangeMatch[1]}–${rangeMatch[2]}`;
+    const firstMatch = valuation.match(/\$[\d,]+(?:\.\d{2})?/);
+    return firstMatch ? firstMatch[0] : null;
+  };
+
   const fetchItems = useCallback(async () => {
     try {
       const url = query ? `/api/items?q=${encodeURIComponent(query)}` : '/api/items';
@@ -66,10 +75,13 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchItems();
+  }, [fetchItems]);
+
+  useEffect(() => {
     const hasProcessing = items.some(i => !['complete', 'error'].includes(i.status));
     const interval = setInterval(fetchItems, hasProcessing ? 3000 : 20000);
     return () => clearInterval(interval);
-  }, [query, fetchItems, items.length]);
+  }, [fetchItems, items]);
 
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
@@ -244,10 +256,13 @@ export default function Dashboard() {
                                       </h3>
                                       
                                       <div className="hidden md:flex items-center gap-4 flex-shrink-0">
-                                          {item.valuation && (
-                                              <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-black tracking-tighter w-20">
+                                          {formatValue(item.valuation) && (
+                                              <div className={cn(
+                                                "flex items-center gap-1 text-[10px] font-black tracking-tighter w-24",
+                                                item.status === 'complete' ? "text-emerald-500" : "text-amber-400"
+                                              )}>
                                                   <DollarSign size={10} />
-                                                  {item.valuation}
+                                                  {item.status === 'complete' ? "VAL" : "EST"} {formatValue(item.valuation)}
                                               </div>
                                           )}
                                           
@@ -271,7 +286,6 @@ export default function Dashboard() {
             )}
         </section>
       </div>
-      <Toaster />
     </main>
   );
 }

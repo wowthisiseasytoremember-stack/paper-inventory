@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 interface UploadFile {
   file: File;
+  previewUrl: string;
   status: 'idle' | 'uploading' | 'success' | 'error';
   progress: number;
   error?: string;
@@ -34,6 +35,7 @@ export function BulkUpload() {
       ...prev,
       ...validFiles.map(file => ({
         file,
+        previewUrl: URL.createObjectURL(file),
         status: 'idle' as const,
         progress: 0
       }))
@@ -41,8 +43,18 @@ export function BulkUpload() {
   };
 
   const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+    setFiles(prev => {
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   };
+
+  // Cleanup all blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      files.forEach(f => URL.revokeObjectURL(f.previewUrl));
+    };
+  }, []);
 
   const uploadFiles = async () => {
     const idleFiles = files.filter(f => f.status === 'idle');
@@ -145,7 +157,7 @@ export function BulkUpload() {
                 <div key={i} className="flex items-center gap-3 p-3 rounded-2xl glass border border-slate-800/50 bg-slate-950/20 group relative">
                   <div className="w-12 h-12 rounded-xl bg-slate-900 flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-800">
                     <img
-                      src={URL.createObjectURL(f.file)}
+                      src={f.previewUrl}
                       alt="preview"
                       className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
                     />

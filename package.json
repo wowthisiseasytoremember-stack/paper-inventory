@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "worker": "tsx scripts/start-worker.ts"
+    "worker": "tsx scripts/start-worker.ts",
+    "test": "node scripts/run-tests.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.45",

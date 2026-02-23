@@ -1,133 +1,78 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import Ajv from 'ajv';
+import fs from 'fs';
+import path from 'path';
+import { ItemMetadataSchema, ItemMetadata } from './schema';
+import { BASELINE_SYSTEM_PROMPT } from './prompts';
 
-const ajv = new Ajv();
+function getMimeType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  const map: Record<string, string> = {
+    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+    '.png': 'image/png', '.gif': 'image/gif',
+    '.webp': 'image/webp', '.bmp': 'image/bmp',
+    '.tiff': 'image/tiff', '.tif': 'image/tiff',
+  };
+  return map[ext] || 'image/png';
+}
 
-// 1. Define the Schema for Validation (The Contract)
-const itemSchema = {
-  type: 'object',
-  properties: {
-    title: { type: 'string', description: 'A concise, descriptive title for the item.' },
-    guessedId: { type: 'string', description: 'Any visible ID, serial number, or date code on the item.' },
-    cleanedTranscription: { type: 'string', description: 'Corrected version of the raw OCR text.' },
-    identifiedNames: { 
-      type: 'array', 
-      items: { type: 'string' },
-      description: 'List of people, organizations, or places mentioned.' 
-    },
-    historicalContext: { type: 'string', description: 'Brief context about the item based on content (e.g., "WWII Ration Card").' },
-    collectorSignificance: { type: 'string', description: 'Why a collector might value this item.' },
-    confidence: { type: 'number', minimum: 0, maximum: 1, description: 'Confidence score (0-1) in the analysis.' }
-  },
-  required: ['title', 'cleanedTranscription', 'identifiedNames', 'confidence'],
-  additionalProperties: false
-};
-
-const validate = ajv.compile(itemSchema);
-
-// 2. Initialize Gemini
-function getModel() {
+function getModel(modelName?: string) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    if (process.env.DEV_AI_MOCK === 'true') {
-      return null; // Signal mock mode
-    }
-    throw new Error('GEMINI_API_KEY is not set and mock mode is disabled.');
-  }
+  if (!apiKey) return null;
   const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  return genAI.getGenerativeModel({
+    model: modelName || 'gemini-2.0-flash',
+    systemInstruction: BASELINE_SYSTEM_PROMPT,
+  });
 }
 
 export interface AIResult {
   rawResponse: string;
-  parsedData: any;
+  parsedData: ItemMetadata;
   durationMs: number;
 }
 
-export async function analyzeItem(rawOcrText: string, imagePath?: string): Promise<AIResult> {
+export async function analyzeItem(rawOcrText: string, imagePath?: string, modelName?: string): Promise<AIResult> {
   const start = Date.now();
-  const model = getModel();
+  const model = getModel(modelName);
 
   if (!model) {
-    // MOCK MODE
-    console.log('[AI] Running in MOCK mode...');
-    const mockData = {
-      title: "Handwritten Historical Document (Mock)",
-      guessedId: "MOCK-12345",
-      cleanedTranscription: rawOcrText.slice(0, 100) + " [Cleaned by Mock AI]",
-      identifiedNames: ["John Doe", "Jane Smith"],
-      historicalContext: "This appears to be a mock historical document generated for testing the pipeline.",
-      collectorSignificance: "High value for system verification.",
-      confidence: 0.95
+    console.log('[AI-Gemini] Running in MOCK mode (no GEMINI_API_KEY)...');
+    const mock: ItemMetadata = {
+      title: 'Unidentified Document (Mock)',
+      guessedId: '',
+      cleanedTranscription: rawOcrText.slice(0, 100),
+      confidence: 0.1,
+      identifiedNames: [],
+      historicalContext: '',
+      collectorSignificance: '',
+      valuation: '',
+      tags: ['mock'],
     };
-
-    return {
-      rawResponse: JSON.stringify(mockData),
-      parsedData: mockData,
-      durationMs: Date.now() - start
-    };
+    return { rawResponse: JSON.stringify(mock), parsedData: mock, durationMs: Date.now() - start };
   }
 
-  // Construct the prompt
-  const prompt = `
-    You are an expert archivist and historian. Analyze the following text extracted from a document via OCR.
-    
-    RAW OCR TEXT:
-    """
-    ${rawOcrText.slice(0, 10000)} // Truncate to avoid token limits if massive
-    """
+  const parts: any[] = [
+    { text: rawOcrText ? `OCR Hint (may contain errors):\n${rawOcrText.substring(0, 5000)}` : 'No OCR text available. Rely on visual analysis.' }
+  ];
 
-    TASK:
-    1. Correct OCR errors in the text.
-    2. Extract key metadata.
-    3. Identify historical context.
-    
-    OUTPUT JSON FORMAT:
-    {
-      "title": "String",
-      "guessedId": "String (optional)",
-      "cleanedTranscription": "String",
-      "identifiedNames": ["String", "String"],
-      "historicalContext": "String",
-      "collectorSignificance": "String",
-      "confidence": Number (0.0 to 1.0)
-    }
-  `;
-
-  try {
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.1, // Low temperature for deterministic output
-        responseMimeType: "application/json",
+  if (imagePath && fs.existsSync(imagePath)) {
+    const buffer = fs.readFileSync(imagePath);
+    parts.push({
+      inline_data: {
+        mime_type: getMimeType(imagePath),
+        data: buffer.toString('base64')
       }
     });
-
-    const response = result.response;
-    const text = response.text();
-    
-    let parsedData;
-    try {
-      parsedData = JSON.parse(text);
-    } catch (e) {
-      console.error('AI JSON Parse Error. Raw:', text);
-      throw new Error('Failed to parse AI response as JSON');
-    }
-
-    // Validate against schema
-    if (!validate(parsedData)) {
-      console.error('AI Schema Validation Error:', validate.errors);
-      throw new Error('AI response did not match required schema.');
-    }
-
-    return {
-      rawResponse: text,
-      parsedData: parsedData,
-      durationMs: Date.now() - start
-    };
-
-  } catch (error) {
-    console.error('Gemini Analysis Failed:', error);
-    throw error;
   }
+
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts }],
+    generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
+  });
+
+  const text = result.response.text();
+  const raw = JSON.parse(text);
+  const parsed = ItemMetadataSchema.parse(raw);
+
+  return { rawResponse: text, parsedData: parsed, durationMs: Date.now() - start };
 }

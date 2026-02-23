@@ -1,12 +1,12 @@
 /**
  * ITEM DEEP DIVE ENRICHMENT API
- * 
- * Triggers the Phase 2 OpenAI "Deep Dive" historical research.
+ *
+ * Triggers full AI pipeline with optional model overrides for A/B testing.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ItemService } from '@/lib/db/items';
-import { enrichDeepDive } from '@/lib/ai/openai-manual';
+import { runFullPipeline, AnalysisOptions } from '@/lib/ai';
 import path from 'path';
 import fs from 'fs';
 
@@ -16,107 +16,70 @@ export async function POST(
 ) {
   try {
     const id = (await params).id;
-
-    // 1. Get custom prompt from body if exists
     const body = await req.json().catch(() => ({}));
-    const customPrompt = body.prompt;
 
-    // 2. Fetch Item
     const item = ItemService.getById(id);
-    if (!item) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
-    }
+    if (!item) return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+    if (!item.originalImagePath) return NextResponse.json({ error: 'No image' }, { status: 400 });
 
-    if (!item.originalImagePath) {
-      return NextResponse.json({ error: 'Cannot enrich item without an image' }, { status: 400 });
-    }
-
-    // 3. Resolve image path
     const imagePathToUse = item.resizedImagePath || item.originalImagePath;
-    if (!imagePathToUse) {
-       return NextResponse.json({ error: 'Cannot enrich item without an image' }, { status: 400 });
-    }
-    
-    // Support both absolute and relative paths
-    const absoluteImagePath = path.isAbsolute(imagePathToUse)
-      ? imagePathToUse
-      : path.join(process.cwd(), 'public', imagePathToUse.replace(/^\//, ''));
+    const absoluteImagePath = path.isAbsolute(imagePathToUse!)
+      ? imagePathToUse!
+      : path.join(process.cwd(), 'public', imagePathToUse!.replace(/^\//, ''));
 
-    // 4. Prepare Baseline Context for the AI
-    const baselineData = {
-      title: item.title,
-      transcription: item.cleanedTranscription,
-      identifiedNames: item.identifiedNames ? JSON.parse(item.identifiedNames) : [],
-      tags: item.tags ? JSON.parse(item.tags as string) : []
+    const options: AnalysisOptions = {
+      baselineModel: body.baselineModel,
+      deepDiveModel: body.deepDiveModel,
+      enableGrounding: body.enableGrounding,
+      customPrompt: body.prompt,
     };
 
-    console.log(`[Enrich API] Starting Deep Dive for Item: ${item.id} ${customPrompt ? '(Custom Prompt Used)' : ''}`);
+    console.log(`[Enrich API] Starting for ${id}`, options);
 
-    // 5. Execute Deep Dive (OpenAI GPT-4o)
-    const deepDiveResult = await enrichDeepDive(absoluteImagePath, baselineData, customPrompt);
+    const result = await runFullPipeline(absoluteImagePath, item.rawOcr || '', options);
 
-    // 6. Log the interaction
+    // Log interaction
     const logFile = path.join(process.cwd(), 'ai-prompt-debug.txt');
-    const logEntry = `[${new Date().toISOString()}] ENRICHMENT_CALL [${item.id}]\n` +
-                     `PROMPT: ${customPrompt || 'DEFAULT'}\n` +
-                     `RESULT: ${JSON.stringify(deepDiveResult, null, 2)}\n` +
-                     `---\n`;
+    const logEntry = `[${new Date().toISOString()}] ENRICHMENT [${id}] cat=${result.category} grounding=${result.groundingUsed}\n` +
+                     `OPTIONS: ${JSON.stringify(options)}\n` +
+                     `RESULT: ${JSON.stringify(result.deepDive, null, 2)}\n---\n`;
     fs.appendFileSync(logFile, logEntry);
 
-    // 7. Store old analysis in history
-    const historyEntry = {
-      timestamp: new Date().toISOString(),
-      prompt: customPrompt || 'DEFAULT',
-      historicalContext: item.historicalContext,
-      collectorSignificance: item.collectorSignificance,
-      valuation: item.valuation,
-      verification_questions: item.verification_questions
-    };
-
+    // Store old analysis in history
     let analysisHistory = [];
     if (item.analysis_history) {
-        try {
-            analysisHistory = JSON.parse(item.analysis_history);
-        } catch (e) {
-            console.error("Failed to parse analysis_history", e);
-        }
+      try { analysisHistory = JSON.parse(item.analysis_history); } catch {}
     }
-    
-    // Only push if there was actually data to save
     if (item.historicalContext || item.valuation) {
-        analysisHistory.push(historyEntry);
+      analysisHistory.push({
+        timestamp: new Date().toISOString(),
+        prompt: body.prompt || 'DEFAULT',
+        models: { baseline: options.baselineModel, deepDive: options.deepDiveModel },
+        historicalContext: item.historicalContext,
+        collectorSignificance: item.collectorSignificance,
+        valuation: item.valuation,
+      });
     }
 
-    // 8. Merge Results & Update Database
-    const existingTags = new Set(baselineData.tags);
-    deepDiveResult.tags.forEach((t: string) => existingTags.add(t));
+    // Merge respecting locked fields
+    const lockedFields: string[] = (item as any).lockedFields
+      ? JSON.parse((item as any).lockedFields) : [];
 
-    const mergedNames = deepDiveResult.identifiedNames && deepDiveResult.identifiedNames.length > 0
-      ? deepDiveResult.identifiedNames
-      : baselineData.identifiedNames;
-
-    const updates = {
-      title: deepDiveResult.title || item.title,
-      historicalContext: deepDiveResult.historicalContext,
-      collectorSignificance: deepDiveResult.collectorSignificance,
-      valuation: deepDiveResult.valuation,
-      verification_questions: deepDiveResult.verificationQuestions ? JSON.stringify(deepDiveResult.verificationQuestions) : undefined,
-      identifiedNames: JSON.stringify(mergedNames),
-      tags: JSON.stringify(Array.from(existingTags)),
-      analysis_history: JSON.stringify(analysisHistory)
+    const candidateUpdates: Record<string, any> = {
+      ...result.merged,
+      analysis_history: JSON.stringify(analysisHistory),
     };
+
+    const updates: Record<string, any> = {};
+    for (const [key, value] of Object.entries(candidateUpdates)) {
+      if (!lockedFields.includes(key)) updates[key] = value;
+    }
 
     ItemService.updateMetadata(id, updates);
 
-    console.log(`[Enrich API] Deep Dive Complete for: ${item.id}`);
-
-    return NextResponse.json({ success: true, item: ItemService.getById(id) });
-
+    return NextResponse.json({ success: true, category: result.category, groundingUsed: result.groundingUsed, item: ItemService.getById(id) });
   } catch (error: any) {
-    console.error('[Enrich API] Deep Dive Error:', error);
-    return NextResponse.json({ 
-      error: 'Deep Dive Failed. Ensure OpenAI API Key is valid and image is accessible.',
-      details: error.message 
-    }, { status: 500 });
+    console.error('[Enrich API] Error:', error);
+    return NextResponse.json({ error: 'Enrichment failed', details: error.message }, { status: 500 });
   }
 }

@@ -50,10 +50,12 @@ export const CollectionService = {
   },
 
   delete: (id: string) => {
-    // Note: Items will have a NULL or dead collection_id if deleted. 
-    // Usually we should handle this or foreign keys will prevent it if PRAGMA foreign_keys = ON.
-    // In our schema, we have a foreign key.
-    return db.prepare('DELETE FROM collections WHERE id = ?').run(id);
+    // Unlink items first to satisfy FK constraints and keep items intact.
+    const tx = db.transaction(() => {
+      db.prepare('UPDATE items SET collection_id = NULL WHERE collection_id = ?').run(id);
+      db.prepare('DELETE FROM collections WHERE id = ?').run(id);
+    });
+    return tx();
   },
 
   getItems: (collectionId: string) => {

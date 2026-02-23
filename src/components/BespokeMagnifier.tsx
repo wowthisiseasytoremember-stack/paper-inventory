@@ -10,13 +10,15 @@ interface BespokeMagnifierProps {
   alt: string;
   className?: string;
   zoomLevel?: number;
+  onLoad?: () => void;
 }
 
 export function BespokeMagnifier({ 
   src, 
   alt, 
   className, 
-  zoomLevel = 2.5 
+  zoomLevel = 2.5,
+  onLoad
 }: BespokeMagnifierProps) {
   const [showMagnifier, setShowMagnifier] = useState(false);
   const [magnifierPos, setMagnifierPos] = useState({ x: 0, y: 0 });
@@ -49,6 +51,7 @@ export function BespokeMagnifier({
         src={src}
         alt={alt}
         className="w-full h-auto block transition-all duration-700"
+        onLoad={onLoad}
         onMouseEnter={() => setShowMagnifier(true)}
         onMouseLeave={() => setShowMagnifier(false)}
         onMouseMove={handleMouseMove}

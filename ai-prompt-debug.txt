@@ -199,3 +199,162 @@ RESULT: {
   ]
 }
 ---
+[2026-02-23T11:58:35.883Z] ENRICHMENT_CALL [4485fceb-1b17-4ead-9e75-f28a97605d42]
+PROMPT: DEFAULT
+RESULT: {
+  "title": "Comic Book - Green Lantern Issue #44 - August 1993",
+  "historicalContext": "The Green Lantern series, published by DC Comics, is a cornerstone of superhero lore, featuring characters who wield power rings that grant them extraordinary abilities. Issue #44, released in August 1993, is part of the 'Trinity' storyline, a significant arc in the Green Lantern saga. Written by Gerard Jones with artwork by Gene Ha and Romeo Tanghal, this issue delves into the challenges faced by the Green Lantern Corps, showcasing the creative storytelling and dynamic art that defined the era.",
+  "collectorSignificance": "1. **Scarcity Assessment:** This issue is relatively common, as it was produced during a time of high print runs in the comic industry. 2. **Current Market Demand Indicators:** While not a key issue, it holds interest for collectors of the Green Lantern series and those completing the 'Trinity' storyline. 3. **Positioning within the Collecting Hierarchy:** It is a mid-tier collectible, appealing primarily to completists and fans of the 1990s DC Comics era. 4. **Factors that Increase/Decrease Value:** Condition is crucial; any wear or damage significantly reduces value. A pristine, bagged, and boarded copy is more desirable.",
+  "valuation": "**ESTIMATED VALUE (Educational Assessment)** - Low: $2 - High: $5 - Most Likely eBay Sale: $3. This valuation is based on recent eBay sales for similar issues in comparable condition. The market for 1990s comics is generally soft due to overproduction, but specific storylines or character arcs can attract niche interest.",
+  "verificationQuestions": [],
+  "identifiedNames": [
+    {
+      "name": "Green Lantern",
+      "type": "business",
+      "confidence": 1,
+      "historicalNote": "Green Lantern is a flagship character for DC Comics, known for its rich mythology and diverse array of characters who have taken on the mantle."
+    },
+    {
+      "name": "Gerard Jones",
+      "type": "person",
+      "confidence": 1,
+      "historicalNote": "Gerard Jones is a writer known for his work on various DC Comics titles during the 1990s, contributing to the development of complex storylines."
+    },
+    {
+      "name": "Gene Ha",
+      "type": "person",
+      "confidence": 1,
+      "historicalNote": "Gene Ha is an artist celebrated for his detailed and dynamic artwork, contributing significantly to the visual appeal of the Green Lantern series."
+    },
+    {
+      "name": "Romeo Tanghal",
+      "type": "person",
+      "confidence": 1,
+      "historicalNote": "Romeo Tanghal is a prolific inker whose work has enhanced the visual storytelling of many DC Comics series, including Green Lantern."
+    },
+    {
+      "name": "DC",
+      "type": "business",
+      "confidence": 1,
+      "historicalNote": "DC Comics is one of the largest and most influential comic book publishers, known for iconic characters like Superman, Batman, and Green Lantern."
+    }
+  ],
+  "tags": [
+    "comics",
+    "1990s",
+    "DC Comics",
+    "Green Lantern",
+    "collectible",
+    "superhero",
+    "Trinity storyline",
+    "Gerard Jones",
+    "Gene Ha",
+    "Romeo Tanghal"
+  ]
+}
+---
+[2026-02-23T12:04:42.394Z] ENRICHMENT_CALL [4485fceb-1b17-4ead-9e75-f28a97605d42]
+PROMPT: DEFAULT
+RESULT: {
+  "title": "Green Lantern Comic Issue #44 - The Wrath of the Destroyer",
+  "historicalContext": "This issue of Green Lantern, published in August during the early 1990s, is part of the DC Comics universe. The 1990s were a significant era for comic books, marked by a boom in popularity and the introduction of darker, more complex storylines.",
+  "collectorSignificance": "Green Lantern comics are highly collectible due to their long-standing popularity and the character's significance in the DC universe. Issue #44 is part of the 'Trinity' storyline, which may increase its desirability among collectors interested in complete story arcs.",
+  "valuation": "Low: $5 — High: $20 — Likely: $10",
+  "verificationQuestions": [
+    "Check the condition of the comic for grading.",
+    "Verify if it's a first print edition.",
+    "Confirm if there are any notable misprints or variants."
+  ],
+  "identifiedNames": [
+    {
+      "name": "Green Lantern",
+      "type": "business",
+      "confidence": 1,
+      "historicalNote": "A major superhero character in the DC Comics universe."
+    },
+    {
+      "name": "Gerard Jones",
+      "type": "person",
+      "confidence": 1,
+      "historicalNote": "A writer known for his work on Green Lantern during the 1990s."
+    },
+    {
+      "name": "Gene Ha",
+      "type": "person",
+      "confidence": 1,
+      "historicalNote": "An artist recognized for his contributions to various comic series, including Green Lantern."
+    },
+    {
+      "name": "Romeo Tanghal",
+      "type": "person",
+      "confidence": 1,
+      "historicalNote": "An inker known for his work with DC Comics."
+    },
+    {
+      "name": "DC",
+      "type": "business",
+      "confidence": 1,
+      "historicalNote": "One of the largest and most influential American comic book publishers."
+    }
+  ],
+  "tags": [
+    "comics",
+    "1990s",
+    "DC Comics",
+    "Green Lantern",
+    "collectible",
+    "superhero",
+    "Trinity storyline",
+    "comic book art"
+  ]
+}
+---
+[2026-02-23T12:11:17.349Z] ENRICHMENT_CALL [314da3e8-9c45-4a18-b83f-efefe3c64faa]
+PROMPT: DEFAULT
+RESULT: {
+  "title": "U.S. Agent #4 — Marvel Comics — 1993",
+  "historicalContext": "Published in 1993, this comic is part of the first series featuring U.S. Agent, a character created by Marvel Comics. U.S. Agent is a government-sanctioned superhero, often depicted as a more aggressive counterpart to Captain America, reflecting the complex political themes of the early 1990s.",
+  "collectorSignificance": "This issue marks the conclusion of U.S. Agent's first solo series, making it significant for collectors interested in character arcs and series completions. Its rarity is moderate, as it was a direct edition, which typically had a lower print run compared to newsstand editions.",
+  "valuation": "Low: $5 — High: $15 — Likely: $10",
+  "verificationQuestions": [
+    "Check for any special inserts or advertisements that might increase value.",
+    "Verify condition, including any signs of wear or damage.",
+    "Confirm if it's a direct edition or newsstand edition."
+  ],
+  "identifiedNames": [],
+  "tags": [
+    "comic book",
+    "Marvel Comics",
+    "U.S. Agent",
+    "superhero",
+    "1990s",
+    "first series",
+    "direct edition",
+    "conclusion issue"
+  ]
+}
+---
+[2026-02-23T12:16:43.393Z] ENRICHMENT_CALL [35fee76d-f221-4473-9cad-c0166eba48b6]
+PROMPT: DEFAULT
+RESULT: {
+  "title": "Wolverine #55 — Marvel Comics — 1992",
+  "historicalContext": "Wolverine #55 was published in 1992, during a period when comic books were experiencing a surge in popularity. This era is notable for its dynamic and often exaggerated art styles, as well as significant story arcs that have influenced modern comic narratives.",
+  "collectorSignificance": "This issue is part of the Wolverine series, which is highly popular among collectors due to the character's enduring appeal. The 30th Anniversary of Spider-Man mentioned on the cover adds an additional layer of interest, as it marks a significant milestone for Marvel Comics.",
+  "valuation": "Low: $5 — High: $20 — Likely: $10",
+  "verificationQuestions": [
+    "Check for any special features or inserts that might increase value.",
+    "Confirm the condition of the comic, as this greatly affects valuation."
+  ],
+  "identifiedNames": [],
+  "tags": [
+    "comic book",
+    "Wolverine",
+    "Marvel Comics",
+    "1992",
+    "30th Anniversary",
+    "Spider-Man",
+    "collectible",
+    "superhero"
+  ]
+}
+---

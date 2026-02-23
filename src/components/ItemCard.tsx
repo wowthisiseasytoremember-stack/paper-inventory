@@ -39,6 +39,17 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 export function ItemCard({ item }: { item: Item }) {
+  const isProvisional = item.status !== 'complete';
+  const displayValue = (() => {
+    if (!item.valuation) return null;
+    const likelyMatch = item.valuation.match(/(?:Most Likely|Likely|eBay Sale)[^$]*(\$[\d,]+(?:\.\d{2})?)/i);
+    if (likelyMatch) return likelyMatch[1];
+    const rangeMatch = item.valuation.match(/(\$[\d,]+(?:\.\d{2})?)\s*[-–]\s*(\$[\d,]+(?:\.\d{2})?)/);
+    if (rangeMatch) return `${rangeMatch[1]}–${rangeMatch[2]}`;
+    const firstMatch = item.valuation.match(/\$[\d,]+(?:\.\d{2})?/);
+    return firstMatch ? firstMatch[0] : null;
+  })();
+
   return (
     <Link href={`/items/${item.id}`} className="block group">
       <motion.div 
@@ -62,11 +73,17 @@ export function ItemCard({ item }: { item: Item }) {
                 <StatusBadge status={item.status} />
              </div>
 
-             {item.valuation && (
+             {displayValue && (
                <div className="absolute bottom-1.5 left-1.5 z-10">
-                  <div className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-xl border border-white/5 text-[9px] font-black text-emerald-400 flex items-center gap-1 shadow-2xl tracking-tighter">
+                  <div className={cn(
+                    "px-2 py-0.5 rounded-md backdrop-blur-xl border text-[9px] font-black flex items-center gap-1 shadow-2xl tracking-tighter",
+                    isProvisional
+                      ? "bg-amber-500/10 border-amber-500/20 text-amber-300"
+                      : "bg-black/80 border-white/5 text-emerald-400"
+                  )}>
                     <DollarSign size={8} strokeWidth={3} />
-                    {item.valuation}
+                    {isProvisional ? "EST" : "VAL"}
+                    <span className="opacity-80">{displayValue}</span>
                   </div>
                </div>
              )}

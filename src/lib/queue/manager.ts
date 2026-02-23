@@ -2,54 +2,56 @@
  * QUEUE MANAGER (v2 — single-pass pipeline)
  *
  * Processes each item through ALL stages in one lock cycle.
- * No more re-queuing between stages.
+ * Uses p-queue for concurrency management.
  */
 
 import { ItemService, Item } from '../db/items';
 import { performOCR } from '../ocr';
 import { db } from '../db';
+import PQueue from 'p-queue';
 
-const POLLING_INTERVAL_MS = 500; // Faster polling since items don't re-queue
 const MAX_CONCURRENT_JOBS = 3;   // 3 concurrent full pipelines (each makes API calls)
 
 export class QueueManager {
+  private workerQueue = new PQueue({ concurrency: MAX_CONCURRENT_JOBS });
   private isRunning = false;
-  private activeJobs = 0;
-  private interval: NodeJS.Timeout | null = null;
   private watchdogInterval: NodeJS.Timeout | null = null;
 
   start() {
     if (this.isRunning) return;
     this.isRunning = true;
-    console.log('[Queue] Started (single-pass mode, max concurrent:', MAX_CONCURRENT_JOBS, ')');
+    console.log('[Queue] Started (p-queue mode, max concurrent:', MAX_CONCURRENT_JOBS, ')');
+    
     ItemService.resetLocks();
+    
     this.watchdogInterval = setInterval(() => {
       ItemService.resetStaleLocks(5);
+      this.trigger();
     }, 60 * 1000);
-    this.loop();
+
+    this.trigger();
   }
 
   stop() {
     this.isRunning = false;
-    if (this.interval) clearTimeout(this.interval);
+    this.workerQueue.pause();
+    this.workerQueue.clear();
     if (this.watchdogInterval) clearInterval(this.watchdogInterval);
     console.log('[Queue] Stopped.');
   }
 
-  private async loop() {
+  trigger() {
     if (!this.isRunning) return;
-
-    if (this.activeJobs < MAX_CONCURRENT_JOBS) {
-      const item = ItemService.lockNext();
-      if (item) {
-        this.activeJobs++;
-        this.processFullPipeline(item).finally(() => {
-          this.activeJobs--;
-        });
-      }
+    // Pull jobs from DB until no more are unlocked
+    let item = ItemService.lockNext();
+    while (item) {
+      this.enqueueItem(item);
+      item = ItemService.lockNext();
     }
+  }
 
-    this.interval = setTimeout(() => this.loop(), POLLING_INTERVAL_MS);
+  private enqueueItem(item: Item) {
+    this.workerQueue.add(() => this.processFullPipeline(item));
   }
 
   /**
@@ -83,7 +85,6 @@ export class QueueManager {
       // --- STAGE 2: Resize (if not already done) ---
       let resizedPath = item.resizedImagePath;
       let thumbnailPath = item.thumbnailPath;
-      let contentHash = item.contentHash;
       let originalHash = item.originalHash;
 
       if (!resizedPath && item.originalImagePath) {
@@ -92,8 +93,6 @@ export class QueueManager {
         const result = await ImageProcessor.process(item.id, item.originalImagePath);
         resizedPath = result.resizedPath;
         thumbnailPath = result.thumbnailPath;
-        contentHash = result.contentHash;
-        originalHash = result.originalHash;
         console.log(`[Queue] ✅ Resize done for ${item.id} (${result.resizeDurationMs}ms)`);
       }
 
@@ -105,7 +104,14 @@ export class QueueManager {
 
       const { runFullPipeline } = await import('../ai');
       const aiStart = Date.now();
-      const result = await runFullPipeline(imagePath, rawOcr);
+      const result = await runFullPipeline(imagePath, rawOcr, undefined, {
+        onBaselineComplete: (baseline) => {
+          // Write baseline data to DB immediately so UI can show title/tags while deep dive runs
+          db.prepare('UPDATE items SET title = ?, tags = ?, confidence = ? WHERE id = ?')
+            .run(baseline.title, JSON.stringify(baseline.tags || []), baseline.confidence || 0, item.id);
+          console.log(`[Queue] ⚡ Baseline written early for ${item.id}: "${baseline.title}"`);
+        },
+      });
       const aiDurationMs = Date.now() - aiStart;
 
       // --- DONE: Unlock with everything ---
@@ -115,7 +121,6 @@ export class QueueManager {
         rawOcr,
         confidence: ocrConfidence,
         originalHash,
-        contentHash,
         resizedImagePath: resizedPath,
         thumbnailPath,
         ...result.merged,

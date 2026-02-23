@@ -358,3 +358,47 @@ RESULT: {
   ]
 }
 ---
+[2026-02-23T16:33:23.050Z] ENRICHMENT [db45c54c-a326-4954-b0f8-7e68a3c4a2e9] cat=comics_1990s grounding=true
+OPTIONS: {"baselineModel":"gemini-2.0-flash","deepDiveModel":"gpt-4o","enableGrounding":true}
+RESULT: {
+  "title": "Namor The Sub-Mariner #32 — Marvel Comics — 1992",
+  "historicalContext": "Namor's solo series ran 1990-1995 during Marvel's early 90s expansion. Issue #32 was part of the 30th anniversary celebration of Spider-Man, featuring cross-promotional tie-ins across multiple titles.",
+  "collectorSignificance": "Mid-run issue of a secondary Marvel title. The Namor solo series had modest print runs compared to flagship titles but still likely 200K+ copies. No significant first appearances or key storylines. Mainly appeals to Namor completists.",
+  "conditionNotes": "VF condition visible. Clean cover with good color retention. Minor edge wear at corners. No visible creases, tears, or spine stress. Colors appear bright and unfaded.",
+  "valuation": "Low: $1 — High: $4 — Likely: $2. Standard 1990s Marvel issue with no key significance. No comparable sales found for this specific issue. CONFIDENCE: MEDIUM — based on similar mid-run 90s Marvel books.",
+  "verificationQuestions": [
+    "Any interior damage or foxing?",
+    "Is this newsstand or direct market edition?",
+    "Any writing or stamps inside?"
+  ],
+  "identifiedNames": [
+    {
+      "name": "Namor",
+      "type": "person",
+      "confidence": 1,
+      "historicalNote": "Marvel's first mutant character, created 1939, Atlantean anti-hero"
+    },
+    {
+      "name": "Marvel Comics",
+      "type": "business",
+      "confidence": 1,
+      "historicalNote": "Major comic publisher founded 1939"
+    }
+  ],
+  "tags": [
+    "namor",
+    "sub-mariner",
+    "marvel-1992",
+    "30th-anniversary",
+    "spider-man-tie-in",
+    "atlantis",
+    "anti-hero",
+    "copper-age"
+  ],
+  "ebayTitle": "Namor Sub-Mariner #32 Marvel 1992 Spider-Man 30th Anniversary VF Copper Age",
+  "ebayDescription": "Namor the Sub-Mariner #32 from November 1992. Part of Spider-Man's 30th anniversary celebration with cross-promotional cover elements. VF condition with clean cover and good color retention. Appeals to Namor collectors and 1990s Marvel completists.",
+  "ebayCategory": "Collectibles > Comic Books, Magazines > Comics > Comics & Graphic Novels",
+  "listingStrategy": "bundle",
+  "suggestedPrice": "$1.99 (or bundle with 10-15 similar 90s books for $15-20)"
+}
+---

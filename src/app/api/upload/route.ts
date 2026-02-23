@@ -36,21 +36,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File too large (Max 25MB)' }, { status: 413 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    // 2. Magic Byte Validation (Security)
-    const type = await fileTypeFromBuffer(buffer);
-    if (!type || !ALLOWED_MIMES.includes(type.mime)) {
-      return NextResponse.json({ 
-        error: `Invalid file type: ${type?.mime || 'unknown'}. Allowed: ${ALLOWED_MIMES.join(', ')}` 
-      }, { status: 415 });
-    }
-
-    // 3. Hash Calculation (for Deduplication)
-    const originalHash = crypto.createHash('sha256').update(buffer).digest('hex');
+    // 2. Fast Deduplication Hash (Metadata only for speed)
+    const fileMeta = `${file.name}|${file.size}|${file.lastModified || '0'}`;
+    const fastHash = crypto.createHash('md5').update(fileMeta).digest('hex');
     
     // Check for duplicate original file
-    const existing = ItemService.getByOriginalHash(originalHash);
+    const existing = ItemService.getByOriginalHash(fastHash);
     
     if (existing) {
       console.log(`[Upload] Duplicate detected: ${existing.id}`);
@@ -61,6 +52,16 @@ export async function POST(req: NextRequest) {
       }, { status: 200 });
     }
 
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // 3. Magic Byte Validation (Security)
+    const type = await fileTypeFromBuffer(buffer);
+    if (!type || !ALLOWED_MIMES.includes(type.mime)) {
+      return NextResponse.json({ 
+        error: `Invalid file type: ${type?.mime || 'unknown'}. Allowed: ${ALLOWED_MIMES.join(', ')}` 
+      }, { status: 415 });
+    }
+
     // 4. Storage
     const originalId = StorageService.generateId();
     const extension = `.${type.ext}`;
@@ -68,10 +69,13 @@ export async function POST(req: NextRequest) {
 
     fs.writeFileSync(safePath, buffer);
 
-    // 5. DB Entry (with hash for dedup)
-    const itemId = ItemService.create(file.name, safePath, type.mime, file.size, originalHash);
+    // 5. DB Entry (with fast hash for dedup)
+    const itemId = ItemService.create(file.name, safePath, type.mime, file.size, fastHash);
 
     console.log(`[Upload] Created ${itemId} (${file.size} bytes)`);
+    
+    // 6. Push to Queue
+    queue.trigger();
 
     return NextResponse.json({ 
       id: itemId, 

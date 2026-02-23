@@ -54,7 +54,7 @@ export function DebugFAB() {
   const [isRetrying, setIsRetrying] = useState(false);
   const [models, setModels] = useState<ModelConfig>({ baseline: [], deepDive: [], grounding: [] });
   const [baselineModel, setBaselineModel] = useState('gemini-2.0-flash');
-  const [deepDiveModel, setDeepDiveModel] = useState('gpt-4o');
+  const [deepDiveModel, setDeepDiveModel] = useState('gemini-2.5-flash');
   const [enableGrounding, setEnableGrounding] = useState(true);
   const params = useParams();
   const itemId = params?.id as string;
@@ -63,7 +63,7 @@ export function DebugFAB() {
     const saved = loadSettings();
     if (saved) {
       setBaselineModel(saved.baselineModel || 'gemini-2.0-flash');
-      setDeepDiveModel(saved.deepDiveModel || 'gpt-4o');
+      setDeepDiveModel(saved.deepDiveModel || 'gemini-2.5-flash');
       setEnableGrounding(saved.enableGrounding ?? true);
     }
 
@@ -187,7 +187,7 @@ export function DebugFAB() {
                     <Select
                       label="Deep Dive"
                       value={deepDiveModel}
-                      options={models.deepDive.length > 0 ? models.deepDive : ['gpt-4o', 'claude-sonnet', 'gemini-2.5-flash']}
+                      options={models.deepDive.length > 0 ? models.deepDive : ['gemini-2.5-flash', 'claude-sonnet', 'groq']}
                       onChange={setDeepDiveModel}
                     />
                   </div>

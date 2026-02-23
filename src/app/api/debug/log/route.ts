@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     models: AVAILABLE_MODELS,
     defaults: {
       baselineModel: 'gemini-2.0-flash',
-      deepDiveModel: 'gpt-4o',
+      deepDiveModel: 'gemini-2.5-flash',
       enableGrounding: true,
     }
   });

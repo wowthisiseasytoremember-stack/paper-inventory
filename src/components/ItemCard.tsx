@@ -40,6 +40,19 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export function ItemCard({ item }: { item: Item }) {
   const isProvisional = item.status !== 'complete';
+
+  // Visual processing state: B&W → faded color → full vibrant
+  const imageFilter = (() => {
+    if (item.status === 'complete') return 'none';
+    if (item.status === 'error') return 'none';
+    // Has a title = baseline done, deep dive still running → faded color
+    if (item.title && item.title !== '...' && item.title !== 'Unidentified Document') {
+      return 'grayscale(0.35) saturate(0.65) brightness(0.9)';
+    }
+    // Still early processing (OCR/resize/waiting) → full B&W
+    return 'grayscale(1) brightness(0.7)';
+  })();
+
   const displayValue = (() => {
     if (!item.valuation) return null;
     const likelyMatch = item.valuation.match(/(?:Most Likely|Likely|eBay Sale)[^$]*(\$[\d,]+(?:\.\d{2})?)/i);
@@ -59,10 +72,11 @@ export function ItemCard({ item }: { item: Item }) {
       >
         <div className="aspect-[1/1] bg-slate-950 relative flex items-center justify-center overflow-hidden border-b border-slate-800/50">
              {item.thumbnailPath ? (
-                <img 
-                    src={`/api/items/${item.id}/thumbnail`} 
-                    alt={item.title || "Document"} 
-                    className="object-cover w-full h-full group-hover:scale-110 transition-luxury duration-700 opacity-90 group-hover:opacity-100"
+                <img
+                    src={`/api/items/${item.id}/thumbnail`}
+                    alt={item.title || "Document"}
+                    className="object-cover w-full h-full group-hover:scale-110 transition-all duration-700 opacity-90 group-hover:opacity-100"
+                    style={{ filter: imageFilter, transition: 'filter 0.8s ease' }}
                     loading="lazy"
                 />
              ) : (

@@ -1,8 +1,10 @@
 /**
- * AI PROVIDER ROUTER (v2)
+ * AI PROVIDER ROUTER (v3)
  *
  * Single entry point. Routes by model prefix. Auto-fallback on failure.
  * Parallelizes triage + grounding for speed.
+ * Default deep dive: gemini-2.5-flash (fast + free).
+ * Groq as text-only last-resort fallback.
  */
 
 import { ItemMetadata, ItemMetadataSchema } from './schema';
@@ -18,6 +20,10 @@ export interface AnalysisOptions {
   customPrompt?: string;
 }
 
+export interface PipelineCallbacks {
+  onBaselineComplete?: (baseline: ItemMetadata) => void;
+}
+
 export interface FullAnalysisResult {
   baseline: ItemMetadata;
   deepDive: DeepDiveResult;
@@ -28,15 +34,16 @@ export interface FullAnalysisResult {
 
 const DEFAULTS = {
   baselineModel: 'gemini-2.0-flash',
-  deepDiveModel: 'claude-sonnet',  // Changed default — OpenAI key is out of quota
+  deepDiveModel: 'gemini-2.5-flash',  // Fast + free. Claude available via FAB for premium.
   enableGrounding: true,
 };
 
-// Fallback chains: if preferred model fails, try next
+// Fallback chains: if preferred model fails, try next. Groq is always last (text-only).
 const DEEP_DIVE_FALLBACKS: Record<string, string[]> = {
-  'gpt-4o':          ['claude-sonnet', 'gemini-2.5-flash'],
-  'claude-sonnet':   ['gpt-4o', 'gemini-2.5-flash'],
-  'gemini-2.5-flash': ['claude-sonnet', 'gpt-4o'],
+  'gpt-4o':           ['claude-sonnet', 'gemini-2.5-flash', 'groq'],
+  'claude-sonnet':    ['gemini-2.5-flash', 'gpt-4o', 'groq'],
+  'gemini-2.5-flash': ['claude-sonnet', 'gpt-4o', 'groq'],
+  'groq':             ['gemini-2.5-flash', 'claude-sonnet'],
 };
 
 const BASELINE_FALLBACKS: Record<string, string[]> = {
@@ -46,8 +53,8 @@ const BASELINE_FALLBACKS: Record<string, string[]> = {
 };
 
 export const AVAILABLE_MODELS = {
-  baseline: ['gemini-2.0-flash', 'gpt-4o-mini', 'gpt-4o'],
-  deepDive: ['gpt-4o', 'claude-sonnet', 'gemini-2.5-flash'],
+  baseline: ['gemini-2.0-flash', 'claude-sonnet'],
+  deepDive: ['gemini-2.5-flash', 'claude-sonnet', 'groq'],
   grounding: ['gemini-2.5-flash'],
 };
 
@@ -65,29 +72,86 @@ async function callBaseline(imagePath: string, ocrText: string, model: string): 
     return result.parsedData;
   }
   if (model.startsWith('gpt')) {
-    const { analyzeImage: analyzeOpenAI } = await import('./openai-manual');
+    const { analyzeImage: analyzeOpenAI } = await import('./openai-sdk');
     return analyzeOpenAI(imagePath, ocrText);
   }
   if (model.startsWith('claude')) {
-    const { analyzeImageAnthropic } = await import('./anthropic-manual');
+    const { analyzeImageAnthropic } = await import('./anthropic-sdk');
     return analyzeImageAnthropic(imagePath, ocrText, BASELINE_SYSTEM_PROMPT, resolveAnthropicModel(model));
   }
   throw new Error(`Unknown model: ${model}`);
 }
 
+async function callGeminiDeepDive(imagePath: string, systemPrompt: string, userContent: string, model: string): Promise<DeepDiveResult> {
+  const fs = await import('fs');
+  const path = await import('path');
+  const { GoogleGenerativeAI } = await import('@google/generative-ai');
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY is missing');
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const geminiModel = genAI.getGenerativeModel({
+    model,
+    systemInstruction: systemPrompt,
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+  });
+
+  const imageBuffer = fs.readFileSync(imagePath);
+  const ext = path.extname(imagePath).toLowerCase();
+  const mimeMap: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
+  const mimeType = mimeMap[ext] || 'image/png';
+
+  const result = await geminiModel.generateContent([
+    userContent,
+    { inlineData: { data: imageBuffer.toString('base64'), mimeType } },
+  ]);
+
+  return JSON.parse(result.response.text()) as DeepDiveResult;
+}
+
+async function callGroqDeepDive(systemPrompt: string, userContent: string): Promise<DeepDiveResult> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('GROQ_API_KEY is missing');
+
+  console.log('[AI-Router] Groq deep dive (text-only fallback, no image)');
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent + '\n\n(Note: Image not available. Rely on baseline extraction and grounding research above.)' },
+      ],
+      temperature: 0.2,
+    }),
+  });
+
+  if (!response.ok) throw new Error(`Groq HTTP ${response.status}: ${await response.text()}`);
+
+  const data = await response.json();
+  const content = data.choices[0].message.content;
+  if (!content) throw new Error('Empty response from Groq');
+  return JSON.parse(content) as DeepDiveResult;
+}
+
 async function callDeepDive(imagePath: string, systemPrompt: string, userContent: string, model: string): Promise<DeepDiveResult> {
   if (model.startsWith('gpt')) {
-    const { enrichDeepDiveRaw } = await import('./openai-manual');
+    const { enrichDeepDiveRaw } = await import('./openai-sdk');
     return enrichDeepDiveRaw(imagePath, systemPrompt, userContent, model);
   }
   if (model.startsWith('claude')) {
-    const { callAnthropic } = await import('./anthropic-manual');
+    const { callAnthropic } = await import('./anthropic-sdk');
     return await callAnthropic(systemPrompt, imagePath, userContent, resolveAnthropicModel(model)) as DeepDiveResult;
   }
   if (model.startsWith('gemini')) {
-    // Gemini via OpenAI-compatible endpoint
-    const { enrichDeepDiveRaw } = await import('./openai-manual');
-    return enrichDeepDiveRaw(imagePath, systemPrompt, userContent, model);
+    return callGeminiDeepDive(imagePath, systemPrompt, userContent, model);
+  }
+  if (model === 'groq' || model.startsWith('llama')) {
+    return callGroqDeepDive(systemPrompt, userContent);
   }
   throw new Error(`Unknown model: ${model}`);
 }
@@ -130,7 +194,8 @@ export async function analyzeImage(imagePath: string, ocrText: string, options?:
 export async function runFullPipeline(
   imagePath: string,
   ocrText: string,
-  options?: AnalysisOptions
+  options?: AnalysisOptions,
+  callbacks?: PipelineCallbacks
 ): Promise<FullAnalysisResult> {
   const baselineModel = options?.baselineModel || DEFAULTS.baselineModel;
   const deepDiveModel = options?.deepDiveModel || DEFAULTS.deepDiveModel;
@@ -142,6 +207,9 @@ export async function runFullPipeline(
     baselineModel, BASELINE_FALLBACKS,
     (m) => callBaseline(imagePath, ocrText, m), 'Baseline'
   );
+
+  // Notify caller immediately — lets UI show title/tags before deep dive finishes
+  callbacks?.onBaselineComplete?.(baseline);
 
   const baselineData = {
     title: baseline.title,

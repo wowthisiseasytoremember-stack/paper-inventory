@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useDropzone } from 'react-dropzone';
+import imageCompression from 'browser-image-compression';
 
 interface UploadFile {
   file: File;
@@ -21,8 +22,29 @@ export function BulkUpload() {
 
   const uploadSingleFile = async (uf: UploadFile) => {
     try {
+      const compressionOptions = {
+        maxSizeMB: 5,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+        preserveExif: true,
+      };
+
+      let fileToUpload = uf.file;
+
+      if (uf.file.type.startsWith('image/')) {
+        try {
+          const compressedBlob = await imageCompression(uf.file, compressionOptions);
+          fileToUpload = new File([compressedBlob], uf.file.name, {
+            type: compressedBlob.type,
+            lastModified: uf.file.lastModified,
+          });
+        } catch (compressionError) {
+          console.warn(`[Compression] Failed for ${uf.file.name}, using original.`);
+        }
+      }
+
       const formData = new FormData();
-      formData.append('file', uf.file);
+      formData.append('file', fileToUpload);
 
       const res = await fetch('/api/upload', {
         method: 'POST',

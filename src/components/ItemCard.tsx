@@ -1,8 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
-import { CheckCircle, Clock, FileText, AlertTriangle, RefreshCw, DollarSign } from 'lucide-react';
+import { RefreshCw, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -15,44 +14,16 @@ interface Item {
   valuation?: string;
 }
 
-const StatusBadge = ({ status }: { status: string }) => {
-  switch (status) {
-    case 'complete':
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tighter uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 backdrop-blur-md">
-          <CheckCircle size={8} strokeWidth={3} /> Ready
-        </span>
-      );
-    case 'error':
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tighter uppercase bg-red-500/10 text-red-400 border border-red-500/20">
-          <AlertTriangle size={8} strokeWidth={3} /> Err
-        </span>
-      );
-    default:
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tighter uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse">
-          <Clock size={8} strokeWidth={3} /> Sync
-        </span>
-      );
-  }
-};
-
 export function ItemCard({ item }: { item: Item }) {
-  const isProvisional = item.status !== 'complete';
+  const isComplete = item.status === 'complete';
+  const isError = item.status === 'error';
+  // Has a title but not complete indicates mid-processing (e.g. AI analysis running)
+  const isMidProcess = !isComplete && !isError && item.title && item.title !== 'Unidentified Document' && item.title !== '...';
+  
+  // Status left stripe color
+  const statusStripe = isComplete ? 'bg-[var(--accent-warm)]' : isError ? 'bg-[var(--status-review)]' : 'bg-[var(--status-processing)]';
 
-  // Visual processing state: B&W → faded color → full vibrant
-  const imageFilter = (() => {
-    if (item.status === 'complete') return 'none';
-    if (item.status === 'error') return 'none';
-    // Has a title = baseline done, deep dive still running → faded color
-    if (item.title && item.title !== '...' && item.title !== 'Unidentified Document') {
-      return 'grayscale(0.35) saturate(0.65) brightness(0.9)';
-    }
-    // Still early processing (OCR/resize/waiting) → full B&W
-    return 'grayscale(1) brightness(0.7)';
-  })();
-
+  // Extract Valuation
   const displayValue = (() => {
     if (!item.valuation) return null;
     const likelyMatch = item.valuation.match(/(?:Most Likely|Likely|eBay Sale)[^$]*(\$[\d,]+(?:\.\d{2})?)/i);
@@ -63,54 +34,76 @@ export function ItemCard({ item }: { item: Item }) {
     return firstMatch ? firstMatch[0] : null;
   })();
 
-  return (
-    <Link href={`/items/${item.id}`} className="block group">
-      <motion.div 
-        whileHover={{ y: -2 }}
-        whileTap={{ scale: 0.98 }}
-        className="relative border rounded-[1.2rem] overflow-hidden transition-luxury glass border-slate-800/40 hover:border-blue-500/30 shadow-xl h-full flex flex-col"
-      >
-        <div className="aspect-[1/1] bg-slate-950 relative flex items-center justify-center overflow-hidden border-b border-slate-800/50">
-             {item.thumbnailPath ? (
-                <img
-                    src={`/api/items/${item.id}/thumbnail`}
-                    alt={item.title || "Document"}
-                    className="object-cover w-full h-full group-hover:scale-110 transition-all duration-700 opacity-90 group-hover:opacity-100"
-                    style={{ filter: imageFilter, transition: 'filter 0.8s ease' }}
-                    loading="lazy"
-                />
-             ) : (
-                <FileText className="text-slate-800 w-6 h-6" />
-             )}
-             
-             <div className="absolute top-1.5 right-1.5 z-10 scale-90 origin-top-right">
-                <StatusBadge status={item.status} />
-             </div>
+  // Image Classes
+  const imageClasses = cn(
+    "object-cover w-full h-full transition-luxury",
+    isComplete ? "processing-complete" : isMidProcess ? "processing-mid" : "processing-grayscale"
+  );
 
-             {displayValue && (
-               <div className="absolute bottom-1.5 left-1.5 z-10">
-                  <div className={cn(
-                    "px-2 py-0.5 rounded-md backdrop-blur-xl border text-[9px] font-black flex items-center gap-1 shadow-2xl tracking-tighter",
-                    isProvisional
-                      ? "bg-amber-500/10 border-amber-500/20 text-amber-300"
-                      : "bg-black/80 border-white/5 text-emerald-400"
-                  )}>
-                    <DollarSign size={8} strokeWidth={3} />
-                    {isProvisional ? "EST" : "VAL"}
-                    <span className="opacity-80">{displayValue}</span>
-                  </div>
-               </div>
-             )}
+  return (
+    <Link href={`/items/${item.id}`} className="block group w-full max-w-[320px] mx-auto">
+      <motion.div 
+        className="relative bg-[var(--surface-800)] rounded-[6px] overflow-hidden hover-lift flex flex-col min-h-[420px] satin-shadow border border-transparent hover:border-[var(--glass-01)]"
+      >
+        {/* Status Line */}
+        <div className={cn("absolute left-0 top-0 bottom-0 w-[4px] z-20 pointer-events-none transition-colors", statusStripe)} />
+
+        {/* Top Thumbnail Area */}
+        <div className="relative w-full h-[260px] bg-[var(--surface-780)] overflow-hidden shrink-0">
+          {item.thumbnailPath ? (
+            <img
+              src={`/api/items/${item.id}/thumbnail`}
+              alt={item.title || "Document"}
+              className={imageClasses}
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <LayoutDashboard className="text-[var(--surface-800)] w-8 h-8" />
+            </div>
+          )}
+
+          {/* Overlays during processing */}
+          {!isComplete && !isError && (
+            <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-end p-4">
+              {/* Scan Sweep Bar */}
+              {isMidProcess && <div className="absolute inset-0 scan-sweep-bar pointer-events-none" />}
+              
+              <div className="flex bg-[var(--glass-02)] w-fit backdrop-blur-md px-2 py-1 rounded-[4px] items-center gap-2 border border-[var(--glass-01)]">
+                <RefreshCw size={12} className="text-[var(--status-processing)] animate-spin" />
+                <span className="text-[10px] font-medium text-[var(--status-processing)] uppercase tracking-widest">Processing</span>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions (Hover) */}
+          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10 duration-200">
+             <div className="bg-[var(--glass-02)] backdrop-blur-sm p-2 rounded-full border border-[var(--glass-01)] shadow-lg cursor-pointer hover:bg-[var(--surface-780)] transition-colors">
+               <span className="sr-only">Quick View</span>
+               <div className="w-4 h-4 rounded-full border-2 border-[var(--text-100)]" />
+             </div>
+          </div>
         </div>
         
-        <div className="p-3 flex-grow flex flex-col justify-end bg-slate-950/40">
-            <h3 className="text-[11px] font-black truncate text-slate-200 mb-0.5 group-hover:text-blue-400 transition-colors tracking-tight" title={item.title}>
-                {item.title || "..."}
-            </h3>
-            <div className="flex items-center justify-between text-[8px] font-bold text-slate-600 uppercase tracking-tighter font-mono">
-                {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-                <div className="w-1 h-1 rounded-full bg-slate-800" />
-            </div>
+        {/* Footer Bar */}
+        <div className="p-[16px] pl-[20px] flex-grow flex flex-col justify-between">
+           <div>
+              <h2 className="text-[14px] font-semibold text-[var(--text-100)] leading-tight line-clamp-2">
+                  {item.title || "Unidentified Item..."}
+              </h2>
+           </div>
+           
+           <div className="mt-4">
+              {displayValue ? (
+                <div className="text-[18px] font-bold text-[var(--accent-warm)] font-serif tracking-tight">
+                    {displayValue}
+                </div>
+              ) : (
+                <div className="text-[14px] text-[var(--text-300)] italic">
+                    {isError ? "Error valuing" : "Analyzing..."}
+                </div>
+              )}
+           </div>
         </div>
       </motion.div>
     </Link>

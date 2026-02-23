@@ -6,6 +6,7 @@ import { UploadCloud, Loader2, Sparkles, ShieldCheck, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import imageCompression from 'browser-image-compression';
 
 export function UploadDropzone({ onUploadComplete }: { onUploadComplete?: () => void }) {
   const [isUploading, setIsUploading] = useState(false);
@@ -20,15 +21,38 @@ export function UploadDropzone({ onUploadComplete }: { onUploadComplete?: () => 
     let successCount = 0;
     let failCount = 0;
 
-    for (const file of acceptedFiles) {
-      if (file.size > 25 * 1024 * 1024) {
-        toast.error(`${file.name}: Exceeds 25MB limit`);
+    const compressionOptions = {
+      maxSizeMB: 5,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      preserveExif: true,
+      alwaysKeepResolution: false,
+    };
+
+    for (const originalFile of acceptedFiles) {
+      if (originalFile.size > 25 * 1024 * 1024) {
+        toast.error(`${originalFile.name}: Exceeds 25MB limit`);
         failCount++;
         continue;
       }
 
+      let fileToUpload = originalFile;
+      
+      try {
+        if (originalFile.type.startsWith('image/')) {
+           const compressedBlob = await imageCompression(originalFile, compressionOptions);
+           fileToUpload = new File([compressedBlob], originalFile.name, {
+             type: compressedBlob.type,
+             lastModified: originalFile.lastModified,
+           });
+           console.log(`[Compression] ${originalFile.name}: ${(originalFile.size / 1024 / 1024).toFixed(2)}MB -> ${(fileToUpload.size / 1024 / 1024).toFixed(2)}MB`);
+        }
+      } catch (error) {
+        console.warn(`[Compression] Failed for ${originalFile.name}, using original.`, error);
+      }
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
 
       try {
         const res = await fetch('/api/upload', {
@@ -43,14 +67,14 @@ export function UploadDropzone({ onUploadComplete }: { onUploadComplete?: () => 
 
         const data = await res.json();
         if (data.status === 'duplicate') {
-          toast.info(`${file.name}: Unit already in vault`);
+          toast.info(`${originalFile.name}: Unit already in vault`);
         } else {
           successCount++;
         }
         setProgress(Math.min(95, 5 + (90 * (successCount + failCount) / acceptedFiles.length)));
       } catch (error: any) {
         console.error(error);
-        toast.error(`${file.name}: ${error.message}`);
+        toast.error(`${originalFile.name}: ${error.message}`);
         failCount++;
       }
     }

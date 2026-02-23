@@ -4,23 +4,12 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { BulkUpload } from '@/components/BulkUpload';
 import { ItemCard } from '@/components/ItemCard';
 import { 
-  Loader2, 
   Search, 
   Archive, 
-  Plus, 
-  LayoutGrid, 
-  List,
   ArrowUpDown,
-  Calendar,
-  DollarSign,
-  Tag,
-  Sparkles,
   Filter,
-  Layers3
+  Upload
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Item {
@@ -30,15 +19,19 @@ interface Item {
     createdAt: string;
     thumbnailPath?: string;
     valuation?: string;
-    tags?: string; // JSON string
+    tags?: string;
     historicalContext?: string;
 }
 
 type SortOption = 'newest' | 'oldest' | 'title';
 
 const SkeletonCard = () => (
-  <div className="rounded-xl bg-slate-900/50 border border-slate-800 p-1 overflow-hidden aspect-square">
-    <div className="w-full h-full bg-slate-800 animate-shimmer rounded-lg" />
+  <div className="rounded-[6px] bg-[var(--surface-800)] border border-[var(--glass-01)] flex flex-col min-h-[420px]">
+    <div className="w-full h-[260px] bg-[var(--surface-780)] animate-shimmer" />
+    <div className="flex-1 p-[16px]">
+        <div className="w-2/3 h-4 rounded bg-[var(--surface-780)] animate-shimmer mb-2" />
+        <div className="w-1/2 h-4 rounded bg-[var(--surface-780)] animate-shimmer" />
+    </div>
   </div>
 );
 
@@ -47,18 +40,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [showUpload, setShowUpload] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
-
-  const formatValue = (valuation?: string) => {
-    if (!valuation) return null;
-    const likelyMatch = valuation.match(/(?:Most Likely|Likely|eBay Sale)[^$]*(\$[\d,]+(?:\.\d{2})?)/i);
-    if (likelyMatch) return likelyMatch[1];
-    const rangeMatch = valuation.match(/(\$[\d,]+(?:\.\d{2})?)\s*[-–]\s*(\$[\d,]+(?:\.\d{2})?)/);
-    if (rangeMatch) return `${rangeMatch[1]}–${rangeMatch[2]}`;
-    const firstMatch = valuation.match(/\$[\d,]+(?:\.\d{2})?/);
-    return firstMatch ? firstMatch[0] : null;
-  };
 
   const fetchItems = useCallback(async () => {
     try {
@@ -93,199 +75,101 @@ export default function Dashboard() {
   }, [items, sortBy]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 p-3 md:p-6 selection:bg-blue-500/30">
-      {/* Ambient background glow */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-[-5%] right-[-5%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[100px]" />
-      </div>
+    <main className="min-h-screen bg-[var(--bg-900)] text-[var(--text-100)] pb-[64px]">
+      
+      {/* A2 — Top bar */}
+      <header className="w-full h-[64px] flex items-center justify-between px-[16px] sticky top-0 z-40 bg-[var(--bg-900)]/90 backdrop-blur-xl border-b border-[var(--glass-01)] mb-[40px]">
+          
+          {/* Left: Search field */}
+          <div className="relative w-full max-w-[420px]">
+            <Search className="absolute left-[16px] top-1/2 -translate-y-1/2 text-[var(--text-200)] w-4 h-4" />
+            <input 
+                type="text" 
+                placeholder="Search sequence..." 
+                className="w-full pl-[40px] pr-[16px] h-[44px] rounded-[8px] bg-[var(--surface-800)] text-[var(--text-100)] placeholder-[var(--text-300)] focus:ring-1 focus:ring-[var(--accent-warm)] border border-[var(--glass-01)] hover:border-[var(--glass-02)] outline-none transition-luxury text-[14px]"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
 
-      <div className="max-w-7xl mx-auto space-y-6 fade-in">
-        
-        {/* Compact Header */}
-        <header className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Layers3 size={18} className="text-white" strokeWidth={2.5} />
-              </div>
-              <div className="hidden sm:block">
-                  <h1 className="text-lg font-black text-white tracking-tight leading-none mb-0.5">Vault</h1>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1">
-                    <Sparkles size={10} className="text-blue-500" /> Pro 2.0 Ingest
-                  </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowUpload(!showUpload)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-xl border font-bold text-xs transition-luxury active:scale-95 shadow-sm",
-                    showUpload ? "bg-slate-800 text-slate-300 border-slate-700" : "bg-blue-600 text-white border-blue-500 hover:bg-blue-500"
-                  )}
-                >
-                  <Plus size={16} className={cn("transition-transform duration-500", showUpload && "rotate-45")} />
-                  <span className="hidden xs:inline">{showUpload ? "Cancel" : "Add Papers"}</span>
-                </button>
-            </div>
-        </header>
-        
-        {/* Compact Controls */}
-        <div className="flex flex-col md:flex-row gap-2">
-            <div className="relative group flex-grow">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 w-3.5 h-3.5" />
-                <input 
-                    type="text" 
-                    placeholder="Search sequence..." 
-                    className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-900 bg-slate-900/60 text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 outline-none transition-luxury text-xs backdrop-blur-md"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                />
-            </div>
-
-            <div className="flex items-center gap-2">
+          {/* Right: Sort + Filter + Upload */}
+          <div className="flex items-center gap-3">
+             <div className="relative">
                 <select 
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="appearance-none bg-slate-900/50 backdrop-blur-md border border-slate-900 text-slate-400 text-[10px] font-bold uppercase tracking-wider rounded-xl px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer transition-luxury"
+                    className="appearance-none bg-[var(--surface-800)] h-[44px] border border-[var(--glass-01)] text-[var(--text-100)] text-[14px] font-medium rounded-[8px] px-4 pr-[32px] focus:outline-none focus:ring-1 focus:ring-[var(--accent-warm)] cursor-pointer hover:bg-[var(--surface-780)] transition-luxury"
                 >
                     <option value="newest">Recent</option>
                     <option value="oldest">Legacy</option>
                     <option value="title">A-Z</option>
                 </select>
+                <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-300)] w-[14px] h-[14px] pointer-events-none" />
+             </div>
 
-                <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl">
-                    <button 
-                        onClick={() => setViewMode('grid')}
-                        className={cn(
-                            "p-1.5 rounded-lg transition-luxury",
-                            viewMode === 'grid' ? "bg-slate-800 text-blue-400 shadow-sm" : "text-slate-600 hover:text-slate-400"
-                        )}
-                    >
-                        <LayoutGrid size={14} />
-                    </button>
-                    <button 
-                        onClick={() => setViewMode('list')}
-                        className={cn(
-                            "p-1.5 rounded-lg transition-luxury",
-                            viewMode === 'list' ? "bg-slate-800 text-blue-400 shadow-sm" : "text-slate-600 hover:text-slate-400"
-                        )}
-                    >
-                        <List size={14} />
-                    </button>
-                </div>
-            </div>
-        </div>
+             <button className="w-[44px] h-[44px] flex items-center justify-center rounded-[8px] border border-[var(--glass-01)] bg-[var(--surface-800)] text-[var(--text-100)] hover:bg-[var(--surface-780)] transition-luxury">
+                <Filter size={16} />
+             </button>
 
-        <AnimatePresence>
-          {showUpload && (
-            <motion.section 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
-            >
-                <div className="pb-4">
-                  <BulkUpload />
-                </div>
-            </motion.section>
+             <button 
+               onClick={() => setShowUpload(!showUpload)}
+               className="h-[48px] px-6 rounded-[8px] bg-transparent border border-[var(--accent-warm)] text-[var(--accent-warm)] text-[14px] font-semibold flex items-center justify-center gap-2 hover:bg-[var(--glass-01)] transition-luxury hover-lift ml-2"
+             >
+                <Upload size={16} />
+                <span>Bulk Upload</span>
+             </button>
+          </div>
+      </header>
+        
+      {/* Upload Drawer / Space */}
+      <AnimatePresence>
+        {showUpload && (
+          <motion.section 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden px-[16px] mb-[40px] max-w-[988px]"
+          >
+              <div>
+                <BulkUpload />
+              </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      {/* A3 — Grid Container */}
+      <section className="px-[16px] w-full max-w-[1020px]">
+          {loading ? (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[24px]">
+               {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
+             </div>
+          ) : items.length === 0 ? (
+             <div className="flex flex-col items-center justify-center py-32 text-center rounded-[12px] border border-dashed border-[var(--glass-02)] bg-[var(--surface-800)]/30">
+                 <Archive className="w-8 h-8 text-[var(--text-300)] mb-4 opacity-50" />
+                 <h3 className="text-[14px] text-[var(--text-200)] mb-6 font-medium">Archive Empty</h3>
+                 <button
+                   onClick={() => setShowUpload(true)}
+                   className="px-6 py-2 bg-[var(--accent-warm)] text-[#0A0A0B] text-[14px] font-bold rounded-[8px] hover:scale-105 transition-transform"
+                 >
+                   Initialize Uploads
+                 </button>
+             </div>
+          ) : (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[24px] place-items-center sm:place-items-stretch">
+                {sortedItems.map((item, idx) => (
+                  <motion.div 
+                    key={item.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(idx * 0.05, 0.5) }}
+                  >
+                    <ItemCard item={item} />
+                  </motion.div>
+                ))}
+             </div>
           )}
-        </AnimatePresence>
+      </section>
 
-        {/* Dense Grid/List */}
-        <section className="space-y-4">
-            <h2 className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] flex items-center gap-2">
-              Sequence Log <span className="text-blue-500/50">[{items.length}]</span>
-            </h2>
-            
-            {loading ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
-                  {[...Array(20)].map((_, i) => <SkeletonCard key={i} />)}
-                </div>
-            ) : items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center rounded-[2rem] border border-slate-900 bg-slate-900/10">
-                    <Archive className="w-8 h-8 text-slate-800 mb-4" />
-                    <h3 className="text-sm font-black text-slate-400 mb-6">Archive Empty</h3>
-                    <button
-                      onClick={() => setShowUpload(true)}
-                      className="px-6 py-2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 transition-luxury active:scale-95"
-                    >
-                      Init Sequence
-                    </button>
-                </div>
-            ) : viewMode === 'grid' ? (
-                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
-                    {sortedItems.map((item, idx) => (
-                      <motion.div 
-                        key={item.id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: idx * 0.01 }}
-                      >
-                        <ItemCard item={item} />
-                      </motion.div>
-                    ))}
-                </div>
-            ) : (
-                /* Tiny List View */
-                <div className="space-y-1">
-                    {sortedItems.map((item, idx) => {
-                        return (
-                            <motion.div
-                              key={item.id}
-                              initial={{ opacity: 0, x: -5 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: idx * 0.01 }}
-                            >
-                              <Link 
-                                href={`/items/${item.id}`}
-                                className="group flex items-center gap-3 p-1.5 pr-4 rounded-xl glass border border-transparent hover:border-slate-800 hover:bg-slate-900/40 transition-luxury"
-                              >
-                                  <div className="w-8 h-8 flex-shrink-0 bg-slate-950 rounded-lg overflow-hidden border border-slate-900">
-                                      {item.thumbnailPath ? (
-                                          <img src={`/api/items/${item.id}/thumbnail`} className="w-full h-full object-cover group-hover:scale-110 transition-luxury" alt="" />
-                                      ) : (
-                                          <div className="w-full h-full flex items-center justify-center">
-                                              <Archive size={12} className="text-slate-800" />
-                                          </div>
-                                      )}
-                                  </div>
-                                  
-                                  <div className="flex-grow min-w-0 flex items-center gap-4">
-                                      <h3 className="text-[11px] font-bold text-slate-200 group-hover:text-blue-400 transition-colors truncate flex-grow">
-                                        {item.title || "Processing..."}
-                                      </h3>
-                                      
-                                      <div className="hidden md:flex items-center gap-4 flex-shrink-0">
-                                          {formatValue(item.valuation) && (
-                                              <div className={cn(
-                                                "flex items-center gap-1 text-[10px] font-black tracking-tighter w-24",
-                                                item.status === 'complete' ? "text-emerald-500" : "text-amber-400"
-                                              )}>
-                                                  <DollarSign size={10} />
-                                                  {item.status === 'complete' ? "VAL" : "EST"} {formatValue(item.valuation)}
-                                              </div>
-                                          )}
-                                          
-                                          <div className="w-24 text-[9px] font-bold text-slate-600 uppercase tracking-tighter">
-                                              {formatDistanceToNow(new Date(item.createdAt), { addSuffix: false })}
-                                          </div>
-                                      </div>
-                                  </div>
-
-                                  <div className={cn(
-                                      "w-1.5 h-1.5 rounded-full",
-                                      item.status === 'complete' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" :
-                                      item.status === 'error' ? "bg-red-500" :
-                                      "bg-blue-500 animate-pulse"
-                                  )} />
-                              </Link>
-                            </motion.div>
-                        );
-                    })}
-                </div>
-            )}
-        </section>
-      </div>
     </main>
   );
 }

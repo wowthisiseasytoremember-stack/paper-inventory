@@ -35,10 +35,10 @@ export async function analyzeImage(
 
   console.log(`[AI-OpenAI-SDK] Analyzing image with ${modelName}`);
 
-  const response = await openai.beta.chat.completions.parse({
+  const response = await openai.chat.completions.create({
     model: modelName,
     messages: [
-      { role: 'system', content: BASELINE_SYSTEM_PROMPT },
+      { role: 'system', content: BASELINE_SYSTEM_PROMPT + '\nEnsure your response is valid JSON matching the exact schema requested.' },
       {
         role: 'user',
         content: [
@@ -54,15 +54,15 @@ export async function analyzeImage(
       }
     ],
     temperature: 0,
-    response_format: zodResponseFormat(ItemMetadataSchema, "item_metadata"),
-    max_retries: MAX_RETRIES,
+    response_format: { type: 'json_object' },
   });
 
-  if (!response.choices[0].message.parsed) {
-    throw new Error('Failed to parse structured output from OpenAI');
+  const content = response.choices[0].message.content;
+  if (!content) {
+    throw new Error('Failed to get output from OpenAI');
   }
 
-  return response.choices[0].message.parsed;
+  return JSON.parse(content) as ItemMetadata;
 }
 
 export interface DeepDiveResult {
@@ -108,7 +108,6 @@ export async function enrichDeepDiveRaw(
       }
     ],
     temperature: 0.2,
-    max_retries: MAX_RETRIES,
   });
 
   const content = response.choices[0].message.content;

@@ -4,13 +4,12 @@ import { usePathname } from 'next/navigation';
 import { 
   Layers3, 
   LayoutDashboard, 
-  PlusCircle, 
-  Settings, 
   Database, 
   History,
   Trash2,
   Sparkles,
-  Search
+  Search,
+  Upload
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -22,7 +21,7 @@ const navItems = [
   { name: 'Search', href: '/search', icon: Search },
 ];
 
-export function Sidebar() {
+export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname();
 
   const handleClearHistory = async () => {
@@ -40,21 +39,23 @@ export function Sidebar() {
   };
 
   return (
-    <div className="flex flex-col h-full w-64 bg-slate-950 border-r border-slate-900 glass backdrop-blur-3xl shrink-0">
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-2xl shadow-blue-500/20">
-            <Layers3 size={24} className="text-white" strokeWidth={2.5} />
+    <div className={cn("flex flex-col h-full bg-[var(--surface-800)] text-[var(--text-100)]", className)}>
+      <div className="p-[24px] pt-[32px]">
+        {/* Logo Area */}
+        <div className="flex items-center gap-3 mb-[24px] h-[40px]">
+          <div className="w-10 h-10 rounded-xl bg-[var(--surface-780)] border border-[var(--glass-01)] flex items-center justify-center shadow-lg">
+            <Layers3 size={24} className="text-[var(--accent-warm)]" strokeWidth={2} />
           </div>
           <div>
-            <h1 className="text-xl font-black text-white tracking-tighter leading-none mb-1">Vault</h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] flex items-center gap-1">
-              <Sparkles size={10} className="text-blue-500" /> Pro 2.0
+            <h1 className="text-xl font-bold tracking-tight leading-none mb-1 font-serif">Vault</h1>
+            <p className="text-[10px] text-[var(--accent-cool)] font-medium uppercase tracking-[0.2em] flex items-center gap-1">
+              <Sparkles size={10} className="text-[var(--accent-warm)]" /> Pro 2.0
             </p>
           </div>
         </div>
 
-        <nav className="space-y-1">
+        {/* Collections List placeholder / Nav */}
+        <nav className="space-y-[12px]">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -62,46 +63,35 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-luxury group",
+                  "flex items-center gap-3 h-[52px] px-4 rounded-[6px] text-[14px] font-medium transition-all group",
                   isActive 
-                    ? "bg-blue-600/10 text-blue-400 border border-blue-500/10 shadow-lg shadow-blue-500/5" 
-                    : "text-slate-500 hover:text-slate-200 hover:bg-white/5 border border-transparent"
+                    ? "bg-[var(--surface-780)] text-[var(--text-100)] border-l-[3px] border-[var(--accent-warm)] shadow-sm" 
+                    : "text-[var(--text-200)] hover:text-[var(--text-100)] hover:bg-[var(--glass-01)] border-l-[3px] border-transparent"
                 )}
               >
-                <item.icon size={18} className={cn("transition-transform group-hover:scale-110", isActive && "text-blue-400")} />
+                <item.icon size={18} className={cn("transition-transform group-hover:scale-105", isActive ? "text-[var(--accent-warm)]" : "text-[var(--accent-cool)]")} />
                 {item.name}
               </Link>
             );
           })}
         </nav>
+
+        {/* Upload CTA */}
+        <button className="mt-[24px] w-full h-[48px] rounded-[8px] bg-transparent border border-[var(--accent-warm)] text-[var(--accent-warm)] text-[14px] font-semibold flex items-center justify-center gap-2 hover:bg-[var(--glass-01)] transition-luxury hover-lift">
+          <Upload size={18} />
+          <span>Upload Items</span>
+        </button>
       </div>
 
-      <div className="mt-auto p-6 space-y-4">
-        <div className="pt-4 border-t border-slate-900">
+      <div className="mt-auto p-[24px] pb-[32px] space-y-4">
+        <div className="pt-4 border-t border-[var(--surface-780)]">
           <button
             onClick={handleClearHistory}
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-2xl text-sm font-bold text-red-500/70 hover:text-red-400 hover:bg-red-500/5 transition-luxury group border border-transparent"
+            className="flex items-center gap-3 h-[48px] px-4 w-full rounded-[6px] text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-luxury group border border-transparent"
           >
-            <Trash2 size={18} className="group-hover:rotate-12 transition-transform" />
+            <Trash2 size={18} className="text-red-400/70 group-hover:rotate-12 transition-transform" />
             Clear History
           </button>
-          <Link
-            href="/settings"
-            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-luxury group border border-transparent"
-          >
-            <Settings size={18} className="group-hover:rotate-45 transition-transform" />
-            Settings
-          </Link>
-        </div>
-
-        <div className="bg-slate-900/50 rounded-2xl p-4 border border-slate-800">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Archive Size</span>
-            <span className="text-[9px] font-black text-blue-500 uppercase">Premium</span>
-          </div>
-          <div className="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800">
-            <div className="h-full bg-blue-600 w-1/3 rounded-full" />
-          </div>
         </div>
       </div>
     </div>

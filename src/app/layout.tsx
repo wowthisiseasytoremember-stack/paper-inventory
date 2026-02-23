@@ -1,21 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Playfair_Display, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { LayoutWrapper } from "@/components/LayoutWrapper";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+});
+
+const robotoMono = Roboto_Mono({
+  variable: "--font-roboto-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "PaperTrail Lite — Ephemera Archiving",
-  description: "AI-powered document scanning, OCR, and archival intelligence for paper ephemera.",
+  title: "Vault — Ephemera Archiving",
+  description: "Premium AI-powered documentation and valuation.",
 };
 
 export const viewport: Viewport = {
@@ -23,7 +28,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0f172a",
+  themeColor: "#0A0A0B",
 };
 
 export default function RootLayout({
@@ -34,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${playfairDisplay.variable} ${robotoMono.variable} antialiased`}
         suppressHydrationWarning
       >
         <LayoutWrapper>

@@ -11,7 +11,7 @@ import { ItemMetadata, ItemMetadataSchema } from './schema';
 import { BASELINE_SYSTEM_PROMPT, DEEP_DIVE_SYSTEM_PROMPT, DEEP_DIVE_PROMPT_COMICS_90S, DEEP_DIVE_PROMPT_DRG } from './prompts';
 import { categorizeForDeepDive, DeepDiveCategory } from './gemini-triage';
 import { getGroundedResearch, GroundedResearch } from './gemini-grounding';
-import { DeepDiveResult } from './openai-manual';
+import { DeepDiveResult } from './openai-sdk';
 
 export interface AnalysisOptions {
   baselineModel?: string;

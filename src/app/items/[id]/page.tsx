@@ -20,7 +20,15 @@ import {
   DollarSign,
   Sparkles,
   Search,
-  Maximize2
+  Maximize2,
+  HelpCircle,
+  MapPin,
+  Building2,
+  User as UserIcon,
+  Layers,
+  Plus,
+  FolderPlus,
+  X
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Toaster } from '@/components/ui/toaster';
@@ -28,11 +36,19 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import { BespokeMagnifier } from '@/components/BespokeMagnifier';
 
 interface Entity {
   name: string;
   type: string;
   confidence: number;
+  historicalNote?: string;
+}
+
+interface Collection {
+  id: string;
+  name: string;
+  description?: string;
 }
 
 interface Item {
@@ -46,6 +62,7 @@ interface Item {
   historicalContext?: string;
   collectorSignificance?: string;
   valuation?: string;
+  verification_questions?: string[];
   originalImagePath?: string;
   resizedImagePath?: string;
   thumbnailPath?: string;
@@ -55,16 +72,20 @@ interface Item {
   errorMessage?: string;
   aiDurationMs?: number;
   totalProcessingMs?: number;
+  collection_id?: string;
 }
 
 export default function ItemDetail() {
   const { id } = useParams();
   const router = useRouter();
   const [item, setItem] = useState<Item | null>(null);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
 
   const fetchItem = async () => {
     try {
@@ -80,8 +101,21 @@ export default function ItemDetail() {
     }
   };
 
+  const fetchCollections = async () => {
+    try {
+      const res = await fetch('/api/collections');
+      if (res.ok) {
+        const data = await res.json();
+        setCollections(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch collections", err);
+    }
+  };
+
   useEffect(() => {
     fetchItem();
+    fetchCollections();
     const interval = setInterval(() => {
       if (item && !['complete', 'error'].includes(item.status)) {
         fetchItem();
@@ -114,9 +148,8 @@ export default function ItemDetail() {
   const handleDeepDive = async () => {
     if (!item) return;
     
-    // We use a custom toast ID so we can update it in-place since this takes ~20s
     const toastId = toast.loading('Initiating Deep Dive...', {
-      description: 'Consulting high-end archival reasoning engine. This may take 15-30 seconds.'
+      description: 'Consulting Senior Auction House Specialist. Analyzing niche market data...'
     });
 
     try {
@@ -127,14 +160,49 @@ export default function ItemDetail() {
       
       toast.success('Deep Dive Complete', { 
         id: toastId,
-        description: 'New historical context and premium valuation unlocked.' 
+        description: 'Premium valuation and museum-grade narrative unlocked.' 
       });
-      fetchItem(); // Refresh UI with new massive Markdown blocks
+      fetchItem();
     } catch (err: any) {
       toast.error('Neural Enrichment Failed', { 
         id: toastId,
         description: err.message 
       });
+    }
+  };
+
+  const handleAssignCollection = async (collectionId: string | null) => {
+    try {
+      const res = await fetch(`/api/items/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collection_id: collectionId })
+      });
+      if (!res.ok) throw new Error('Assignment failed');
+      toast.success(collectionId ? 'Added to collection' : 'Removed from collection');
+      fetchItem();
+      setShowCollectionModal(false);
+    } catch (err) {
+      toast.error('Failed to update collection');
+    }
+  };
+
+  const handleCreateCollection = async () => {
+    if (!newCollectionName.trim()) return;
+    try {
+      const res = await fetch('/api/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCollectionName })
+      });
+      if (!res.ok) throw new Error('Creation failed');
+      const data = await res.json();
+      toast.success('New collection established');
+      setNewCollectionName('');
+      fetchCollections();
+      handleAssignCollection(data.id);
+    } catch (err) {
+      toast.error('Failed to create collection');
     }
   };
 
@@ -175,380 +243,446 @@ export default function ItemDetail() {
   const isComplete = item.status === 'complete';
   const isError = item.status === 'error';
   const isProcessing = !isComplete && !isError;
+  const currentCollection = collections.find(c => c.id === item.collection_id);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-32 overflow-x-hidden">
-      {/* Dynamic Hero Header */}
-      <div className="h-64 md:h-80 w-full relative overflow-hidden">
-        {/* Background Layer (Blurred Original) */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={`/api/items/${item.id}/image`} 
-            alt="" 
-            className="w-full h-full object-cover blur-2xl opacity-20 scale-110"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-slate-950/60 to-slate-950" />
+    <main className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-32 overflow-x-hidden selection:bg-blue-500/30">
+      {/* Dynamic Hero Layout */}
+      <div className="relative pt-12">
+        {/* Background Ambience */}
+        <div className="absolute top-0 inset-x-0 h-[600px] overflow-hidden pointer-events-none opacity-20">
+             <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/30 rounded-full blur-[150px] animate-pulse" />
+             <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[60%] bg-indigo-600/20 rounded-full blur-[120px]" />
         </div>
-        
-        {/* Animated Orbs */}
-        <motion.div 
-          animate={{ scale: [1, 1.2, 1], x: [0, 50, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-          className="absolute top-10 left-10 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px] z-0" 
-        />
-        <motion.div 
-          animate={{ scale: [1, 1.3, 1], y: [0, 30, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-0 right-20 w-[30rem] h-[30rem] bg-indigo-600/10 rounded-full blur-[120px] z-0" 
-        />
 
-        <div className="max-w-6xl mx-auto px-6 h-full flex flex-col justify-end pb-10 relative z-10">
-          <button 
-            onClick={() => router.push('/')}
-            className="absolute top-8 left-6 group flex items-center gap-3"
-          >
-            <div className="p-3 rounded-2xl glass hover:bg-white/10 transition-luxury shadow-2xl border border-white/5">
-              <ArrowLeft size={18} className="text-white group-hover:-translate-x-1 transition-transform" />
-            </div>
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-white/50 group-hover:text-white transition-colors">Return to Vault</span>
-          </button>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
-          >
-            <div className="flex flex-wrap items-center gap-3">
-              <span className={cn(
-                "px-4 py-1 rounded-full text-[10px] font-black tracking-[0.2em] uppercase backdrop-blur-3xl border shadow-2xl",
-                isComplete ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-emerald-500/5" :
-                isError ? "bg-red-500/10 text-red-400 border-red-500/30 shadow-red-500/5" :
-                "bg-blue-500/10 text-blue-400 border-blue-500/30 animate-pulse shadow-blue-500/5"
-              )}>
-                {item.status.replace(/_/g, ' ')}
-              </span>
-              
-              {item.confidence != null && (
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full text-[10px] font-black tracking-widest text-white shadow-2xl">
-                  <ShieldCheck size={14} className="text-cyan-400" />
-                  {(item.confidence * 100).toFixed(0)}% <span className="text-white/30">CONFIDENCE</span>
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-12 relative z-10">
+          {/* Top Navigation & Status */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+            <div className="flex items-center gap-6">
+              <button 
+                onClick={() => router.push('/')}
+                className="group flex items-center gap-3 transition-all"
+              >
+                <div className="p-3 rounded-2xl glass hover:bg-white/10 transition-luxury shadow-2xl border border-white/5 group-hover:-translate-x-1">
+                  <ArrowLeft size={18} className="text-white" />
                 </div>
-              )}
-            </div>
-
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-tighter leading-[0.9]">
-              {item.title || (isProcessing ? "Synthesizing Archive..." : "Unidentified Unit")}
-            </h1>
-          </motion.div>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-6 -mt-4 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
-          
-          {/* Main Visuals & AI Core (8 cols) */}
-          <div className="lg:col-span-8 space-y-8">
-            
-            {/* High-Resolution Archive View */}
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="group glass rounded-[3rem] overflow-hidden shadow-3xl border border-white/5 p-3 md:p-5 relative"
-            >
-               <div className="aspect-auto min-h-[400px] flex items-center justify-center bg-slate-950/50 rounded-[2.2rem] border border-slate-900 overflow-hidden relative">
-                  {!imageLoaded && (
-                     <div className="absolute inset-0 flex items-center justify-center bg-slate-950">
-                        <div className="w-12 h-12 rounded-full border-4 border-slate-800 border-t-blue-500 animate-spin" />
-                     </div>
-                  )}
-                  <img 
-                    src={`/api/items/${item.id}/image`} 
-                    alt={item.title || "Archive Preview"} 
-                    onLoad={() => setImageLoaded(true)}
-                    className={cn(
-                      "max-w-full h-auto shadow-4xl transition-all duration-1000",
-                      imageLoaded ? "scale-100 opacity-100" : "scale-110 opacity-0",
-                      isProcessing ? 'grayscale blur-sm' : 'grayscale-0 blur-none'
-                    )}
-                  />
-                  
-                  {/* View Controls Overlay */}
-                  <div className="absolute bottom-6 right-6 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-luxury translate-y-4 group-hover:translate-y-0">
-                    <button 
-                      onClick={() => window.open(`/api/items/${item.id}/image`, '_blank')}
-                      className="p-4 bg-black/60 backdrop-blur-2xl text-white rounded-2xl hover:bg-black/80 border border-white/10 shadow-2xl group/btn"
-                    >
-                      <Maximize2 size={20} className="group-hover/btn:scale-110 transition-transform" />
-                    </button>
-                  </div>
-
-                  {/* Processing HUD Overlay */}
-                  {isProcessing && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/40 backdrop-blur-md">
-                      <div className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white font-black text-sm rounded-full shadow-2xl animate-pulse">
-                        <RefreshCw size={18} className="animate-spin" />
-                        AI CORE PROCESSING
-                      </div>
-                      <p className="text-xs text-white/50 font-bold uppercase tracking-[0.2em]">Neural extraction in progress</p>
-                    </div>
-                  )}
-               </div>
-            </motion.div>
-
-            {/* Archival Research Container */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Historical Synthesis */}
-                <motion.div 
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="glass rounded-[2.5rem] p-8 border border-white/5 space-y-4 shadow-xl"
-                >
-                  <div className="flex items-center gap-3 text-blue-400 pb-2 border-b border-white/5">
-                    <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                      <History size={20} />
-                    </div>
-                    <h3 className="text-sm font-black uppercase tracking-[0.1em]">Historical Synthesis</h3>
-                  </div>
-                  <div className="text-slate-300 text-sm leading-relaxed font-medium prose prose-invert prose-blue max-w-none prose-p:mb-4 prose-li:mb-1 prose-ul:my-4">
-                    {item.historicalContext ? (
-                      <ReactMarkdown>{item.historicalContext}</ReactMarkdown>
-                    ) : (
-                      <p>{isProcessing ? "Reconstructing era-appropriate context..." : "Context synthesis unavailable."}</p>
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* Collector Significance */}
-                <motion.div 
-                  initial={{ x: 20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="glass rounded-[2.5rem] p-8 border border-white/5 space-y-4 shadow-xl"
-                >
-                  <div className="flex items-center gap-3 text-indigo-400 pb-2 border-b border-white/5">
-                    <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                      <Sparkles size={20} />
-                    </div>
-                    <h3 className="text-sm font-black uppercase tracking-[0.1em]">Archival Value</h3>
-                  </div>
-                  <div className="text-slate-300 text-sm leading-relaxed font-medium prose prose-invert prose-indigo max-w-none prose-p:mb-4 prose-li:mb-1 prose-ul:my-4">
-                    {item.collectorSignificance ? (
-                      <ReactMarkdown>{item.collectorSignificance}</ReactMarkdown>
-                    ) : (
-                      <p>{isProcessing ? "Evaluating rarity and uniqueness factors..." : "Significance patterns not detected."}</p>
-                    )}
-                  </div>
-                </motion.div>
-            </div>
-
-            {/* Deep Transcription Card */}
-            <motion.div 
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               transition={{ delay: 0.5 }}
-               className="glass rounded-[3rem] p-10 border border-white/5 space-y-6"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 text-slate-300">
-                  <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                    <FileText size={20} />
-                  </div>
-                  <h3 className="text-sm font-black uppercase tracking-[0.1em]">Digital Reconstruction (OCR)</h3>
+              </button>
+              <div className="space-y-1">
+                <div className="flex items-center gap-3">
+                  <span className={cn(
+                    "px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border shadow-2xl transition-all duration-500",
+                    isComplete ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
+                    isError ? "bg-red-500/10 text-red-400 border-red-500/30" :
+                    "bg-blue-500/10 text-blue-400 border-blue-500/30 animate-pulse"
+                  )}>
+                    {item.status.replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                    ID: {item.id.split('-')[0].toUpperCase()}
+                  </span>
                 </div>
-                {item.cleanedTranscription && (
-                   <button 
-                    onClick={() => {
-                       navigator.clipboard.writeText(item.cleanedTranscription || '');
-                       toast.success('System: Text copied to memory');
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black text-white/50 hover:text-white transition-luxury border border-white/5"
-                   >
-                     <Copy size={12} /> COPY DATA
-                   </button>
-                )}
+                <h1 className="text-xl md:text-2xl font-bold text-slate-300 truncate max-w-xl">
+                    {item.title || "Unidentified Record"}
+                </h1>
               </div>
-              
-              <div className="relative group/text">
-                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-[2rem] blur-xl opacity-0 group-hover/text:opacity-100 transition-luxury" />
-                <div className="relative bg-slate-950/80 rounded-[2rem] p-8 font-mono text-[13px] md:text-sm leading-loose border border-white/5 text-slate-400 max-h-[40rem] overflow-y-auto custom-scrollbar whitespace-pre-wrap">
-                   {item.cleanedTranscription || (isProcessing ? "Initiating deep visual scan and verbatim transcription..." : "Deep scan produced no text results.")}
-                </div>
-              </div>
-            </motion.div>
+            </div>
+
+            <div className="flex items-center gap-4">
+               {isComplete && !item.valuation && (
+                 <button 
+                    onClick={handleDeepDive}
+                    className="flex items-center gap-3 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-black rounded-2xl transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(37,99,235,0.4)] active:scale-95"
+                 >
+                   <Sparkles size={16} />
+                   INITIALIZE DEEP DIVE
+                 </button>
+               )}
+            </div>
           </div>
 
-          {/* Intelligence Sidebar (4 cols) */}
-          <div className="lg:col-span-4 space-y-6">
-            
-            {/* Primary Action / Valuation Card */}
-            <motion.div 
-              initial={{ x: 20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="glass rounded-[2.5rem] overflow-hidden border border-white/10 shadow-3xl bg-gradient-to-br from-indigo-950/30 to-slate-950/50"
-            >
-                <div className="p-8 space-y-6">
-                   <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Market Intelligence</h3>
-                      <DollarSign size={16} className="text-emerald-500" />
-                   </div>
-                   
-                   <div className="space-y-1">
-                      <p className="text-[10px] font-black text-emerald-500/50 uppercase tracking-[0.2em] mb-1">Estimated Value</p>
-                      <div className="text-3xl font-black text-emerald-400 tracking-tighter">
-                        {item.valuation || (isProcessing ? "Evaluating..." : "TBD")}
+          {/* VALUATION DASHBOARD (High Visibility) */}
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="mb-12 relative group"
+          >
+             <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-[3rem] blur opacity-10 group-hover:opacity-20 transition duration-1000" />
+             <div className="relative glass rounded-[3rem] p-10 md:p-12 border border-white/10 shadow-3xl bg-slate-900/40 backdrop-blur-3xl overflow-hidden">
+                <div className="absolute right-0 top-0 opacity-5 pointer-events-none">
+                   <DollarSign size={300} strokeWidth={0.5} />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-center gap-12">
+                   <div className="space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                           <div className="w-10 h-[1px] bg-emerald-500/50" />
+                           <p className="text-[11px] font-black text-emerald-500 uppercase tracking-[0.4em]">Expert Market Appraisal</p>
+                        </div>
+                        <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-white tracking-tighter tabular-nums leading-none">
+                           {item.valuation?.match(/\$\d+(\.\d{2})?/g)?.[item.valuation?.match(/\$\d+(\.\d{2})?/g)!.length - 1] || item.valuation || "– –"}
+                        </h2>
+                      </div>
+                      <div className="flex flex-wrap gap-6 pt-4">
+                         <div className="space-y-1">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Market Status</p>
+                            <p className="text-sm font-bold text-white flex items-center gap-2">
+                               <Check className="text-emerald-500 w-4 h-4" /> HIGH DEMAND
+                            </p>
+                         </div>
+                         <div className="w-[1px] h-10 bg-white/10" />
+                         <div className="space-y-1">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Confidence Score</p>
+                            <p className="text-sm font-bold text-white uppercase flex items-center gap-2">
+                               <ShieldCheck className="text-blue-400 w-4 h-4" /> {(item.confidence || 0.85 * 100).toFixed(0)}% ANALYTIC
+                            </p>
+                         </div>
                       </div>
                    </div>
 
-                   <button 
-                      onClick={handleDeepDive}
-                      disabled={isProcessing}
-                      className="w-full relative group/deep flex items-center justify-between py-4 px-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-black rounded-2xl transition-all duration-300 shadow-xl shadow-purple-900/40 hover:shadow-purple-700/60 disabled:opacity-50 overflow-hidden"
-                   >
-                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/deep:translate-y-0 transition-transform duration-300 ease-out" />
-                     <span className="relative z-10">DEEP DIVE ANALYSIS</span>
-                     <Sparkles size={18} className="relative z-10 text-purple-200 group-hover/deep:rotate-12 transition-transform" />
-                   </button>
-
-                   <div className="h-[1px] w-full bg-white/5" />
-
-                   <button 
-                      onClick={() => window.open(`/api/items/${item.id}/image`, '_blank')}
-                      className="w-full group flex items-center justify-between py-4 px-6 bg-blue-600 text-white text-sm font-black rounded-2xl hover:bg-blue-500 transition-luxury shadow-xl shadow-blue-500/20 active:scale-[0.98]"
-                   >
-                     VIEW SOURCE
-                     <ExternalLink size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                   </button>
-                </div>
-                
-                {/* Secondary Actions Row */}
-                <div className="grid grid-cols-2 border-t border-white/5">
-                   <button className="py-4 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/5 transition-luxury border-r border-white/5">Export JSON</button>
-                   <button className="py-4 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/5 transition-luxury">Print Label</button>
-                </div>
-            </motion.div>
-            
-            {/* Unit Metadata Sidebar */}
-            <motion.div 
-              initial={{ x: 20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="glass rounded-[2.5rem] p-8 border border-white/5 space-y-8"
-            >
-              <div className="space-y-6">
-                <header className="flex items-center justify-between">
-                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Archival Metadata</h3>
-                  <Target size={16} className="text-slate-700" />
-                </header>
-
-                <div className="space-y-5">
-                   <div className="group/meta">
-                      <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1.5 flex justify-between items-center px-1">
-                        Archival ID
-                        <Check size={10} className={cn("text-emerald-500 transition-opacity", copied ? "opacity-100" : "opacity-0")} />
-                      </p>
-                      <button 
-                        onClick={handleCopyId}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-slate-950 border border-slate-900 rounded-xl group-hover/meta:border-blue-500/30 transition-luxury"
-                      >
-                         <span className="font-mono text-xs text-slate-400 truncate pr-2">{item.id}</span>
-                         <Copy size={12} className="text-slate-700 group-hover/meta:text-blue-500 transition-colors" />
-                      </button>
-                   </div>
-
-                   <div className="grid grid-cols-1 gap-4">
-                      <div className="p-4 bg-slate-950 rounded-2xl border border-slate-900">
-                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                          <Calendar size={10} /> Ingestion Point
-                        </p>
-                        <p className="text-[11px] font-bold text-slate-300">
-                          {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-                        </p>
+                   <div className="glass bg-white/5 rounded-3xl p-8 border border-white/10 space-y-4">
+                      <div className="flex items-center gap-2 text-slate-300">
+                         <Target size={18} className="text-indigo-400" />
+                         <span className="text-xs font-black uppercase tracking-widest">Pricing Strategy</span>
                       </div>
-
-                      {item.totalProcessingMs && (
-                        <div className="p-4 bg-slate-950 rounded-2xl border border-slate-900">
-                          <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                            <ShieldCheck size={10} /> Processing Time
-                          </p>
-                          <p className="text-[11px] font-bold text-slate-300">
-                            {(item.totalProcessingMs / 1000).toFixed(1)}s ARCHIVAL CYCLE
-                          </p>
+                      <div className="text-slate-400 text-sm font-medium leading-relaxed prose prose-invert prose-blue prose-p:mb-0 prose-strong:text-emerald-400">
+                         <ReactMarkdown>
+                           {item.valuation?.includes('**') ? item.valuation : "Perform a Deep Dive to unlock detailed market logic and specialized pricing tiers for this asset."}
+                         </ReactMarkdown>
+                      </div>
+                      {isComplete && (
+                        <div className="flex gap-2 pt-2">
+                           {item.tags?.slice(0, 3).map(tag => (
+                             <span key={tag} className="text-[9px] font-black px-3 py-1 bg-white/5 border border-white/5 rounded-full text-slate-500 uppercase tracking-widest">
+                               #{tag}
+                             </span>
+                           ))}
                         </div>
                       )}
                    </div>
                 </div>
-              </div>
+             </div>
+          </motion.div>
 
-              {/* Entity Detection HUD */}
-              <div className="space-y-4 pt-8 border-t border-white/5">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Neural Entity Map</h4>
-                <div className="flex flex-wrap gap-2">
-                   {item.identifiedNames && item.identifiedNames.length > 0 ? (
-                      item.identifiedNames.map((entity, i) => (
-                        <span key={i} className="px-3 py-1.5 bg-blue-500/5 hover:bg-blue-500/10 text-blue-400 rounded-xl text-[10px] font-black border border-blue-500/20 transition-luxury cursor-default">
-                          {entity.name} <span className="text-[9px] opacity-40 ml-1 font-bold">{entity.type.toUpperCase()}</span>
-                        </span>
-                      ))
-                   ) : (
-                      <div className="text-slate-800 text-[10px] font-black italic tracking-widest">
-                        {isProcessing ? "NEURAL SCANNING..." : "SCAN COMPLETED: NO ENTITIES"}
-                      </div>
-                   )}
-                </div>
-              </div>
-
-              {/* Tags HUD */}
-              <div className="space-y-4 pt-4">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Archival Tags</h4>
-                <div className="flex flex-wrap gap-1.5">
-                   {item.tags && item.tags.length > 0 ? (
-                      item.tags.map((tag, i) => (
-                        <span key={i} className="px-3 py-1 bg-slate-900 text-slate-500 rounded-lg text-[10px] font-bold border border-white/5 hover:border-slate-700 transition-luxury">
-                          #{tag.replace(/\s/g, '-')}
-                        </span>
-                      ))
-                   ) : (
-                      <div className="h-6 flex items-center gap-1">
-                        <div className="w-1 h-1 rounded-full bg-slate-800" />
-                        <div className="w-1 h-1 rounded-full bg-slate-800" />
-                        <div className="w-1 h-1 rounded-full bg-slate-800" />
-                      </div>
-                   )}
-                </div>
-              </div>
-            </motion.div>
+          {/* MAIN GRID */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             
-            {/* System Status / Error Panel */}
-            <AnimatePresence>
-              {isError && (
-                <motion.div 
-                   initial={{ opacity: 0, scale: 0.9 }}
-                   animate={{ opacity: 1, scale: 1 }}
-                   className="p-8 rounded-[2.5rem] bg-red-500/5 border border-red-500/20 text-red-400 space-y-4 shadow-2xl shadow-red-500/5"
-                >
-                  <div className="flex items-center gap-3 font-black text-[10px] uppercase tracking-widest">
-                    <AlertCircle size={18} /> Cycle Fault Detected
+            {/* LEFT COLUMN: Visuals (4 cols) */}
+            <div className="lg:col-span-4 space-y-8 sticky top-12">
+               <motion.div 
+                 initial={{ scale: 0.95, opacity: 0 }}
+                 animate={{ scale: 1, opacity: 1 }}
+                 className="group relative glass rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5 p-2 bg-slate-900/50"
+               >
+                  <div className="aspect-[4/5] md:aspect-square lg:aspect-[4/5] relative rounded-[2.1rem] overflow-hidden bg-slate-950 flex items-center justify-center group-hover:shadow-[0_0_50px_rgba(59,130,246,0.1)] transition-all duration-700">
+                     {!imageLoaded && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                           <RefreshCw className="w-8 h-8 text-slate-800 animate-spin" />
+                        </div>
+                     )}
+                     
+                     <BespokeMagnifier 
+                        src={`/api/items/${item.id}/image`}
+                        alt={item.title || "Archive"}
+                        className={cn(
+                           "max-w-full h-full object-contain transition-all duration-1000 group-hover:scale-105",
+                           imageLoaded ? "opacity-100" : "opacity-0"
+                        )}
+                        onLoad={() => setImageLoaded(true)}
+                     />
+
+                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60 pointer-events-none" />
                   </div>
-                  <p className="text-xs font-bold leading-relaxed opacity-80">
-                    {item.errorMessage || "Unknown neural processing exception."}
-                  </p>
-                  <button 
-                    onClick={handleRetry}
-                    disabled={retrying}
-                    className="w-full flex items-center justify-center gap-3 py-3.5 bg-red-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-red-500 transition-luxury active:scale-95 disabled:opacity-50 shadow-xl shadow-red-500/20"
-                  >
-                    <RefreshCw size={14} className={retrying ? 'animate-spin' : ''} />
-                    {retrying ? 'Re-Calibrating...' : 'Force System Reset'}
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+               </motion.div>
+
+               {/* VERIFICATION QUESTIONS */}
+               {item.verification_questions && item.verification_questions.length > 0 && (
+                 <motion.div 
+                   initial={{ x: -20, opacity: 0 }}
+                   animate={{ x: 0, opacity: 1 }}
+                   className="p-8 rounded-[2rem] bg-amber-500/5 border border-amber-500/20 shadow-xl space-y-4"
+                 >
+                   <div className="flex items-center gap-3 text-amber-500 font-black text-xs uppercase tracking-widest">
+                     <HelpCircle size={18} /> Verification Needed
+                   </div>
+                   <p className="text-[11px] font-bold text-amber-200/60 leading-relaxed uppercase tracking-wider">
+                     The specialist requires clarification on the following to finalize valuation:
+                   </p>
+                   <ul className="space-y-3">
+                      {item.verification_questions.map((q, i) => (
+                        <li key={i} className="flex gap-3 text-sm font-semibold text-slate-300 group/q">
+                           <span className="text-amber-500/50 mt-1">•</span>
+                           <span>{q}</span>
+                        </li>
+                      ))}
+                   </ul>
+                 </motion.div>
+               )}
+
+               {/* QUICK METADATA */}
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="glass bg-white/5 rounded-2xl p-5 border border-white/5 space-y-2">
+                     <div className="flex items-center gap-2 text-slate-500">
+                        <Calendar size={12} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Archived</span>
+                     </div>
+                     <p className="text-xs font-bold text-slate-300">
+                        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                     </p>
+                  </div>
+                  <div className="glass bg-white/5 rounded-2xl p-5 border border-white/5 space-y-2">
+                     <div className="flex items-center gap-2 text-slate-500">
+                        <Clock size={12} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Runtime</span>
+                     </div>
+                     <p className="text-xs font-bold text-slate-300">
+                        {(item.totalProcessingMs || 0) / 1000}s CYCLE
+                     </p>
+                  </div>
+               </div>
+            </div>
+
+            {/* RIGHT COLUMN: Intelligence (8 cols) */}
+            <div className="lg:col-span-8 space-y-12">
+               
+               {/* HISTORICAL NARRATIVE */}
+               <motion.section 
+                 initial={{ y: 20, opacity: 0 }}
+                 animate={{ y: 0, opacity: 1 }}
+                 transition={{ delay: 0.2 }}
+                 className="space-y-8"
+               >
+                  <div className="flex items-center gap-4">
+                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+                     <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.5em]">Historical Research</h3>
+                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+                  </div>
+
+                  <div className="prose prose-invert prose-blue max-w-none prose-p:text-slate-400 prose-p:leading-[1.8] prose-p:text-lg prose-headings:text-white prose-strong:text-blue-400 prose-li:text-slate-400">
+                     {item.historicalContext ? (
+                        <ReactMarkdown>{item.historicalContext}</ReactMarkdown>
+                     ) : (
+                        <div className="flex flex-col items-center justify-center p-20 glass bg-white/5 rounded-[3rem] border border-dashed border-white/10 opacity-50">
+                           <History className="w-12 h-12 text-slate-700 mb-4" />
+                           <p className="text-sm font-black uppercase tracking-widest text-slate-600">Narrative Pending Deep Dive</p>
+                        </div>
+                     )}
+                  </div>
+               </motion.section>
+
+               {/* SIGNIFICANCE & MARKET POSITION */}
+               <motion.section 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-8"
+               >
+                  <div className="glass rounded-[2.5rem] p-10 border border-white/10 bg-indigo-500/5 shadow-xl space-y-6">
+                     <div className="flex items-center gap-3 text-indigo-400">
+                        <Sparkles size={20} />
+                        <h4 className="text-sm font-black uppercase tracking-widest">Collector Significance</h4>
+                     </div>
+                     <div className="text-slate-400 text-sm font-medium leading-[1.7] prose prose-invert prose-indigo prose-p:mb-0">
+                        {item.collectorSignificance ? (
+                           <ReactMarkdown>{item.collectorSignificance}</ReactMarkdown>
+                        ) : (
+                           <p>Establishing rarity fingerprints and niche market demand patterns...</p>
+                        )}
+                     </div>
+                  </div>
+
+                  <div className="glass rounded-[2.5rem] p-10 border border-white/10 space-y-6">
+                     <div className="flex items-center gap-3 text-blue-400">
+                        <Layers size={20} />
+                        <h4 className="text-sm font-black uppercase tracking-widest">Niche Categorization</h4>
+                     </div>
+                     <div className="flex flex-wrap gap-2">
+                         {item.tags?.map((tag, i) => (
+                           <span key={i} className="px-4 py-2 bg-slate-900 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 hover:border-blue-400/30 transition-all cursor-default">
+                              {tag}
+                           </span>
+                         ))}
+                     </div>
+                     <div className="pt-4 border-t border-white/5">
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">Portfolio Management</p>
+                        {currentCollection ? (
+                          <div 
+                            onClick={() => setShowCollectionModal(true)}
+                            className="flex items-center gap-3 p-3 bg-blue-500/10 rounded-2xl border border-blue-500/30 hover:border-blue-400 transition-all cursor-pointer group"
+                          >
+                             <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:rotate-12 transition-transform">
+                                <Tag size={14} />
+                             </div>
+                             <span className="text-[11px] font-black text-blue-300 uppercase tracking-widest truncate">{currentCollection.name}</span>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => setShowCollectionModal(true)}
+                            className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-dashed border-white/10 hover:border-slate-500 transition-all text-slate-600 hover:text-slate-400 w-full group"
+                          >
+                             <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center group-hover:bg-slate-700">
+                                <Plus size={14} />
+                             </div>
+                             <span className="text-[10px] font-black uppercase tracking-widest">Add to Collection</span>
+                          </button>
+                        )}
+                     </div>
+                  </div>
+               </motion.section>
+
+               {/* ENTITY MAP & TRANSCRIPTION */}
+               <motion.section 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="space-y-6"
+               >
+                  <div className="flex items-center justify-between">
+                     <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em]">Neural Transcription & Entities</h3>
+                     <button 
+                        onClick={() => {
+                           navigator.clipboard.writeText(item.cleanedTranscription || '');
+                           toast.success('System: Digital record copied');
+                        }}
+                        className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white flex items-center gap-2 transition-colors"
+                     >
+                        <Copy size={12} /> Copy Tape
+                     </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                     <div className="md:col-span-2 glass bg-slate-950/80 rounded-[2.5rem] p-10 border border-white/5 font-mono text-sm text-slate-400 selection:bg-blue-500/40 leading-[1.8] max-h-[400px] overflow-y-auto custom-scrollbar whitespace-pre-wrap">
+                        {item.cleanedTranscription || "Initiating digital reconstruction..."}
+                     </div>
+                     <div className="space-y-4">
+                        <div className="p-8 glass rounded-[2rem] border border-white/5 space-y-6">
+                           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Detected Entities</p>
+                           <div className="space-y-3">
+                              {item.identifiedNames?.map((entity, i) => (
+                                <div key={i} className="group/entity space-y-1">
+                                   <div className="flex items-center justify-between">
+                                      <span className="text-[11px] font-black text-blue-400 truncate max-w-[120px]">{entity.name.toUpperCase()}</span>
+                                      <span className="text-[9px] font-bold text-slate-700 uppercase tracking-tighter">{entity.type}</span>
+                                   </div>
+                                    {entity.historicalNote && (
+                                       <p className="text-[10px] text-slate-600 italic font-medium leading-tight group-hover/entity:text-slate-500 transition-colors">
+                                          {entity.historicalNote}
+                                       </p>
+                                    )}
+                                </div>
+                              ))}
+                              {!item.identifiedNames?.length && <p className="text-slate-800 text-[10px] font-black uppercase italic">No entities flagged</p>}
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </motion.section>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* COLLECTION MODAL */}
+      <AnimatePresence>
+         {showCollectionModal && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+               <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowCollectionModal(false)}
+                  className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+               />
+               <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="relative glass bg-slate-900 w-full max-w-lg rounded-[3rem] border border-white/10 shadow-3xl p-8 md:p-12 space-y-8"
+               >
+                  <div className="flex items-center justify-between">
+                     <h3 className="text-xl font-bold text-white">Manage Collection</h3>
+                     <button onClick={() => setShowCollectionModal(false)} className="p-2 hover:bg-white/5 rounded-xl transition-colors">
+                        <X size={20} />
+                     </button>
+                  </div>
+
+                  <div className="space-y-4">
+                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Existing Collections</p>
+                     <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto custom-scrollbar">
+                        {collections.map(c => (
+                           <button 
+                             key={c.id}
+                             onClick={() => handleAssignCollection(c.id)}
+                             className={cn(
+                               "flex items-center justify-between p-4 rounded-2xl border transition-all text-left",
+                               item.collection_id === c.id ? "bg-blue-600 border-blue-400 text-white" : "bg-white/5 border-white/5 hover:border-white/20 text-slate-300"
+                             )}
+                           >
+                              <span className="text-sm font-bold uppercase tracking-widest">{c.name}</span>
+                              {item.collection_id === c.id && <Check size={16} />}
+                           </button>
+                        ))}
+                        {item.collection_id && (
+                          <button 
+                            onClick={() => handleAssignCollection(null)}
+                            className="p-4 rounded-2xl border border-dashed border-red-500/20 text-red-400 hover:bg-red-500/5 text-xs font-black uppercase tracking-widest"
+                          >
+                             Remove from collection
+                          </button>
+                        )}
+                     </div>
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t border-white/5">
+                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Create New Collection</p>
+                     <div className="flex gap-2">
+                        <input 
+                           type="text" 
+                           value={newCollectionName}
+                           onChange={(e) => setNewCollectionName(e.target.value)}
+                           placeholder="e.g. Civil War Corresp..."
+                           className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium focus:border-blue-500 outline-none transition-all"
+                        />
+                        <button 
+                           onClick={handleCreateCollection}
+                           className="p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                        >
+                           <FolderPlus size={18} />
+                        </button>
+                     </div>
+                  </div>
+               </motion.div>
+            </div>
+         )}
+      </AnimatePresence>
+      
+      {/* HUD Bar (Floating Bottom) */}
+      <AnimatePresence>
+         {isComplete && (
+            <motion.div 
+               initial={{ y: 100 }}
+               animate={{ y: 0 }}
+               className="fixed bottom-8 inset-x-0 z-50 px-6 flex justify-center"
+            >
+               <div className="glass bg-slate-900/80 backdrop-blur-3xl px-8 py-4 rounded-[2.5rem] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex items-center gap-8">
+                  <div className="hidden md:flex flex-col">
+                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Valuation Engine</span>
+                     <span className="text-xs font-bold text-emerald-400 uppercase">Analytic Research Hub</span>
+                  </div>
+                  <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
+                  <div className="flex items-center gap-3">
+                     <button className="hidden sm:flex items-center gap-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 rounded-2xl text-[11px] font-black text-slate-300 transition-all border border-white/5">
+                        <Check size={14} className="text-emerald-500" /> SYSTEM ARCHIVED
+                     </button>
+                     <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black rounded-2xl transition-all shadow-xl shadow-blue-500/20">
+                        <ExternalLink size={14} /> EBAY TEMPLATE
+                     </button>
+                  </div>
+               </div>
+            </motion.div>
+         )}
+      </AnimatePresence>
+
       <Toaster />
     </main>
   );

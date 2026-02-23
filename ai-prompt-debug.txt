@@ -1,28 +1,46 @@
-/**
- * AI PROMPT CONFIGURATION
- * 
- * Centralized location for all AI prompts.
- */
-
-// --- STAGE 1: BASELINE INGESTION PROMPT ---
-export const BASELINE_SYSTEM_PROMPT = process.env.BASELINE_PROMPT || `You are a master archivist, ephemera historian, and forensic document analyst. 
-Analyze this document image with extreme precision. 
-
-CRITICAL PRIORITY: VALUATION
-Your primary goal is to determine the FAIR MARKET VALUE for this specific piece of ephemera. 
-- Look for signatures, rare postal markings, specific dates, or unique letterheads.
-- Provide a clear, estimated dollar value (e.g., "$45.00 - $60.00").
-- If it's a mundane receipt but from a high-value collector niche (e.g., 19th-century mining, obscure railroads, early tech), explain WHY the value is higher.
-
-Tasks:
-1. Verbatim Transcription: Extract ALL text with absolute accuracy. Decipher script/cursive meticulously.
-2. Historical Synthesis: Determine the era and cultural significance.
-3. Collector Significance: Identify why a specialist would want this.
-4. Valuation: Provide a bold, justified auction estimate.
-5. Entity Extraction: Map people, businesses, and locations.`;
-
-// --- STAGE 2: DEEP DIVE ENRICHMENT PROMPT ---
-export const DEEP_DIVE_SYSTEM_PROMPT = process.env.DEEP_DIVE_PROMPT || `**Situation**
+[2026-02-23T09:22:20.832Z] ENRICHMENT_CALL [13bd4a2d-b294-4d00-b975-0b31588e6a21]
+PROMPT: DEFAULT
+RESULT: {
+  "title": "Event Comics Issue 1 - Ashcan Edition",
+  "historicalContext": "In the mid-1990s, the comic book industry was undergoing a renaissance, with independent publishers like Event Comics pushing creative boundaries. Founded by Joe Quesada and Jimmy Palmiotti, Event Comics became a beacon for innovative storytelling and dynamic artwork. The 'Ashcan Edition' of Issue 1 represents a unique piece of comic history, often used as a promotional tool to generate interest and gauge market potential before a full release. These editions were typically printed in limited quantities, making them highly sought after by collectors.",
+  "collectorSignificance": "Ashcan editions are rare by nature, often produced in very limited runs to test the market. This particular issue, being the first from Event Comics, holds significant value due to its association with industry giants Joe Quesada and Jimmy Palmiotti. The condition of the comic, along with its provenance, can greatly influence its desirability among collectors. The presence of any unique markings or signatures could further enhance its value.",
+  "valuation": "**$500 - $1,000**. Given the rarity of ashcan editions and the prominence of the creators involved, this comic is a prized collectible. The hammer price could exceed expectations if the condition is near mint and if there are any additional unique features.",
+  "identifiedNames": [
+    {
+      "name": "Event Comics",
+      "type": "business",
+      "confidence": 0.9,
+      "historicalNote": "Event Comics was a pivotal player in the 1990s comic book scene, known for its creative freedom and high-quality publications."
+    },
+    {
+      "name": "Joe Quesada",
+      "type": "person",
+      "confidence": 0.95,
+      "historicalNote": "Joe Quesada is a renowned comic book artist and writer, later becoming the editor-in-chief of Marvel Comics."
+    },
+    {
+      "name": "Jimmy Palmiotti",
+      "type": "person",
+      "confidence": 0.95,
+      "historicalNote": "Jimmy Palmiotti is a celebrated comic book writer and artist, known for his collaborations with Joe Quesada."
+    }
+  ],
+  "tags": [
+    "comics",
+    "Event Comics",
+    "1990s",
+    "issue 1",
+    "collectible",
+    "ashcan edition",
+    "Joe Quesada",
+    "Jimmy Palmiotti",
+    "independent comics",
+    "comic book history"
+  ]
+}
+---
+[2026-02-23T09:32:01.132Z] ENRICHMENT_CALL [13bd4a2d-b294-4d00-b975-0b31588e6a21]
+PROMPT: **Situation**
 
 You are a Senior Auction House Specialist with expertise equivalent to Sotheby's or Christie's senior appraisers, combined with Master Archivist credentials. You are conducting a comprehensive secondary analysis of a collectible item to determine its true market value and historical significance for an eBay reseller who acquires inventory at estate sales. You have access to both the raw image of the item and a baseline extraction report that provides initial observations. This analysis is part of an automated workflow that must deliver consistent, reliable results across multiple items.
 
@@ -80,6 +98,7 @@ When certainty is low for other reasons, state: "Value estimate is speculative d
 
 The assistant should return a valid JSON object with the following structure, maintaining consistent formatting and depth across all analyses:
 
+```json
 {
   "title": "string (standardized professional title: [Item Type] - [Key Identifier] - [Date/Era if known])",
   "historicalContext": "string (museum-grade narrative with rich Markdown formatting that contextualizes the item within its era and explains its cultural significance. Use consistent paragraph structure: opening hook, historical background, significance to collectors)",
@@ -92,10 +111,91 @@ The assistant should return a valid JSON object with the following structure, ma
     { 
       "name": "string", 
       "type": "person" | "business" | "location", 
-      "confidence": number, 
+      "confidence": number (0-1 scale, applied consistently: 0.9-1.0 = definitive identification, 0.7-0.89 = high confidence, 0.5-0.69 = probable, below 0.5 = speculative)", 
       "historicalNote": "string (2-3 sentence research note explaining significance and connection to value)"
     }
   ],
   "tags": ["string (standardized specific niche tags: era/decade, item category, condition grade, key identifiers, collector niche. Minimum 5 tags, maximum 10 tags per item)"]
 }
-`;
+```
+
+**Consistency Requirements:**
+
+1. The assistant should apply the same analytical depth to every item regardless of perceived value
+2. The assistant should use identical formatting conventions for all JSON fields across analyses
+3. The assistant should maintain consistent confidence scoring standards for identifiedNames
+4. The assistant should structure valuation explanations using the same template format
+5. The assistant should apply uniform standards for what constitutes "bulletproof ID" versus "educated assessment"
+6. The assistant should consistently ask verification questions rather than providing low-confidence assessments when critical value-determining factors are not visible in the provided image
+
+The assistant should prioritize accuracy and transparency in all claims. When uncertainty exists about specific details that significantly impact value, the assistant should request targeted verification through the verificationQuestions field rather than speculating. When uncertainty exists for other reasons, the assistant should acknowledge this explicitly using standardized disclaimer language while providing the most informed assessment possible based on available visual and contextual evidence. The goal is to provide reliable, repeatable analysis that supports confident business decisions for estate sale acquisitions and eBay pricing.
+RESULT: {
+  "title": "Event Comics Issue 1 - Ashcan Edition - 1990s",
+  "historicalContext": "Event Comics was founded in the mid-1990s by Joe Quesada and Jimmy Palmiotti, two influential figures in the comic book industry. The ashcan edition of Issue 1 represents a unique piece of comic history, often used as a promotional tool to gauge interest before a full release. This era was marked by a surge in independent comic publishers, challenging the dominance of Marvel and DC with innovative storytelling and artistic styles.",
+  "collectorSignificance": "Ashcan editions are typically produced in limited quantities, making them rarer than standard issues. The involvement of Joe Quesada and Jimmy Palmiotti adds significant collector appeal due to their later prominence in the industry. Current market demand for 1990s independent comics is moderate, with specific interest in unique editions and early works of notable creators. The condition of the comic, including its cover and interior pages, will greatly influence its value.",
+  "valuation": "**ESTIMATED VALUE (Educational Assessment)** - Low: $50 - High: $150 - Most Likely eBay Sale: $100. The ashcan edition's rarity and the creators' significance contribute to its value. Comparable sales of similar ashcan editions from the 1990s show a range depending on condition and demand.",
+  "verificationQuestions": [
+    "Can you confirm the condition of the interior pages and any signs of wear or damage?",
+    "Is there any indication of the print run or additional markings that might confirm its ashcan status?"
+  ],
+  "identifiedNames": [
+    {
+      "name": "Joe Quesada",
+      "type": "person",
+      "confidence": 0.9,
+      "historicalNote": "Joe Quesada is a renowned comic book artist and editor, known for his work with Marvel Comics and his role in revitalizing the industry in the 2000s."
+    },
+    {
+      "name": "Jimmy Palmiotti",
+      "type": "person",
+      "confidence": 0.9,
+      "historicalNote": "Jimmy Palmiotti is a celebrated writer and inker, recognized for his collaborations with Joe Quesada and contributions to various successful comic series."
+    }
+  ],
+  "tags": [
+    "comics",
+    "Event Comics",
+    "1990s",
+    "ashcan edition",
+    "Joe Quesada",
+    "Jimmy Palmiotti",
+    "independent comics",
+    "collectible",
+    "comic book history",
+    "limited edition"
+  ]
+}
+---
+[2026-02-23T09:48:55.529Z] ENRICHMENT_CALL [13bd4a2d-b294-4d00-b975-0b31588e6a21]
+PROMPT: DEFAULT
+RESULT: {
+  "title": "Event Comics Issue 1 - Ashcan Edition - 1990s",
+  "historicalContext": "Event Comics was founded in the 1990s by Joe Quesada and Jimmy Palmiotti, two influential figures in the comic book industry. The 'Ashcan Edition' refers to a limited print run often used for promotional purposes or to secure copyrights. These editions are typically rare and sought after by collectors due to their limited availability and unique place in comic book history.",
+  "collectorSignificance": "1. Scarcity assessment: Ashcan editions are typically produced in very limited quantities, making them rare finds. 2. Current market demand indicators: There is a niche market for 1990s independent comics, especially those associated with prominent creators like Quesada and Palmiotti. 3. Positioning within the collecting hierarchy: This item holds appeal for collectors interested in the evolution of independent comics and the careers of its creators. 4. Factors that increase/decrease value: Condition is crucial; any wear or damage can significantly impact value. The presence of signatures or additional promotional material can increase desirability.",
+  "valuation": "**ESTIMATED VALUE (Educational Assessment)** - Low: $50 - High: $150 - Most Likely eBay Sale: $100. The valuation is based on the rarity of ashcan editions and the involvement of notable creators. Comparable sales of similar items show a range depending on condition and market interest.",
+  "verificationQuestions": [
+    "Can you confirm if there are any signatures or additional promotional materials included with this edition?",
+    "Is there any visible wear or damage to the cover or pages?"
+  ],
+  "identifiedNames": [
+    {
+      "name": "Event Comics",
+      "type": "business",
+      "confidence": 0.9,
+      "historicalNote": "Event Comics was a significant player in the 1990s independent comic scene, known for its innovative storytelling and artistic style."
+    }
+  ],
+  "tags": [
+    "1990s",
+    "comics",
+    "Event Comics",
+    "ashcan edition",
+    "Joe Quesada",
+    "Jimmy Palmiotti",
+    "independent comics",
+    "limited edition",
+    "collectible",
+    "comic book history"
+  ]
+}
+---

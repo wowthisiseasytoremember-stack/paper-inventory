@@ -1,18 +1,33 @@
+/**
+ * ARCHIVE WORKER
+ * 
+ * Standalone process to handle OCR, Image Resizing, and AI Enrichment.
+ * Running this separately from Next.js avoids SQLite locking issues.
+ */
+
 import { queue } from '../src/lib/queue/manager';
+import { ItemService } from '../src/lib/db/items';
 import dotenv from 'dotenv';
-import path from 'path';
 
-// Load .env from project root
-dotenv.config({ path: path.join(process.cwd(), '.env') });
+// Load environment variables
+dotenv.config();
 
-console.log('Starting Queue Manager Process...');
+async function main() {
+  console.log('--- VAULT ARCHIVE WORKER STARTING ---');
+  console.log(`Time: ${new Date().toISOString()}`);
+  
+  // 1. Crash Recovery: Reset any stuck locks from previous runs
+  console.log('[Worker] Running crash recovery...');
+  ItemService.resetLocks();
 
-// Start the manager (it handles its own lock resets)
-queue.start();
+  // 2. Start the processing loop
+  console.log('[Worker] Entering main processing loop...');
+  
+  // The queue manager handles polling indefinitely
+  queue.start();
+}
 
-// Keep process alive
-process.on('SIGINT', () => {
-  console.log('Worker stopping...');
-  queue.stop();
-  process.exit(0);
+main().catch(err => {
+  console.error('[Worker] Fatal error:', err);
+  process.exit(1);
 });

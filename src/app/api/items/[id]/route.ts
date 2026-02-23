@@ -27,6 +27,7 @@ export async function GET(
       ...item,
       identifiedNames: item.identifiedNames ? JSON.parse(item.identifiedNames) : [],
       tags: item.tags ? JSON.parse(item.tags as string) : [],
+      verification_questions: item.verification_questions ? JSON.parse(item.verification_questions) : [],
       processingLock: Boolean(item.processingLock)
     };
 

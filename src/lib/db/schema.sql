@@ -23,7 +23,9 @@ CREATE TABLE IF NOT EXISTS items (
     identifiedNames TEXT, -- JSON Array
     historicalContext TEXT,
     collectorSignificance TEXT,
+    verification_questions TEXT, -- JSON Array of specific questions
     aiRawResponse TEXT,
+    analysis_history TEXT, -- JSON Array
 
     -- Deduplication & Integrity
     originalHash TEXT, -- Pre-strip
@@ -49,7 +51,20 @@ CREATE TABLE IF NOT EXISTS items (
     -- Timestamps
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     processedAt DATETIME,
-    deletedAt DATETIME -- Soft delete
+    deletedAt DATETIME, -- Soft delete
+    
+    -- Collection
+    collection_id TEXT,
+    FOREIGN KEY(collection_id) REFERENCES collections(id)
+);
+
+-- Collections Table
+CREATE TABLE IF NOT EXISTS collections (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    icon TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes for frequent queries

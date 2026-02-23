@@ -122,6 +122,7 @@ export interface DeepDiveResult {
   historicalContext: string;
   collectorSignificance: string;
   valuation: string;
+  verificationQuestions?: string[];
   identifiedNames: Array<{
     name: string;
     type: string;
@@ -133,7 +134,8 @@ export interface DeepDiveResult {
 
 export async function enrichDeepDive(
   imagePath: string, 
-  baselineData: any
+  baselineData: any,
+  customSystemPrompt?: string
 ): Promise<DeepDiveResult> {
   const imageBuffer = fs.readFileSync(imagePath);
   const base64Image = imageBuffer.toString('base64');
@@ -144,6 +146,7 @@ export async function enrichDeepDive(
   }
 
   const { DEEP_DIVE_SYSTEM_PROMPT } = require('./prompts');
+  const systemPrompt = customSystemPrompt || DEEP_DIVE_SYSTEM_PROMPT;
 
   let attempt = 0;
   while (attempt <= MAX_RETRIES) {
@@ -163,7 +166,7 @@ export async function enrichDeepDive(
           messages: [
             {
               role: 'system',
-              content: DEEP_DIVE_SYSTEM_PROMPT
+              content: systemPrompt
             },
             {
               role: 'user',

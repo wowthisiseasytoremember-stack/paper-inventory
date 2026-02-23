@@ -39,6 +39,9 @@ export interface Item {
   totalProcessingMs?: number;
   processedAt?: string; // ISO
   tags?: string; // JSON
+  verification_questions?: string; // JSON
+  collection_id?: string;
+  analysis_history?: string; // JSON array of past deep dives
 }
 
 export const ItemService = {
@@ -175,7 +178,11 @@ export const ItemService = {
    * Strict whitelist prevents mutation of system fields.
    */
   updateMetadata: (id: string, updates: Record<string, any>) => {
-    const EDITABLE = ['title', 'guessedId', 'cleanedTranscription', 'historicalContext', 'collectorSignificance', 'tags'];
+    const EDITABLE = [
+      'title', 'guessedId', 'cleanedTranscription', 'historicalContext', 
+      'collectorSignificance', 'tags', 'valuation', 'verification_questions', 
+      'collection_id', 'analysis_history'
+    ];
     const sets: string[] = [];
     const args: any[] = [];
     for (const [key, value] of Object.entries(updates)) {

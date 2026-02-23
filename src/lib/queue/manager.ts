@@ -10,7 +10,7 @@ import { performOCR } from '../ocr';
 import { db } from '../db';
 
 const POLLING_INTERVAL_MS = 2000;
-const MAX_CONCURRENT_JOBS = 2;
+const MAX_CONCURRENT_JOBS = 10;
 
 export class QueueManager {
   private isRunning = false;

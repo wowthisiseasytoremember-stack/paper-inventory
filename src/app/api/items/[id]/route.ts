@@ -27,9 +27,16 @@ export async function GET(
       ...item,
       identifiedNames: item.identifiedNames ? JSON.parse(item.identifiedNames) : [],
       tags: item.tags ? JSON.parse(item.tags as string) : [],
-      verification_questions: item.verification_questions ? JSON.parse(item.verification_questions) : [],
-      analysis_history: item.analysis_history ? JSON.parse(item.analysis_history) : [],
-      lockedFields: (item as any).lockedFields ? JSON.parse((item as any).lockedFields) : [],
+      comp_search_keywords: item.comp_search_keywords ? JSON.parse(item.comp_search_keywords as string) : [],
+      visible_flaws: item.visible_flaws ? JSON.parse(item.visible_flaws as string) : [],
+      research_pathways: item.research_pathways ? JSON.parse(item.research_pathways as string) : [],
+      uncertain_fields: item.uncertain_fields ? JSON.parse(item.uncertain_fields as string) : [],
+      item_specifics: item.item_specifics ? JSON.parse(item.item_specifics as string) : {},
+      identification: item.identification,
+      estimated_value: item.estimated_value,
+      liquidity_score: item.liquidity_score,
+      target_buy_price: item.target_buy_price,
+      user_decision: item.user_decision || 'none',
       processingLock: Boolean(item.processingLock)
     };
 
@@ -53,18 +60,6 @@ export async function PATCH(
     const item = ItemService.getById(id);
     if (!item) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
-    }
-
-    // Auto-lock user-edited fields so AI won't overwrite them
-    const LOCKABLE = ['title', 'cleanedTranscription', 'historicalContext', 'collectorSignificance', 'valuation', 'tags'];
-    const editedFields = Object.keys(body).filter(k => LOCKABLE.includes(k));
-
-    if (editedFields.length > 0) {
-      const existing: string[] = (item as any).lockedFields
-        ? JSON.parse((item as any).lockedFields)
-        : [];
-      const merged = [...new Set([...existing, ...editedFields])];
-      body.lockedFields = JSON.stringify(merged);
     }
 
     const result = ItemService.updateMetadata(id, body);

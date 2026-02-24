@@ -153,7 +153,7 @@ export function UploadDropzone({ onUploadComplete }: { onUploadComplete?: () => 
           <p className="text-sm font-medium text-slate-500 max-w-xs mx-auto">
             {isUploading 
               ? `Syncing to secure isolation zone...`
-              : "Drop high-fidelity scans or tap to browse the sequence. Gemini 2.0 Pro will synthesize metadata."}
+              : "Drop high-fidelity scans or tap to browse the sequence. OpenAI will synthesize metadata."}
           </p>
           
           <div className="flex items-center justify-center gap-3 pt-4">

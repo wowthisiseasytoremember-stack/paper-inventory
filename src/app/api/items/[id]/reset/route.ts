@@ -1,8 +1,8 @@
 /**
- * RETRY API
- * 
- * Re-queues a failed item for processing.
- * Resets error state and increments retry count.
+ * RESET API
+ *
+ * Re-queues a stuck item that is not in error state.
+ * Intended for stalled processing recovery.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -21,9 +21,9 @@ export async function POST(
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
 
-    if (item.status !== 'error') {
+    if (item.status === 'error') {
       return NextResponse.json({ 
-        error: `Cannot retry item in '${item.status}' state. Only 'error' items can be retried.` 
+        error: "Item is in 'error' state. Use retry instead."
       }, { status: 400 });
     }
 
@@ -33,29 +33,26 @@ export async function POST(
       }, { status: 422 });
     }
 
-    // Reset to queued with incremented retry count
     db.prepare(`
-      UPDATE items 
-      SET status = 'queued', 
-          errorMessage = NULL, 
-          processingLock = 0, 
+      UPDATE items
+      SET status = 'queued',
+          errorMessage = NULL,
+          processingLock = 0,
           watchdogLockedAt = NULL,
           retryCount = retryCount + 1,
           statusUpdatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(id);
 
-    console.log(`[Retry] Re-queued item ${id} (attempt ${item.retryCount + 1})`);
+    console.log(`[Reset] Re-queued stalled item ${id}`);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       id,
-      retryCount: item.retryCount + 1,
       message: 'Item re-queued for processing.'
     });
-
   } catch (error: any) {
-    console.error('Retry Error:', error);
+    console.error('Reset Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

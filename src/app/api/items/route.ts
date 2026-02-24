@@ -66,6 +66,16 @@ export async function GET(req: NextRequest) {
       ...item,
       identifiedNames: item.identifiedNames ? JSON.parse(item.identifiedNames) : [],
       tags: item.tags ? JSON.parse(item.tags) : [],
+      comp_search_keywords: item.comp_search_keywords ? JSON.parse(item.comp_search_keywords) : [],
+      visible_flaws: item.visible_flaws ? JSON.parse(item.visible_flaws) : [],
+      research_pathways: item.research_pathways ? JSON.parse(item.research_pathways) : [],
+      uncertain_fields: item.uncertain_fields ? JSON.parse(item.uncertain_fields) : [],
+      item_specifics: item.item_specifics ? JSON.parse(item.item_specifics) : {},
+      identification: item.identification,
+      estimated_value: item.estimated_value,
+      liquidity_score: item.liquidity_score,
+      target_buy_price: item.target_buy_price,
+      user_decision: item.user_decision || 'none',
       processingLock: Boolean(item.processingLock)
     }));
 

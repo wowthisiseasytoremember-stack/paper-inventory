@@ -45,6 +45,7 @@ export default function CollectionsPage() {
       // For each collection, fetch item count (simulated or real if API supports)
       setCollections(data);
     } catch (err) {
+      console.error('Failed to fetch collections:', err);
       toast.error('Vault connection interrupted');
     } finally {
       setLoading(false);
@@ -82,6 +83,7 @@ export default function CollectionsPage() {
       toast.success('Collection dismantled');
       fetchCollections();
     } catch (err) {
+      console.error('Failed to delete collection:', err);
       toast.error('Dismantling failed');
     }
   };

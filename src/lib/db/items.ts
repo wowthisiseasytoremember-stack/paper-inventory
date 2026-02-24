@@ -16,6 +16,7 @@ export interface Item {
   processingLock: number; // 0 or 1
   retryCount: number;
   errorMessage?: string;
+  statusUpdatedAt?: string;
   originalHash?: string;
   contentHash?: string;
   title?: string;
@@ -39,9 +40,20 @@ export interface Item {
   totalProcessingMs?: number;
   processedAt?: string; // ISO
   tags?: string; // JSON
-  verification_questions?: string; // JSON
-  collection_id?: string;
-  analysis_history?: string; // JSON array of past deep dives
+  // New Reseller Fields
+  ai_category?: string;
+  identification?: string;
+  estimated_value?: string;
+  liquidity_score?: number;
+  target_buy_price?: string;
+  ebay_title?: string;
+  comp_search_keywords?: string; // JSON
+  visible_flaws?: string; // JSON
+  dealer_gut_check?: string;
+  research_pathways?: string; // JSON
+  uncertain_fields?: string; // JSON
+  item_specifics?: string; // JSON
+  user_decision?: 'buy' | 'pass' | 'research' | 'none';
 }
 
 export const ItemService = {
@@ -52,8 +64,8 @@ export const ItemService = {
   create: (filename: string, originalPath: string, mimeType: string, fileSize: number, originalHash?: string) => {
     const id = randomUUID();
     const stmt = db.prepare(`
-      INSERT INTO items (id, originalFilename, originalImagePath, mimeType, fileSize, status, originalHash)
-      VALUES (?, ?, ?, ?, ?, 'queued', ?)
+      INSERT INTO items (id, originalFilename, originalImagePath, mimeType, fileSize, status, originalHash, statusUpdatedAt, user_decision)
+      VALUES (?, ?, ?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP, 'none')
     `);
     stmt.run(id, filename, originalPath, mimeType, fileSize, originalHash ?? null);
     return id;
@@ -102,7 +114,12 @@ export const ItemService = {
    * Releases the lock and updates status.
    */
   unlock: (id: string, newStatus: ItemStatus, updates: Partial<Item> = {}) => {
-    const sets: string[] = ['processingLock = 0', 'watchdogLockedAt = NULL', 'status = ?'];
+    const sets: string[] = [
+      'processingLock = 0',
+      'watchdogLockedAt = NULL',
+      'status = ?',
+      'statusUpdatedAt = CURRENT_TIMESTAMP'
+    ];
     const args: any[] = [newStatus];
 
     for (const [key, value] of Object.entries(updates)) {
@@ -124,7 +141,8 @@ export const ItemService = {
       SET processingLock = 0, 
           watchdogLockedAt = NULL, 
           status = 'error', 
-          errorMessage = ? 
+          errorMessage = ?,
+          statusUpdatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(error, id);
   },
@@ -135,7 +153,11 @@ export const ItemService = {
   resetLocks: () => {
     const info = db.prepare(`
       UPDATE items 
-      SET processingLock = 0, watchdogLockedAt = NULL, status = 'error', errorMessage = 'System crash detected during processing'
+      SET processingLock = 0,
+          watchdogLockedAt = NULL,
+          status = 'error',
+          errorMessage = 'System crash detected during processing',
+          statusUpdatedAt = CURRENT_TIMESTAMP
       WHERE processingLock = 1
     `).run();
     console.log(`[CrashRecovery] Reset ${info.changes} locked items.`);
@@ -152,7 +174,8 @@ export const ItemService = {
           watchdogLockedAt = NULL, 
           status = 'error', 
           errorMessage = 'Processing timed out (Watchdog)',
-          retryCount = retryCount + 1
+          retryCount = retryCount + 1,
+          statusUpdatedAt = CURRENT_TIMESTAMP
       WHERE processingLock = 1 
         AND watchdogLockedAt IS NOT NULL
         AND watchdogLockedAt < datetime('now', '-${timeoutMinutes} minutes')
@@ -178,12 +201,7 @@ export const ItemService = {
    * Strict whitelist prevents mutation of system fields.
    */
   updateMetadata: (id: string, updates: Record<string, any>) => {
-    const EDITABLE = [
-      'title', 'guessedId', 'cleanedTranscription', 'confidence',
-      'identifiedNames', 'historicalContext', 'collectorSignificance',
-      'tags', 'valuation', 'verification_questions',
-      'collection_id', 'analysis_history', 'lockedFields'
-    ];
+    const EDITABLE = ['title', 'guessedId', 'cleanedTranscription', 'historicalContext', 'collectorSignificance', 'tags', 'user_decision'];
     const sets: string[] = [];
     const args: any[] = [];
     for (const [key, value] of Object.entries(updates)) {
@@ -201,7 +219,7 @@ export const ItemService = {
    * Updates status/metadata WITHOUT releasing the lock.
    */
   updateStatus: (id: string, newStatus: ItemStatus, updates: Partial<Item> = {}) => {
-    const sets: string[] = ['status = ?'];
+    const sets: string[] = ['status = ?', 'statusUpdatedAt = CURRENT_TIMESTAMP'];
     const args: any[] = [newStatus];
 
     for (const [key, value] of Object.entries(updates)) {

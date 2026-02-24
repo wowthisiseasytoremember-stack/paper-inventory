@@ -1,144 +1,190 @@
 /**
- * QUEUE MANAGER (v2 — single-pass pipeline)
- *
- * Processes each item through ALL stages in one lock cycle.
- * Uses p-queue for concurrency management.
+ * QUEUE MANAGER
+ * 
+ * Orchestrates the processing pipeline.
+ * Polls for locked items and dispatches them to appropriate workers.
  */
 
 import { ItemService, Item } from '../db/items';
 import { performOCR } from '../ocr';
-import { db } from '../db';
-import PQueue from 'p-queue';
 
-const MAX_CONCURRENT_JOBS = 3;   // 3 concurrent full pipelines (each makes API calls)
+const POLLING_INTERVAL_MS = 2000;
+const MAX_CONCURRENT_JOBS = 2;
 
 export class QueueManager {
-  private workerQueue = new PQueue({ concurrency: MAX_CONCURRENT_JOBS });
   private isRunning = false;
+  private activeJobs = 0;
+  private interval: NodeJS.Timeout | null = null;
   private watchdogInterval: NodeJS.Timeout | null = null;
 
   start() {
     if (this.isRunning) return;
     this.isRunning = true;
-    console.log('[Queue] Started (p-queue mode, max concurrent:', MAX_CONCURRENT_JOBS, ')');
+    console.log('Queue Manager Started.');
     
+    // Reset any stale locks from previous crash
     ItemService.resetLocks();
-    
+
+    // Start Runtime Watchdog (checks every 1 minute)
     this.watchdogInterval = setInterval(() => {
-      ItemService.resetStaleLocks(5);
-      this.trigger();
+      ItemService.resetStaleLocks(5); // Reset locks older than 5 minutes
     }, 60 * 1000);
 
-    this.trigger();
+    this.loop();
   }
 
   stop() {
     this.isRunning = false;
-    this.workerQueue.pause();
-    this.workerQueue.clear();
+    if (this.interval) clearTimeout(this.interval);
     if (this.watchdogInterval) clearInterval(this.watchdogInterval);
-    console.log('[Queue] Stopped.');
+    console.log('Queue Manager Stopped.');
   }
 
-  trigger() {
+  private async loop() {
     if (!this.isRunning) return;
-    // Pull jobs from DB until no more are unlocked
-    let item = ItemService.lockNext();
-    while (item) {
-      this.enqueueItem(item);
-      item = ItemService.lockNext();
+
+    if (this.activeJobs < MAX_CONCURRENT_JOBS) {
+      const item = ItemService.lockNext();
+      
+      if (item) {
+        this.activeJobs++;
+        // Process asynchronously without awaiting here to allow concurrency
+        this.processItem(item).finally(() => {
+          this.activeJobs--;
+          // Immediate triggers? For now, just let the loop catch it.
+        });
+      }
     }
+
+    // Schedule next poll
+    this.interval = setTimeout(() => this.loop(), POLLING_INTERVAL_MS);
   }
 
-  private enqueueItem(item: Item) {
-    this.workerQueue.add(() => this.processFullPipeline(item));
-  }
-
-  /**
-   * Single-pass: OCR → Resize → AI all in one lock cycle.
-   * No re-queuing. Item goes from queued → complete in one shot.
-   */
-  private async processFullPipeline(item: Item) {
-    const pipelineStart = Date.now();
-    console.log(`[Queue] 🚀 Full pipeline for ${item.id}`);
-
+  private async processItem(item: Item) {
+    const startTime = Date.now();
+    console.log(`[Queue] 🚀 Processing Item ${item.id} (Status: ${item.status})`);
+    
     try {
-      // --- STAGE 1: OCR (if not already done) ---
-      let rawOcr = item.rawOcr || '';
-      let ocrConfidence = item.confidence || 0;
-
-      if (item.status === 'queued') {
-        if (item.originalImagePath) {
-          db.prepare('UPDATE items SET status = ? WHERE id = ?').run('processing_ocr', item.id);
-          try {
-            const ocrResult = await performOCR(item.originalImagePath);
-            rawOcr = ocrResult.text;
-            ocrConfidence = ocrResult.confidence;
-            console.log(`[Queue] ✅ OCR done for ${item.id}`);
-          } catch (ocrErr: any) {
-            // OCR failure is non-fatal — vision models can read the image
-            console.warn(`[Queue] ⚠️ OCR failed for ${item.id}, continuing without: ${ocrErr.message}`);
-          }
-        }
+      // STATE MACHINE ROUTER
+      switch (item.status) {
+        case 'queued':
+          // Move directly to Resize. OpenAI will handle text.
+          ItemService.updateStatus(item.id, 'processing_resize');
+          await this.handleResize(item);
+          break;
+        case 'ocr_complete':
+          await this.handleResize(item);
+          break;
+        case 'resize_complete':
+          await this.handleAI(item);
+          break;
+        default:
+          console.warn(`[Queue] ⚠️ Unknown state ${item.status} for item ${item.id}`);
+          ItemService.unlock(item.id, 'error', { errorMessage: 'Unknown State' });
       }
-
-      // --- STAGE 2: Resize (if not already done) ---
-      let resizedPath = item.resizedImagePath;
-      let thumbnailPath = item.thumbnailPath;
-      let originalHash = item.originalHash;
-
-      if (!resizedPath && item.originalImagePath) {
-        db.prepare('UPDATE items SET status = ? WHERE id = ?').run('processing_resize', item.id);
-        const { ImageProcessor } = await import('../processing/image-processor');
-        const result = await ImageProcessor.process(item.id, item.originalImagePath);
-        resizedPath = result.resizedPath;
-        thumbnailPath = result.thumbnailPath;
-        console.log(`[Queue] ✅ Resize done for ${item.id} (${result.resizeDurationMs}ms)`);
-      }
-
-      // --- STAGE 3: AI (baseline → triage → grounding → deep dive) ---
-      const imagePath = resizedPath || item.originalImagePath;
-      if (!imagePath) throw new Error('No image path available');
-
-      db.prepare('UPDATE items SET status = ? WHERE id = ?').run('processing_ai', item.id);
-
-      const { runFullPipeline } = await import('../ai');
-      const aiStart = Date.now();
-      const result = await runFullPipeline(imagePath, rawOcr, undefined, {
-        onBaselineComplete: (baseline) => {
-          // Write baseline data to DB immediately so UI can show title/tags while deep dive runs
-          db.prepare('UPDATE items SET title = ?, tags = ?, confidence = ? WHERE id = ?')
-            .run(baseline.title, JSON.stringify(baseline.tags || []), baseline.confidence || 0, item.id);
-          console.log(`[Queue] ⚡ Baseline written early for ${item.id}: "${baseline.title}"`);
-        },
-      });
-      const aiDurationMs = Date.now() - aiStart;
-
-      // --- DONE: Unlock with everything ---
-      const totalProcessingMs = Date.now() - pipelineStart;
-
-      ItemService.unlock(item.id, 'complete', {
-        rawOcr,
-        confidence: ocrConfidence,
-        originalHash,
-        resizedImagePath: resizedPath,
-        thumbnailPath,
-        ...result.merged,
-        aiDurationMs,
-        totalProcessingMs,
-        processedAt: new Date().toISOString(),
-      });
-
-      console.log(`[Queue] 🏁 Complete: ${item.id} [${result.category}] (${totalProcessingMs}ms total, ${aiDurationMs}ms AI, grounding: ${result.groundingUsed})`);
-
     } catch (error) {
-      const duration = Date.now() - pipelineStart;
-      console.error(`[Queue] ❌ Failed ${item.id} after ${duration}ms:`, error);
-      ItemService.unlock(item.id, 'error', {
-        errorMessage: error instanceof Error ? error.message : String(error)
+      const duration = Date.now() - startTime;
+      console.error(`[Queue] ❌ Failed to process item ${item.id} after ${duration}ms:`, error);
+      ItemService.unlock(item.id, 'error', { 
+        errorMessage: error instanceof Error ? error.message : String(error) 
+        // totalProcessingMs can be updated here too if partial progress was made
       });
     }
+  }
+
+  // --- HANDLERS ---
+
+  private async handleOCR(item: any) {
+    if (!item.originalImagePath) {
+      throw new Error('Missing originalImagePath');
+    }
+    
+    ItemService.updateStatus(item.id, 'processing_ocr');
+
+    const result = await performOCR(item.originalImagePath);
+    
+    ItemService.unlock(item.id, 'ocr_complete', {
+      rawOcr: result.text,
+      confidence: result.confidence,
+    });
+    
+    console.log(`[Queue] ✅ OCR Complete for ${item.id}`);
+  }
+
+  private async handleResize(item: any) {
+    if (!item.originalImagePath) {
+      throw new Error('Missing originalImagePath');
+    }
+
+    ItemService.updateStatus(item.id, 'processing_resize');
+    
+    const { ImageProcessor } = await import('../processing/image-processor');
+    const result = await ImageProcessor.process(item.id, item.originalImagePath);
+
+    ItemService.unlock(item.id, 'resize_complete', {
+      originalHash: result.originalHash,
+      contentHash: result.contentHash,
+      resizedImagePath: result.resizedPath,
+      thumbnailPath: result.thumbnailPath,
+      mimeType: result.mimeType,
+      resizeDurationMs: result.resizeDurationMs
+    });
+
+    console.log(`[Queue] ✅ Resize & Hash Complete for ${item.id} (${result.resizeDurationMs}ms)`);
+  }
+
+  private async handleAI(item: any) {
+    if (!item.resizedImagePath) {
+      throw new Error('Missing resizedImagePath');
+    }
+
+    ItemService.updateStatus(item.id, 'processing_ai');
+    
+    const { analyzeImage } = await import('../ai');
+
+    const startTime = Date.now();
+    const metadata = await analyzeImage(item.resizedImagePath, item.rawOcr || '');
+    const aiDurationMs = Date.now() - startTime;
+
+    // Calculate total processing time from creation
+    const createdDate = new Date(item.createdAt).getTime();
+    const totalProcessingMs = Date.now() - createdDate;
+
+    ItemService.unlock(item.id, 'complete', {
+      title: metadata.title,
+      guessedId: metadata.guessedId,
+      cleanedTranscription: metadata.cleanedTranscription,
+      confidence: metadata.confidence,
+      identifiedNames: JSON.stringify(metadata.identifiedNames),
+      historicalContext: metadata.historicalContext,
+      collectorSignificance: metadata.collectorSignificance,
+      valuation: metadata.valuation,
+      
+      // Reseller Fields
+      ai_category: metadata.ai_category,
+      identification: metadata.identification,
+      estimated_value: metadata.valuation, // Map estimated_value to database valuation field for compatibility
+      liquidity_score: metadata.liquidity_score,
+      target_buy_price: metadata.target_buy_price,
+      ebay_title: metadata.ebay_title,
+      comp_search_keywords: JSON.stringify(metadata.comp_search_keywords),
+      visible_flaws: JSON.stringify(metadata.visible_flaws),
+      dealer_gut_check: metadata.dealer_gut_check,
+      research_pathways: JSON.stringify(metadata.research_pathways),
+      uncertain_fields: JSON.stringify(metadata.uncertain_fields),
+      item_specifics: JSON.stringify(metadata.item_specifics),
+
+      // Metrics & Completion
+      aiDurationMs,
+      totalProcessingMs,
+      processedAt: new Date().toISOString(),
+      rawOcr: metadata.cleanedTranscription,
+      tags: JSON.stringify(metadata.tags || [])
+    });
+
+    console.log(`[Queue] 🏁 AI Analysis Complete for ${item.id} (AI: ${aiDurationMs}ms, Total: ${totalProcessingMs}ms)`);
   }
 }
 
+// Singleton
 export const queue = new QueueManager();

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS items (
     processingLock INTEGER DEFAULT 0, -- Boolean using 0/1
     retryCount INTEGER DEFAULT 0,
     watchdogLockedAt DATETIME, -- For timeout detection
+    statusUpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP, -- For progress tracking
     errorMessage TEXT,
 
     -- Identification & Search
@@ -76,26 +77,29 @@ CREATE INDEX IF NOT EXISTS idx_items_createdAt ON items(createdAt);
 -- FTS5 Virtual Table for Full-Text Search
 CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
     title, 
+    identification,
     cleanedTranscription, 
     identifiedNames, 
+    dealer_gut_check,
+    ai_category,
     content='items', 
     content_rowid='rowid'
 );
 
 -- Triggers to keep FTS index in sync
 CREATE TRIGGER IF NOT EXISTS items_ai AFTER INSERT ON items BEGIN
-  INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames) 
-  VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames);
+  INSERT INTO items_fts(rowid, title, identification, cleanedTranscription, identifiedNames, dealer_gut_check, ai_category) 
+  VALUES (new.rowid, new.title, new.identification, new.cleanedTranscription, new.identifiedNames, new.dealer_gut_check, new.ai_category);
 END;
 
 CREATE TRIGGER IF NOT EXISTS items_ad AFTER DELETE ON items BEGIN
-  INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames) 
-  VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames);
+  INSERT INTO items_fts(items_fts, rowid, title, identification, cleanedTranscription, identifiedNames, dealer_gut_check, ai_category) 
+  VALUES('delete', old.rowid, old.title, old.identification, old.cleanedTranscription, old.identifiedNames, old.dealer_gut_check, old.ai_category);
 END;
 
 CREATE TRIGGER IF NOT EXISTS items_au AFTER UPDATE ON items BEGIN
-  INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames) 
-  VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames);
-  INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames) 
-  VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames);
+  INSERT INTO items_fts(items_fts, rowid, title, identification, cleanedTranscription, identifiedNames, dealer_gut_check, ai_category) 
+  VALUES('delete', old.rowid, old.title, old.identification, old.cleanedTranscription, old.identifiedNames, old.dealer_gut_check, old.ai_category);
+  INSERT INTO items_fts(rowid, title, identification, cleanedTranscription, identifiedNames, dealer_gut_check, ai_category) 
+  VALUES (new.rowid, new.title, new.identification, new.cleanedTranscription, new.identifiedNames, new.dealer_gut_check, new.ai_category);
 END;

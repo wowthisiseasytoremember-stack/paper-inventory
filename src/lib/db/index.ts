@@ -82,6 +82,7 @@ export function initSchema() {
         aiDurationMs INTEGER,
         totalProcessingMs INTEGER,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        statusUpdatedAt DATETIME,
         processedAt DATETIME,
         deletedAt DATETIME,
         collection_id TEXT,

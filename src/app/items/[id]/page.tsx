@@ -67,6 +67,7 @@ interface Item {
   research_pathways?: string[];
   uncertain_fields?: string[];
   item_specifics?: Record<string, string>;
+  user_decision?: string;
 }
 
 export default function ItemDetail() {
@@ -108,7 +109,7 @@ export default function ItemDetail() {
       toast.success(`Decision set to ${decision.toUpperCase()}`);
     } catch (err) {
       console.error('Failed to save decision:', err);
-      toast.error('Failed to save decision');
+      toast.error('Failed to save');
     } finally {
       setIsUpdatingDecision(false);
     }

@@ -122,8 +122,6 @@ export class QueueManager {
     const result = await ImageProcessor.process(item.id, item.originalImagePath);
 
     ItemService.unlock(item.id, 'resize_complete', {
-      originalHash: result.originalHash,
-      contentHash: result.contentHash,
       resizedImagePath: result.resizedPath,
       thumbnailPath: result.thumbnailPath,
       mimeType: result.mimeType,
@@ -169,7 +167,7 @@ export class QueueManager {
       ebay_title: metadata.ebay_title,
       comp_search_keywords: JSON.stringify(metadata.comp_search_keywords),
       visible_flaws: JSON.stringify(metadata.visible_flaws),
-      dealer_gut_check: metadata.dealer_gut_check,
+
       research_pathways: JSON.stringify(metadata.research_pathways),
       uncertain_fields: JSON.stringify(metadata.uncertain_fields),
       item_specifics: JSON.stringify(metadata.item_specifics),

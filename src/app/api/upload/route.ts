@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     console.log(`[Upload] Created ${itemId} (${file.size} bytes)`);
     
     // 6. Push to Queue
-    queue.trigger();
+
 
     return NextResponse.json({ 
       id: itemId, 

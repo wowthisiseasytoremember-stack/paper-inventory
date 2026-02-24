@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs';
 import path from 'path';
 import { ItemMetadataSchema, ItemMetadata } from './schema';
-import { BASELINE_SYSTEM_PROMPT } from './prompts';
+import { getPrompt, CONDUCTOR_PROMPT_FILE } from './prompts';
 
 function getMimeType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
@@ -21,7 +21,7 @@ function getModel(modelName?: string) {
   const genAI = new GoogleGenerativeAI(apiKey);
   return genAI.getGenerativeModel({
     model: modelName || 'gemini-2.0-flash',
-    systemInstruction: BASELINE_SYSTEM_PROMPT,
+    systemInstruction: getPrompt(CONDUCTOR_PROMPT_FILE),
   });
 }
 

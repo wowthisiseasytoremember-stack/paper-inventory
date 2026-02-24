@@ -9,7 +9,7 @@ import path from 'path';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { ItemMetadata, ItemMetadataSchema } from './schema';
-import { BASELINE_SYSTEM_PROMPT } from './prompts';
+import { getPrompt, CONDUCTOR_PROMPT_FILE } from './prompts';
 
 const MAX_RETRIES = 3;
 
@@ -38,7 +38,7 @@ export async function analyzeImage(
   const response = await openai.chat.completions.create({
     model: modelName,
     messages: [
-      { role: 'system', content: BASELINE_SYSTEM_PROMPT + '\nEnsure your response is valid JSON matching the exact schema requested.' },
+      { role: 'system', content: getPrompt(CONDUCTOR_PROMPT_FILE) + '\nEnsure your response is valid JSON matching the exact schema requested.' },
       {
         role: 'user',
         content: [

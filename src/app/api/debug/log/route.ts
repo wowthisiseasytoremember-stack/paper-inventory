@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { DEEP_DIVE_SYSTEM_PROMPT } from '@/lib/ai/prompts';
-import { AVAILABLE_MODELS } from '@/lib/ai';
+import { getPrompt, EXPERT_BASE_PROMPT_FILE } from '@/lib/ai/prompts';
 
 export async function GET(req: NextRequest) {
+  // TODO: Model list should be dynamic based on config
+  const availableModels = {
+    baseline: ['gemini-2.0-flash', 'gpt-4o-mini', 'gpt-4o'],
+    deepDive: ['gemini-2.5-flash', 'claude-sonnet', 'groq'],
+    grounding: []
+  };
+
   return NextResponse.json({
-    prompt: DEEP_DIVE_SYSTEM_PROMPT,
-    models: AVAILABLE_MODELS,
+    prompt: getPrompt(EXPERT_BASE_PROMPT_FILE),
+    models: availableModels,
     defaults: {
       baselineModel: 'gemini-2.0-flash',
       deepDiveModel: 'gemini-2.5-flash',

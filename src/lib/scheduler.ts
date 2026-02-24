@@ -9,6 +9,8 @@ import { ItemService, Item } from './db/items';
 import { db } from './db';
 import { resizeImage } from './processing/resize';
 import { performCloudVisionOCR } from './ocr/cloud-vision';
+import { runConductor } from './ai/conductor';
+import { runExpert } from './ai/expert';
 
 const POLLING_INTERVAL_MS = 2000;
 const MAX_CONCURRENT_JOBS = 1;
@@ -154,11 +156,60 @@ async function processItem(item: Item) {
     }
 
     if (item.status === 'processing_ai') {
-      // TODO: Call AI pipeline (Task 4.3)
-      console.log(`[Scheduler] ${item.id}: AI enrichment pending`);
+      try {
+        // Step 1: Run Conductor to categorize
+        const conductorResult = await runConductor(item.rawOcr || '');
+        console.log(`[Scheduler] ${item.id}: Conductor categorized as "${conductorResult.category}" (confidence: ${conductorResult.confidence_score})`);
 
-      db.prepare(`UPDATE items SET status = 'complete', statusUpdatedAt = ? WHERE id = ?`)
-        .run(new Date().toISOString(), item.id);
+        // Step 2: Run Expert for detailed extraction
+        const expertResult = await runExpert(conductorResult.category, item.rawOcr || '');
+
+        // Step 3: Build analysis history entry
+        const analysisEntry = {
+          timestamp: new Date().toISOString(),
+          category: conductorResult.category,
+          conductor_confidence: conductorResult.confidence_score,
+          expert_extracted_title: expertResult.title,
+          extracted_fields: {
+            identified_names: expertResult.identified_names,
+            historical_context: expertResult.historical_context,
+            collector_significance: expertResult.collector_significance,
+            estimated_value_signals: expertResult.estimated_value_signals,
+            condition_issues: expertResult.visible_condition_issues,
+            ebay_keywords: expertResult.ebay_search_keywords,
+          },
+        };
+
+        // Parse existing analysis_history
+        let analysisHistory: any[] = [];
+        if (item.analysis_history) {
+          try {
+            analysisHistory = JSON.parse(item.analysis_history);
+          } catch (err) {
+            console.warn(`[Scheduler] ${item.id}: Could not parse existing analysis_history`);
+          }
+        }
+        analysisHistory.push(analysisEntry);
+
+        // Step 4: Update DB
+        ItemService.updateMetadata(item.id, {
+          title: expertResult.title,
+          identifiedNames: JSON.stringify(expertResult.identified_names),
+          historicalContext: expertResult.historical_context,
+          collectorSignificance: expertResult.collector_significance,
+          analysis_history: JSON.stringify(analysisHistory),
+        });
+
+        db.prepare(`UPDATE items SET status = 'complete', statusUpdatedAt = ? WHERE id = ?`)
+          .run(new Date().toISOString(), item.id);
+
+        console.log(`[Scheduler] ${item.id}: Enrichment complete - "${expertResult.title}"`);
+
+      } catch (err: any) {
+        console.error(`[Scheduler] ${item.id}: AI enrichment failed -`, err.message);
+        db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
+          .run(err.message, new Date().toISOString(), item.id);
+      }
       return;
     }
 

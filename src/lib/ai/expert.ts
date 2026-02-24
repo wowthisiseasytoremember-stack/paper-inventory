@@ -41,15 +41,20 @@ export interface ExpertResult {
 export async function runExpert(
   category: string,
   ocrText: string,
+  researchData?: string,
   imageBase64?: string
 ): Promise<ExpertResult> {
   const expertPrompt = EXPERT_PROMPTS[category] || EXPERT_PROMPTS.general_vintage_ephemera;
 
   try {
+    const promptText = researchData 
+      ? `${expertPrompt}\n\n[OCR TEXT & WEB ENTITIES]:\n${ocrText}\n\n[RESEARCHER NOTES (Google Search Grounding)]:\n${researchData}`
+      : `${expertPrompt}\n\n[OCR TEXT & WEB ENTITIES]:\n${ocrText}`;
+
     const content: Anthropic.MessageParam['content'] = [
       {
         type: 'text',
-        text: `${expertPrompt}\n\n[OCR TEXT]:\n${ocrText}`,
+        text: promptText,
       },
     ];
 

@@ -22,6 +22,7 @@ export interface OCRResult {
   text: string;
   confidence: number;
   duration_ms: number;
+  webEntities?: Array<{description: string, score: number}>;
 }
 
 export async function performCloudVisionOCR(filePath: string): Promise<OCRResult> {
@@ -34,16 +35,29 @@ export async function performCloudVisionOCR(filePath: string): Promise<OCRResult
 
     const request = {
       image: { content: base64Image },
+      features: [
+        { type: 'TEXT_DETECTION' as const },
+        { type: 'WEB_DETECTION' as const }
+      ]
     };
 
-    const [result] = await client.textDetection(request);
+    const [result] = await client.annotateImage(request);
     const annotations = result.textAnnotations || [];
+    const webDetection = result.webDetection || {};
+
+    let webEntities: Array<{description: string, score: number}> = [];
+    if (webDetection.webEntities) {
+      webEntities = webDetection.webEntities
+        .filter(e => e.description && e.score)
+        .map(e => ({ description: e.description as string, score: e.score as number }));
+    }
 
     if (annotations.length === 0) {
       return {
         text: '[No text detected]',
         confidence: 0,
         duration_ms: Date.now() - startTime,
+        webEntities
       };
     }
 
@@ -55,6 +69,7 @@ export async function performCloudVisionOCR(filePath: string): Promise<OCRResult
       text: fullText,
       confidence,
       duration_ms: Date.now() - startTime,
+      webEntities
     };
   } catch (err: any) {
     const duration = Date.now() - startTime;

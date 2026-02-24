@@ -11,6 +11,7 @@ import { resizeImage } from './processing/resize';
 import { performCloudVisionOCR } from './ocr/cloud-vision';
 import { runConductor } from './ai/conductor';
 import { runExpert } from './ai/expert';
+import { runResearcher } from './ai/researcher';
 
 const POLLING_INTERVAL_MS = 2000;
 const MAX_CONCURRENT_JOBS = 1;
@@ -83,8 +84,12 @@ async function processItem(item: Item) {
       try {
         const ocrResult = await performCloudVisionOCR(item.originalImagePath!);
 
+        const webEntitiesText = ocrResult.webEntities && ocrResult.webEntities.length > 0 
+          ? '\n\n--- Web Entities (Knowledge Graph) ---\n' + ocrResult.webEntities.map(e => `- ${e.description} (${(e.score * 100).toFixed(1)}%)`).join('\n')
+          : '';
+
         ItemService.updateMetadata(item.id, {
-          rawOcr: ocrResult.text,
+          rawOcr: ocrResult.text + webEntitiesText,
           confidence: ocrResult.confidence,
           ocrDurationMs: ocrResult.duration_ms
         });
@@ -161,10 +166,14 @@ async function processItem(item: Item) {
         const conductorResult = await runConductor(item.rawOcr || '');
         console.log(`[Scheduler] ${item.id}: Conductor categorized as "${conductorResult.category}" (confidence: ${conductorResult.confidence_score})`);
 
-        // Step 2: Run Expert for detailed extraction
-        const expertResult = await runExpert(conductorResult.category, item.rawOcr || '');
+        // Step 2: Run Researcher (Gemini) for Google Search Grounding
+        const researcherResult = await runResearcher(conductorResult.category, item.rawOcr || '');
+        console.log(`[Scheduler] ${item.id}: Researcher completed grounding search`);
 
-        // Step 3: Build analysis history entry
+        // Step 3: Run Expert (Sonnet) for detailed extraction, passing researcher data
+        const expertResult = await runExpert(conductorResult.category, item.rawOcr || '', researcherResult.notes);
+
+        // Step 4: Build analysis history entry (saving ALL raw data for the user)
         const analysisEntry = {
           timestamp: new Date().toISOString(),
           category: conductorResult.category,
@@ -178,6 +187,11 @@ async function processItem(item: Item) {
             condition_issues: expertResult.visible_condition_issues,
             ebay_keywords: expertResult.ebay_search_keywords,
           },
+          raw_data: {
+            conductor: conductorResult.raw_response,
+            researcher: researcherResult.raw_response,
+            expert: expertResult.raw_response
+          }
         };
 
         // Parse existing analysis_history
@@ -191,13 +205,14 @@ async function processItem(item: Item) {
         }
         analysisHistory.push(analysisEntry);
 
-        // Step 4: Update DB
+        // Step 5: Update DB
         ItemService.updateMetadata(item.id, {
           title: expertResult.title,
           identifiedNames: JSON.stringify(expertResult.identified_names),
           historicalContext: expertResult.historical_context,
           collectorSignificance: expertResult.collector_significance,
           analysis_history: JSON.stringify(analysisHistory),
+          aiRawResponse: JSON.stringify({ expert: expertResult.raw_response, researcher: researcherResult.raw_response })
         });
 
         db.prepare(`UPDATE items SET status = 'complete', statusUpdatedAt = ? WHERE id = ?`)

@@ -84,6 +84,7 @@ export function initSchema() {
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         statusUpdatedAt DATETIME,
         processedAt DATETIME,
+        user_decision TEXT DEFAULT 'none',
         deletedAt DATETIME,
         collection_id TEXT,
         FOREIGN KEY(collection_id) REFERENCES collections(id) ON DELETE SET NULL

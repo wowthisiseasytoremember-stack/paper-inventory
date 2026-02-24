@@ -143,6 +143,37 @@ export function initSchema() {
   // Migration: fix FK cascade on existing databases (SQLite can't ALTER FK,
   // but new databases get ON DELETE SET NULL from the CREATE above)
 
+  // Migration: drop and recreate FTS5 triggers to fix broken column references
+  // Old triggers referenced non-existent columns (identification, dealer_gut_check, ai_category).
+  // DROP + recreate is safe — the FTS table is rebuilt from content='items'.
+  try {
+    db.exec(`
+      DROP TRIGGER IF EXISTS items_ai;
+      DROP TRIGGER IF EXISTS items_ad;
+      DROP TRIGGER IF EXISTS items_au;
+
+      CREATE TRIGGER items_ai AFTER INSERT ON items BEGIN
+        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames)
+        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames);
+      END;
+
+      CREATE TRIGGER items_ad AFTER DELETE ON items BEGIN
+        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames)
+        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames);
+      END;
+
+      CREATE TRIGGER items_au AFTER UPDATE ON items BEGIN
+        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames)
+        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames);
+        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames)
+        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames);
+      END;
+    `);
+    console.log('[Migration] FTS5 triggers recreated with correct columns.');
+  } catch (e: any) {
+    console.error('[Migration] Failed to recreate FTS5 triggers:', e.message);
+  }
+
   console.log('Database Schema Initialized Successfully.');
 }
 

@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "eBay Reseller Data Schema",
+  "description": "The standard JSON output for all Expert Appraiser models, optimized for quick eBay listing and research.",
+  "type": "object",
+  "properties": {
+    "ebay_title": {
+      "type": "string",
+      "description": "An SEO-optimized listing title, max 80 characters. e.g., 'Vintage 1966 North American Aviation Apollo CSM Internal Memo D-12345'",
+      "maxLength": 80
+    },
+    "comp_search_keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "3 to 5 highly specific phrases to copy/paste into eBay 'Sold Items' search to find comparables. e.g., ['North American Aviation D-12345', 'Vintage Apollo CSM memo 1966']",
+      "maxItems": 5
+    },
+    "visible_flaws": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Bulleted list of visible condition issues (e.g., 'creased top right corner', 'faded ink', 'rusted staples')."
+    },
+    "item_specifics": {
+      "type": "object",
+      "description": "Key-value pairs of objective facts about the item to fill out eBay Item Specifics.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "dealer_gut_check": {
+      "type": "string",
+      "description": "A 1-2 sentence quick take from the AI on the item's potential desirability or rarity. e.g., 'Internal D-numbered docs from the Apollo program are highly desirable; check sold comps carefully, likely $50-$150+.'"
+    }
+  },
+  "required": [
+    "ebay_title",
+    "comp_search_keywords",
+    "visible_flaws",
+    "dealer_gut_check"
+  ]
+}

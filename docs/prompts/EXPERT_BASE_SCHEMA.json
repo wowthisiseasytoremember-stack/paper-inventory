@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Research & Valuation Decision Schema",
+  "description": "Schema for a deep research and valuation tool, focused on Buy/Pass decisions and market intelligence.",
+  "type": "object",
+  "properties": {
+    "identification": {
+      "type": "string",
+      "description": "Clear, accurate, human-readable name of the item. No SEO stuffing."
+    },
+    "estimated_value": {
+      "type": "string",
+      "description": "Realistic market value range (e.g., '$40 - $60')."
+    },
+    "liquidity_score": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "How fast this item typically sells (1 = very slow, 10 = instant)."
+    },
+    "target_buy_price": {
+      "type": "string",
+      "description": "Maximum recommended purchase price to ensure a healthy margin (e.g., 'Max Buy: $15')."
+    },
+    "comp_search_keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "3-5 exact phrases for checking Sold Item comps.",
+      "maxItems": 5
+    },
+    "visible_flaws": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Objective list of visible condition issues."
+    },
+    "dealer_gut_check": {
+      "type": "string",
+      "description": "The cynical, expert assessment of why it's worth buying or passing."
+    },
+    "research_pathways": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Specific databases, steps, or archives to consult for verification."
+    },
+    "item_specifics": {
+      "type": "object",
+      "description": "Key factual data points (e.g., 'Year': '1954', 'Division': 'Pueblo').",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "required": [
+    "identification",
+    "estimated_value",
+    "liquidity_score",
+    "target_buy_price",
+    "comp_search_keywords",
+    "visible_flaws",
+    "dealer_gut_check",
+    "research_pathways"
+  ]
+}

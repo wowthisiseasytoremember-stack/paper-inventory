@@ -30,30 +30,34 @@ export interface Item {
   valuation?: string;
   originalImagePath?: string;
   createdAt: string; // ISO
-  // New fields
   resizedImagePath?: string;
   thumbnailPath?: string;
   mimeType?: string;
+  fileSize?: number;
   ocrDurationMs?: number;
   resizeDurationMs?: number;
   aiDurationMs?: number;
   totalProcessingMs?: number;
   processedAt?: string; // ISO
   tags?: string; // JSON
-  // New Reseller Fields
+  verification_questions?: string; // JSON
+  collection_id?: string;
+  analysis_history?: string; // JSON array of past deep dives
+  lockedFields?: string; // JSON
+  originalFilename?: string;
+  // Legacy reseller fields (kept for backward compatibility)
   ai_category?: string;
   identification?: string;
   estimated_value?: string;
   liquidity_score?: number;
   target_buy_price?: string;
   ebay_title?: string;
-  comp_search_keywords?: string; // JSON
-  visible_flaws?: string; // JSON
-  dealer_gut_check?: string;
-  research_pathways?: string; // JSON
-  uncertain_fields?: string; // JSON
-  item_specifics?: string; // JSON
-  user_decision?: 'buy' | 'pass' | 'research' | 'none';
+  comp_search_keywords?: string;
+  visible_flaws?: string;
+  research_pathways?: string;
+  uncertain_fields?: string;
+  item_specifics?: string;
+  user_decision?: string;
 }
 
 export const ItemService = {

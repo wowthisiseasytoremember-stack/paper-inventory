@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Vintage Comic Book Analysis Schema",
+  "description": "Schema for deep extraction of vintage comic book metadata by the Expert agent.",
+  "type": "object",
+  "properties": {
+    "publisher": {
+      "type": "string",
+      "description": "e.g., Marvel, DC, Image, Dark Horse",
+      "enum": ["Marvel", "DC", "Image", "Dark Horse", "Valiant", "Other"]
+    },
+    "title": {
+      "type": "string",
+      "description": "The exact title of the series (e.g., 'The Amazing Spider-Man', 'X-Men')"
+    },
+    "issue_number": {
+      "type": "string",
+      "description": "The issue number, including decimals if applicable (e.g., '1', '1.5', '300')"
+    },
+    "publication_year": {
+      "type": "integer",
+      "description": "The year of publication, derived from the cover date or copyright text."
+    },
+    "publication_month": {
+      "type": "string",
+      "description": "The month of publication if visible."
+    },
+    "edition_type": {
+      "type": "string",
+      "description": "Direct Edition vs Newsstand Edition",
+      "enum": ["Direct Edition", "Newsstand Edition", "Unknown/Not Visible"]
+    },
+    "variant_cover": {
+      "type": "boolean",
+      "description": "True if this appears to be a special variant cover (e.g., holofoil, chromium, specific artist variant)."
+    },
+    "key_issue_indicators": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of significant events advertised on the cover (e.g., '1st appearance of Venom', 'Death of Superman', 'Anniversary Issue')."
+    },
+    "cover_price": {
+      "type": "string",
+      "description": "The original cover price (e.g., '$1.50', '£1.00', '75¢')."
+    },
+    "creators_listed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of writers, pencillers, or inkers prominently displayed on the cover (e.g., 'Todd McFarlane', 'Jim Lee')."
+    },
+    "condition_notes": {
+      "type": "object",
+      "properties": {
+        "spine_ticks": {
+          "type": "string",
+          "description": "Observations of color breaks or stress lines along the spine."
+        },
+        "corner_wear": {
+          "type": "string",
+          "description": "Observations of blunting or rounding on the corners."
+        },
+        "creases": {
+          "type": "string",
+          "description": "Any visible folds or creases on the cover."
+        },
+        "overall_grade_estimate": {
+          "type": "string",
+          "description": "A very rough estimated grade range based purely on the visible cover image (e.g., 'NM 9.4+', 'VF/NM 9.0', 'VG 4.0')."
+        }
+      },
+      "description": "Detailed observations about the physical condition of the comic based ONLY on the provided image."
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "The AI's confidence in its extraction, from 0 to 1."
+    }
+  },
+  "required": ["publisher", "title", "issue_number", "edition_type", "condition_notes", "confidence_score"]
+}

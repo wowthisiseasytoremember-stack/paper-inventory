@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "paper-inventory-488411",
+  "private_key_id": "4f90bf2f1afcd05944608fa67f6a17f2a10adfa3",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDr2j9G7ZagrETx\nAfnc+mtU2TzSOwEQAiXBflI7zfgqxixPD+dXmoRuECc0GqdAMQ/N3HW6quyyDYRs\nAviFISY24yb/3Kdo890GTuz4GSOn0Xxkj8wl6ZSeseLnThj9hjP3rqhgg3R/faf5\ntVF1MII2LDmIDwxsSQwwh6VS5NBGFFVGnGyN2hd3s6w2JF2JL2ARzSYtC2SO228f\njvwQ3HbTQAsUzMcRdUftVNn1iSKmpZCXh049L7LGaI6AlRSgTDRY8pshD1zLBlky\nhAUGOPNISLeWwpMiqRWzh5pVOuO5VrS7CVBemN9eG38YnIQyZIKIFAafpTZsaNYl\nhc+9mVhTAgMBAAECggEAGd6oBysjVP9gVoEte4AaSsXDRpoDPVLG+mjVM0sd1+9B\nx/BKI1FHCl2KN0xfIQrgnWd7oFyENumFp2VSBiRDMU0MJ49362qoSTtaAcKcJxmy\nx8MAFP6Ad0GyzkVCN3jDdXz6ag+xNRS+2oR5aV3HQpLqQpLH/Y6roB0Y1LVVZQI7\nBF+33kgg1DHEVR4d2GLPHiEmbi4tDvKOZi8IX5ahB+iiGTisGVGWepO+WeZ7mu1b\nk1DD+F8ATrkeDp2b+GN8C4F91sZSrJksboxMgtGjCJyG/mlv/ABCJ5lVIKTIauyL\nCrVWOOVqRjgM7XoikE8CdQYhfkRiZf5EUFtNCVbFgQKBgQD9Py6hsZqyVqXZW+nP\nkKYjyFcywTqNbcxnOrR8P5pH/ctfScgre7dQ2OGPI0x5GBfDxXLGoFW6S1+VwTPr\n3v3pKJQxZVOK+jwUPeYMWrnbn0qImkd8uM9oVyNeou5QRve6IaZFs/7xC+diwaFk\nByDjulJsLcLBFPDpt4RfwRU30wKBgQDuaqeQok5rZzmSk3yHJqYQSjwUGgKeN0/5\nv0141UPMj1jJSQpv0UwVc5AxvrWeqaNzzRmhRD+sYvtEyiV4PfyQxqboXJbbD1Ar\nyZbLGX99Sge5Uy6GRjquD3gYzBFiyvVV+MLlH2MrtlD8twaFKvoEjBoCtDMGjkUl\np40c/JONgQKBgQC97qUKoClll5bLbiPtiI8SRy8e4c0IRVEIGv9CMHGFjNL6pFt8\nQU07VW3V7KNuLqOkMHHkhlvFXMJTjpNiU9wbAlQit9vwX7yvcb0XhvPdw5oi2ZLD\n99eWacQdNhWGH7Or5ZDOtjB+mG7xokdove/s29D1UVy/cvU8VGbzadyAAQKBgQDB\nz/n/3bGaJgPrX/HvfD+rJm3IeYx/Sb+96wHzpIrFFBK9Lp9JXv9WwOcLSVkjbgvt\n62FWc8C/Roe02A+1u85BcvvkEMChu8UUk3/+AvBczX2R7kj35sd1ECY1Ik9P3GWs\nSdlFoUphEoirp62pO9KbN7k9UXfZcHZNsfNJCRp6AQKBgFwpk+t2OsKm1KIMkYyv\nT9gFX+TszwFaoczV3O9N+427VJ6AVZfWffKQB6UKaGRPaGw1DIM4SChptOEzjKdI\nA/JU+7+ZtsNeH/hnUYES8Heuqx+NbJa1dHPJIlKhqmrq/KHeqkIT2RuGnT3/8ovt\nfvCvw9GT12eecROVWYO5rOic\n-----END PRIVATE KEY-----\n",
+  "client_email": "paper-inventory@paper-inventory-488411.iam.gserviceaccount.com",
+  "client_id": "104251881876809737190",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/paper-inventory%40paper-inventory-488411.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

@@ -1,0 +1,325 @@
+Feature: Fix Broken Pipeline & Wire Google Cloud Vision OCR
+
+  System Architecture
+
+  Components That Must Exist
+
+  1. Database layer (Better-SQLite3) — source of truth for items
+  2. File upload API — validates and stores images
+  3. Scheduler/worker — polls queue, dispatches jobs
+  4. Image resizing — generates thumbnails + web-optimized versions (Sharp)
+  5. OCR service — extracts text from images (Google Cloud Vision)
+  6. AI enrichment pipeline — Conductor (categorize) + Experts (extract reseller data)
+  7. State machine — manages item through processing stages
+
+  Component Dependencies
+
+  Upload API → Database ✓ (working)
+              → Scheduler (broken, needs activation)
+                          → Image Resizing (incomplete)
+                          → OCR Worker (basic, needs Cloud Vision)
+                          → AI Enrichment (weak, needs expert prompts)
+
+  Data Flow
+
+  User uploads image
+    ↓ Validates + stores in DB
+    ↓ Scheduler picks up job
+    ↓ Resize image (thumbnail + web version)
+    ↓ OCR text from image (Cloud Vision)
+    ↓ AI categorizes (Conductor prompt) → picks expert
+    ↓ Expert analyzes (domain-specific extraction)
+    ↓ Stores results in DB (title, value indicators, keywords, condition, analysis_history)
+    ↓ UI displays enriched item
+
+  ---
+  Milestones & Task Breakdown
+
+  Milestone 1: Emergency Bug Fixes (2-3 hours)
+
+  Goal: Get code compiling and database working
+  Validate: Dev server starts, no console errors, database accepts inserts
+
+  Task 1.1: Resolve Merge Conflict in items.ts (30 min)
+
+  - Remove conflict markers in Item interface
+  - Keep "Updated upstream" version (has verification_questions, collection_id, analysis_history)
+  - Fix create() method — remove user_decision column reference
+  - Run: grep -n "<<<<<<" src/lib/db/items.ts → expect empty output
+
+  Task 1.2: Resolve Merge Conflicts in enrich/route.ts (30 min)
+
+  - Fix import conflict — keep runFullPipeline import
+  - Remove dead code block (old enrichDeepDive logic)
+  - Verify no more conflict markers
+
+  Task 1.3: Resolve Merge Conflicts in ai/index.ts (20 min)
+
+  - Keep "Updated upstream" side (full multi-model router)
+  - Discard "Stashed changes" (old stub)
+
+  Task 1.4: Resolve Merge Conflict in page.tsx (20 min)
+
+  - Keep useInlineEdit hook approach
+  - Discard keyboard navigation experiment
+
+  Task 1.5: Fix Broken FTS5 Triggers in Live Database (30 min)
+
+  - Add migration block in src/lib/db/index.ts (after line ~141)
+  - DROP + recreate FTS5 triggers with correct columns
+  - Test: Start dev server, check console for [Migration] FTS5 triggers recreated...
+
+  Task 1.6: Fix Silent Error Catches (20 min)
+
+  - src/app/items/[id]/page.tsx line 231: log fetchCollections errors
+  - src/app/api/items/[id]/enrich/route.ts line 56: log JSON parse errors
+
+  Task 1.7: Add Idempotency Guard to Enrich Endpoint (15 min)
+
+  - Check if item already processing_ai — reject with 409 if true
+  - Prevents double-enrichment on network retry
+
+  Task 1.8: Verify Compilation (15 min)
+
+  - Run npx tsc --noEmit → expect 0 errors
+  - Start npm run dev → server boots successfully
+
+  ---
+  Milestone 2: Activate the Scheduler (1-2 hours)
+
+  Goal: Processing pipeline actually runs
+  Validate: Upload an image, watch it move through queued → processing_ocr → ...
+
+  Task 2.1: Create Worker Start Script (30 min)
+
+  - Create scripts/start-worker.ts
+  - Import startProcessingLoop from @/lib/scheduler
+  - Add basic logging: "Worker started", "Processing item X", "Job complete"
+  - Test: Run npx tsx scripts/start-worker.ts in separate terminal while dev server runs
+
+  Task 2.2: Implement processing_ocr Stage Stub (20 min)
+
+  - Update src/lib/scheduler.ts: add basic OCR handler
+  - For now, just log "OCR processing" and move item to ocr_complete
+  - Don't call Cloud Vision yet — we'll wire that in Milestone 4
+
+  Task 2.3: Implement processing_resize Stage with Sharp (45 min)
+
+  - Use sharp library (already in package.json)
+  - Create thumbnail (300px width) → save to data/thumbnails/{id}.jpg
+  - Create web version (1024px width) → save to data/resized/{id}.jpg
+  - Update DB: set thumbnailPath, resizedImagePath, move to resize_complete
+  - Test: Upload → confirm files appear in data/ dirs
+
+  Task 2.4: Wire Up Status Transitions in Scheduler (30 min)
+
+  - Ensure processing_ocr → ocr_complete → processing_resize → resize_complete flow
+  - Add error handling: if any stage fails, set status to error + log message
+  - Test: Upload → watch status changes in DB
+
+  ---
+  Milestone 3: Swap Basic OCR with Google Cloud Vision (1-2 hours)
+
+  Goal: Extract text accurately using Cloud Vision instead of current method
+  Validate: Upload image → OCR produces meaningful text
+
+  Task 3.1: Set Up Google Cloud Vision Client (30 min)
+
+  - Verify .env.local has GOOGLE_CLOUD_PROJECT_ID and GOOGLE_APPLICATION_CREDENTIALS
+  - Install @google-cloud/vision if not already present
+  - Create src/lib/ocr/cloud-vision.ts with Vision client initialization
+  - Add error handling: if Vision API fails, set item to error status
+
+  Task 3.2: Implement Cloud Vision OCR Handler (45 min)
+
+  - Read image file from originalImagePath
+  - Call Vision.textDetection(image) API
+  - Extract raw text → store in rawOcr
+  - Handle confidence/warnings
+  - Test: Upload image → confirm rawOcr populated with text
+
+  Task 3.3: Update Scheduler OCR Stage to Use Cloud Vision (20 min)
+
+  - Replace stub from Task 2.2 with actual Cloud Vision call
+  - Move item to ocr_complete on success
+  - On failure, move to error + log API response
+
+  Task 3.4: Add Fallback if Cloud Vision Quota Exceeded (15 min)
+
+  - Catch "quota exceeded" error
+  - Set item status to ocr_pending_retry
+  - Scheduler will retry on next cycle
+  - Log warning (quota will reset)
+
+  ---
+  Milestone 4: Wire Up AI Enrichment (Conductor + Experts) (2-3 hours)
+
+  Goal: AI extracts reseller-ready data (category, value indicators, condition, keywords)
+  Validate: Enriched item has: category, title, keywords, condition notes, analysis_history entry
+
+  Task 4.1: Implement Conductor (Router) AI Call (45 min)
+
+  - Read rawOcr + thumbnailPath (image)
+  - Call Claude with CONDUCTOR_PROMPT.md
+  - Returns: { category: "comic_books" | "railroadiana" | ..., confidence_score: 0.85 }
+  - Store raw response in aiRawResponse
+  - Move to processing_ai stage
+
+  Task 4.2: Implement Expert Dispatcher (30 min)
+
+  - Based on conductor's category → pick expert prompt
+    - comic_books → use COMIC_BOOK_EXPERT.md
+    - railroadiana → use RAILROAD_EXPERT.md
+    - etc.
+  - Load correct expert prompt template from docs/prompts/experts/
+
+  Task 4.3: Call Expert AI with Image + OCR Text (60 min)
+
+  - Send to Claude: OCR text + image file
+  - Expert extracts: title, identified names, historical context, condition flaws, valuation gut-check, eBay keywords
+  - Parse JSON response with Ajv schema validation
+  - Store parsed result in: title, identifiedNames, historicalContext, collectorSignificance, plus new analysis_history entry
+  - If validation fails → log error, move to error, don't crash
+
+  Task 4.4: Store Analysis History Entry (30 min)
+
+  - Append to analysis_history (JSON array)
+  - Entry contains: { timestamp, category, expertUsed, rawResponse, parsedResult, confidence }
+  - This allows re-running analysis and seeing history
+
+  Task 4.5: Add Retry Logic for AI Failures (20 min)
+
+  - If Claude API fails → retry up to 3 times with exponential backoff
+  - After 3 failures → set status to error, store last error message
+
+  ---
+  Milestone 5: End-to-End Pipeline Test (1 hour)
+
+  Goal: Full flow works: upload → resize → OCR → enrich → store
+  Validate: Can upload real document and get back enriched data
+
+  Task 5.1: Manual Test Flow (30 min)
+
+  1. Start dev server: npm run dev
+  2. Start worker: npx tsx scripts/start-worker.ts (separate terminal)
+  3. Upload test image via API or UI
+  4. Watch both consoles — confirm:
+    - Upload succeeds
+    - Scheduler picks up job
+    - Resize creates files
+    - Cloud Vision extracts text
+    - Conductor categorizes
+    - Expert enriches
+    - Item ends in complete status
+  5. Query DB: confirm all fields populated (title, identifiedNames, analysis_history, etc.)
+
+  Task 5.2: Test Error Paths (20 min)
+
+  - Upload invalid file → confirm rejected with clear error
+  - Kill worker mid-processing → restart it → confirm scheduler recovers
+  - Double-click "Enrich" → confirm idempotency guard prevents duplicate analysis
+
+  Task 5.3: Document Known Limitations (10 min)
+
+  - Create docs/PIPELINE_STATUS.md
+  - List what works, what's WIP, what still needs UI
+
+  ---
+  Milestone 6: Performance & Reliability Tweaks (1-2 hours)
+
+  Goal: Pipeline stable, performant, doesn't hang or lose data
+  Validate: Can process 10 items in sequence without errors
+
+  Task 6.1: Add Processing Timeouts (30 min)
+
+  - Cloud Vision: 30s timeout
+  - AI Enrichment: 60s timeout
+  - If timeout → move to error, log timeout
+  - Prevents hanging indefinitely
+
+  Task 6.2: Add Backpressure (Queue Depth Limiting) (20 min)
+
+  - Scheduler: don't process more than 2 items concurrently
+  - If queue depth > 5, pause accepting new uploads (polite backoff)
+  - Return 429 (too busy) on upload attempts when overloaded
+
+  Task 6.3: Add Health Check Endpoint (30 min)
+
+  - GET /api/health returns:
+  {
+    "status": "ok",
+    "queueDepth": 2,
+    "recentErrors": ["..."],
+    "cloudVision": "ok",
+    "anthropic": "ok"
+  }
+  - Use to diagnose why things hang
+
+  Task 6.4: Add Request Logging (20 min)
+
+  - Log all uploads, enrichments, errors to structured JSON
+  - Include: item ID, duration, status, error message
+  - File: data/logs/YYYY-MM-DD.log
+  - Helps debug later
+
+  ---
+  Risk Areas & Mitigation
+
+  🔴 High Risk: Database Locking
+
+  - Problem: SQLite locks on concurrent writes → pipeline hangs
+  - Mitigation: Keep background jobs to 1-2 concurrent; test with stress test
+  - Validation: Process 10 items without "database is locked" errors
+
+  🔴 High Risk: Google Cloud Vision API Failures
+
+  - Problem: Quota exceeded, auth error, network failure
+  - Mitigation: Implement retry with exponential backoff; fall through to error state
+  - Validation: Test with invalid credentials → confirm graceful failure
+
+  🟡 Medium Risk: AI Response Parsing
+
+  - Problem: Claude returns malformed JSON → schema validation fails
+  - Mitigation: Strict Ajv validation; log raw response; move to error gracefully
+  - Validation: Check data/logs/ for parse failures
+
+  🟡 Medium Risk: Merge Conflicts in Later Sessions
+
+  - Problem: If you edit files during fixes, new conflicts appear
+  - Mitigation: Commit after each milestone; pull fresh before starting
+  - Validation: Run grep -rn "<<<<<<" src/ before moving to next milestone
+
+  🟢 Low Risk: Image File Corruption
+
+  - Problem: Partially written files cause OCR to fail
+  - Mitigation: Write to temp file, then rename (atomic)
+  - Validation: Can safely kill server mid-upload → resume without data loss
+
+  ---
+  Summary
+
+  ┌─────────────────────────┬───────────┬────────────────────┬────────────────────────────────────┐
+  │        Milestone        │ Time Est. │    Blocker Fix     │           New Capability           │
+  ├─────────────────────────┼───────────┼────────────────────┼────────────────────────────────────┤
+  │ 1. Emergency Fixes      │ 2-3h      │ ✅ Code compiles   │ DB works, error logs visible       │
+  ├─────────────────────────┼───────────┼────────────────────┼────────────────────────────────────┤
+  │ 2. Scheduler Activation │ 1-2h      │ ✅ Pipeline runs   │ Images resize, OCR queues          │
+  ├─────────────────────────┼───────────┼────────────────────┼────────────────────────────────────┤
+  │ 3. Cloud Vision         │ 1-2h      │ ✅ Accurate OCR    │ Text extraction works              │
+  ├─────────────────────────┼───────────┼────────────────────┼────────────────────────────────────┤
+  │ 4. AI Enrichment        │ 2-3h      │ ✅ Reseller data   │ Titles, values, keywords extracted │
+  ├─────────────────────────┼───────────┼────────────────────┼────────────────────────────────────┤
+  │ 5. End-to-End Test      │ 1h        │ ✅ Full flow works │ Can use it now                     │
+  ├─────────────────────────┼───────────┼────────────────────┼────────────────────────────────────┤
+  │ 6. Reliability          │ 1-2h      │ -                  │ Stable, doesn't hang               │
+  └─────────────────────────┴───────────┴────────────────────┴────────────────────────────────────┘
+
+  Total: ~9-13 hours of focused work
+
+  ---
+  Next Steps
+
+  1. Start with Milestone 1 (emergency fixes) — this unblocks everything
+  2. After each task, commit to git
+  3. After each milestone, run validation check
+  4. If you get stuck, check the risk areas section

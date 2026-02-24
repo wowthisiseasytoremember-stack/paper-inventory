@@ -27,16 +27,8 @@ export async function GET(
       ...item,
       identifiedNames: item.identifiedNames ? JSON.parse(item.identifiedNames) : [],
       tags: item.tags ? JSON.parse(item.tags as string) : [],
-      comp_search_keywords: item.comp_search_keywords ? JSON.parse(item.comp_search_keywords as string) : [],
-      visible_flaws: item.visible_flaws ? JSON.parse(item.visible_flaws as string) : [],
-      research_pathways: item.research_pathways ? JSON.parse(item.research_pathways as string) : [],
-      uncertain_fields: item.uncertain_fields ? JSON.parse(item.uncertain_fields as string) : [],
-      item_specifics: item.item_specifics ? JSON.parse(item.item_specifics as string) : {},
-      identification: item.identification,
-      estimated_value: item.estimated_value,
-      liquidity_score: item.liquidity_score,
-      target_buy_price: item.target_buy_price,
-      user_decision: item.user_decision || 'none',
+      lockedFields: item.lockedFields ? JSON.parse(item.lockedFields) : [],
+      analysis_history: item.analysis_history ? JSON.parse(item.analysis_history) : [],
       processingLock: Boolean(item.processingLock)
     };
 

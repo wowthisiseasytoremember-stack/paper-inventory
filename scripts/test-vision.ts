@@ -60,10 +60,15 @@ async function testOCR() {
       // Call Vision API
       const request = {
         image: { content: base64Image },
+        features: [
+          { type: 'TEXT_DETECTION' as const },
+          { type: 'WEB_DETECTION' as const }
+        ]
       };
 
-      const [result] = await client.textDetection(request);
+      const [result] = await client.annotateImage(request);
       const detections = result.textAnnotations || [];
+      const webDetection = result.webDetection || {};
 
       if (detections.length === 0) {
         console.log(`⚠️  ${imageName}: No text detected`);
@@ -78,7 +83,15 @@ async function testOCR() {
 
       console.log(`✅ ${imageName}`);
       console.log(`   Text: "${textPreview}..."`);
-      console.log(`   Confidence: ${(confidence * 100).toFixed(1)}%\n`);
+      console.log(`   Confidence: ${(confidence * 100).toFixed(1)}%`);
+      
+      if (webDetection.webEntities && webDetection.webEntities.length > 0) {
+        console.log(`   Web Entities:`);
+        webDetection.webEntities.slice(0, 5).forEach(entity => {
+           console.log(`     - ${entity.description} (${(entity.score! * 100).toFixed(1)}%)`);
+        });
+      }
+      console.log('');
 
       successCount++;
     } catch (err: any) {

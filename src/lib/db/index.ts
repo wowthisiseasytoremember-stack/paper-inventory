@@ -49,7 +49,7 @@ export function initSchema() {
 
     CREATE TABLE IF NOT EXISTS items (
         id TEXT PRIMARY KEY,
-        status TEXT NOT NULL DEFAULT 'queued' CHECK(status IN ('queued', 'processing_ocr', 'ocr_complete', 'processing_resize', 'resize_complete', 'processing_ai', 'complete', 'error')),
+        status TEXT NOT NULL DEFAULT 'queued' CHECK(status IN ('queued', 'processing_ocr', 'ocr_complete', 'ocr_pending_retry', 'processing_resize', 'resize_complete', 'processing_ai', 'complete', 'error')),
         processingLock INTEGER DEFAULT 0,
         retryCount INTEGER DEFAULT 0,
         watchdogLockedAt DATETIME,

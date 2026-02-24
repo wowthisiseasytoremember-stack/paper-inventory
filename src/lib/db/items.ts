@@ -8,7 +8,7 @@
 import { db } from './index';
 import { randomUUID } from 'crypto';
 
-export type ItemStatus = 'queued' | 'processing_ocr' | 'ocr_complete' | 'processing_resize' | 'resize_complete' | 'processing_ai' | 'complete' | 'error';
+export type ItemStatus = 'queued' | 'processing_ocr' | 'ocr_complete' | 'ocr_pending_retry' | 'processing_resize' | 'resize_complete' | 'processing_ai' | 'complete' | 'error';
 
 export interface Item {
   id: string;

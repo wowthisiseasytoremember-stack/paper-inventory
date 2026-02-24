@@ -8,6 +8,7 @@
 import { ItemService, Item } from './db/items';
 import { db } from './db';
 import { resizeImage } from './processing/resize';
+import { performCloudVisionOCR } from './ocr/cloud-vision';
 
 const POLLING_INTERVAL_MS = 2000;
 const MAX_CONCURRENT_JOBS = 1;
@@ -77,15 +78,40 @@ async function processItem(item: Item) {
     }
 
     if (item.status === 'processing_ocr') {
-      // TODO: Call GCV OCR handler (Task 3.1)
-      console.log(`[Scheduler] ${item.id}: OCR pending (will use GCV in next phase)`);
+      try {
+        const ocrResult = await performCloudVisionOCR(item.originalImagePath!);
 
-      // Stub: set dummy OCR result
-      ItemService.updateMetadata(item.id, {
-        rawOcr: '[OCR PENDING - Google Cloud Vision integration in progress]'
-      });
+        ItemService.updateMetadata(item.id, {
+          rawOcr: ocrResult.text,
+          confidence: ocrResult.confidence,
+          ocrDurationMs: ocrResult.duration_ms
+        });
 
-      db.prepare(`UPDATE items SET status = 'ocr_complete', statusUpdatedAt = ? WHERE id = ?`)
+        db.prepare(`UPDATE items SET status = 'ocr_complete', statusUpdatedAt = ? WHERE id = ?`)
+          .run(new Date().toISOString(), item.id);
+
+        console.log(`[Scheduler] ${item.id}: OCR complete (confidence: ${(ocrResult.confidence * 100).toFixed(1)}%)`);
+
+      } catch (err: any) {
+        // Handle specific errors
+        if (err.message.includes('QUOTA_EXCEEDED')) {
+          console.warn(`[Scheduler] ${item.id}: GCV quota exceeded, retrying later`);
+          db.prepare(`UPDATE items SET status = 'ocr_pending_retry', statusUpdatedAt = ? WHERE id = ?`)
+            .run(new Date().toISOString(), item.id);
+        } else {
+          console.error(`[Scheduler] ${item.id}: OCR failed -`, err.message);
+          db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
+            .run(err.message, new Date().toISOString(), item.id);
+        }
+      }
+      return;
+    }
+
+    // Handle retry state
+    if (item.status === 'ocr_pending_retry') {
+      console.log(`[Scheduler] ${item.id}: retrying OCR...`);
+      // Move back to processing_ocr to retry
+      db.prepare(`UPDATE items SET status = 'processing_ocr', statusUpdatedAt = ? WHERE id = ?`)
         .run(new Date().toISOString(), item.id);
       return;
     }

@@ -15,10 +15,8 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const navItems = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Archival Log', href: '/log', icon: History },
+  { name: 'Inventory', href: '/', icon: LayoutDashboard },
   { name: 'Collections', href: '/collections', icon: Database },
-  { name: 'Search', href: '/search', icon: Search },
 ];
 
 export function Sidebar({ className }: { className?: string }) {
@@ -77,10 +75,13 @@ export function Sidebar({ className }: { className?: string }) {
         </nav>
 
         {/* Upload CTA */}
-        <button className="mt-[24px] w-full h-[48px] rounded-[8px] bg-transparent border border-[var(--accent-warm)] text-[var(--accent-warm)] text-[14px] font-semibold flex items-center justify-center gap-2 hover:bg-[var(--glass-01)] transition-luxury hover-lift">
+        <Link 
+          href="/?upload=true"
+          className="mt-[24px] w-full h-[48px] rounded-[8px] bg-transparent border border-[var(--accent-warm)] text-[var(--accent-warm)] text-[14px] font-semibold flex items-center justify-center gap-2 hover:bg-[var(--glass-01)] transition-luxury hover-lift"
+        >
           <Upload size={18} />
           <span>Upload Items</span>
-        </button>
+        </Link>
       </div>
 
       <div className="mt-auto p-[24px] pb-[32px] space-y-4">

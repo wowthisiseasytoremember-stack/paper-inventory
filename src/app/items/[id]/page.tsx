@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, AlertCircle, RefreshCw, Copy, Check, Pencil, Save, X,
-  Lock, ChevronDown, Tag, Plus, FolderPlus, HelpCircle, ExternalLink
+  Lock, ChevronDown, Tag, Plus, HelpCircle, ExternalLink
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -107,15 +107,15 @@ function EditableText({ label, fieldName, content, locked, editable, edit, multi
       <div className="space-y-3">
         {multiline ? (
           <textarea autoFocus value={edit.value} onChange={e => edit.setValue(e.target.value)}
-            className="w-full bg-slate-900 border border-blue-500/50 rounded-2xl px-5 py-4 text-sm text-slate-200 leading-relaxed outline-none resize-none min-h-[160px] shadow-inner shadow-black/50 transition-colors focus:border-blue-400 focus:ring-1 focus:ring-blue-400/50" />
+            className="w-full bg-[var(--surface-800)] border border-[var(--accent-warm)]/50 rounded-[8px] px-5 py-4 text-[14px] text-[var(--text-100)] leading-relaxed outline-none resize-none min-h-[160px] shadow-inner transition-colors focus:border-[var(--accent-warm)] focus:ring-1 focus:ring-[var(--accent-warm)]/50" />
         ) : (
           <input autoFocus value={edit.value} onChange={e => edit.setValue(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') edit.save(); if (e.key === 'Escape') edit.cancel(); }}
-            className="w-full bg-slate-900 border border-blue-500/50 rounded-xl px-5 py-3 text-sm text-slate-200 outline-none shadow-inner shadow-black/50 transition-colors focus:border-blue-400 focus:ring-1 focus:ring-blue-400/50" />
+            className="w-full bg-[var(--surface-800)] border border-[var(--accent-warm)]/50 rounded-[8px] px-5 py-3 text-[14px] text-[var(--text-100)] outline-none shadow-inner transition-colors focus:border-[var(--accent-warm)] focus:ring-1 focus:ring-[var(--accent-warm)]/50" />
         )}
         <div className="flex gap-3 justify-end">
-          <button onClick={edit.cancel} className="px-4 py-2 hover:bg-slate-800 text-slate-400 text-xs font-bold rounded-xl transition-colors">Cancel</button>
-          <button onClick={edit.save} className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors shadow-lg shadow-blue-500/20"><Save size={14} />Save</button>
+          <button onClick={edit.cancel} className="px-4 py-2 hover:bg-[var(--surface-780)] text-[var(--text-300)] text-[12px] font-semibold rounded-[6px] transition-colors">Cancel</button>
+          <button onClick={edit.save} className="px-5 py-2 bg-[var(--accent-warm)] hover:bg-[#A88B52] text-[#0A0A0B] text-[12px] font-semibold rounded-[6px] flex items-center gap-1.5 transition-colors shadow-lg"><Save size={14} />Save</button>
         </div>
       </div>
     );
@@ -124,23 +124,23 @@ function EditableText({ label, fieldName, content, locked, editable, edit, multi
   return (
     <div className="group/field relative">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+        <h3 className="text-[10px] font-black text-[var(--accent-cool)] uppercase tracking-[0.2em] flex items-center gap-2">
           {label}
-          {locked && <Lock size={12} className="text-amber-500/60" />}
+          {locked && <Lock size={12} className="text-[var(--status-review)]" />}
         </h3>
         {editable && content && !locked && (
           <button onClick={() => edit.start(fieldName, content)}
-            className="text-xs font-bold text-slate-500 hover:text-blue-400 flex items-center gap-1.5 opacity-0 group-hover/field:opacity-100 transition-all bg-slate-900 px-2 py-1 rounded-lg border border-slate-800 hover:border-blue-500/30">
+            className="text-[12px] font-semibold text-[var(--text-300)] hover:text-[var(--text-100)] flex items-center gap-1.5 opacity-0 group-hover/field:opacity-100 transition-all bg-[var(--surface-800)] px-2 py-1 rounded-[6px] border border-[var(--glass-01)] hover:border-[var(--accent-warm)]/30">
             <Pencil size={12} /> Edit
           </button>
         )}
       </div>
       {content ? (
-        <div className="text-sm text-slate-300 leading-relaxed prose prose-invert prose-p:my-2 prose-strong:text-white max-w-none font-medium">
+        <div className="text-[14px] text-[var(--text-200)] leading-[1.6] prose prose-invert prose-p:my-2 prose-strong:text-[var(--text-100)] max-w-none font-normal">
           <ReactMarkdown>{content}</ReactMarkdown>
         </div>
       ) : (
-        <p className="text-sm text-slate-600 font-medium italic">Pending analysis...</p>
+        <p className="text-[14px] text-[var(--text-300)] font-normal italic">Pending analysis...</p>
       )}
     </div>
   );
@@ -148,12 +148,12 @@ function EditableText({ label, fieldName, content, locked, editable, edit, multi
 
 function StatusPill({ status }: { status: string }) {
   const config = status === 'complete'
-    ? { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', label: 'Complete' }
+    ? { bg: 'bg-[var(--accent-warm)]/10', text: 'text-[var(--accent-warm)]', border: 'border-[var(--accent-warm)]/20', label: 'Complete' }
     : status === 'error'
-    ? { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/20', label: 'Error' }
-    : { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20 animate-pulse', label: status.replace(/_/g, ' ') };
+    ? { bg: 'bg-[var(--status-review)]/10', text: 'text-[var(--status-review)]', border: 'border-[var(--status-review)]/20', label: 'Error' }
+    : { bg: 'bg-[var(--status-processing)]/10', text: 'text-[var(--status-processing)]', border: 'border-[var(--status-processing)]/20 animate-pulse', label: status.replace(/_/g, ' ') };
   return (
-    <span className={cn('px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border', config.bg, config.text, config.border)}>
+    <span className={cn('px-2.5 py-1 rounded-[4px] text-[10px] font-bold uppercase tracking-widest border', config.bg, config.text, config.border)}>
       {config.label}
     </span>
   );
@@ -245,25 +245,21 @@ export default function ItemDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B0D13]">
-        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-900)]">
+        <RefreshCw className="w-8 h-8 text-[var(--accent-cool)] animate-spin" />
       </div>
     );
   }
 
-  function Loader2({ className }: { className?: string }) {
-    return <RefreshCw className={className} />;
-  }
-
   if (!item) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B0D13] p-6">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-900)] p-6">
         <div className="max-w-sm text-center space-y-6">
-          <div className="w-20 h-20 bg-red-500/10 border border-red-500/20 rounded-3xl flex items-center justify-center mx-auto shadow-[0_0_40px_-10px_rgba(239,68,68,0.3)]">
-            <AlertCircle className="w-10 h-10 text-red-500" />
+          <div className="w-20 h-20 bg-[var(--status-review)]/10 border border-[var(--status-review)]/20 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+            <AlertCircle className="w-10 h-10 text-[var(--status-review)]" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Item not found</h1>
-          <button onClick={() => router.push('/')} className="px-8 py-3.5 bg-white text-black text-sm font-bold rounded-2xl hover:scale-105 transition-transform">
+          <h1 className="text-2xl font-bold text-[var(--text-100)] tracking-tight">Item not found</h1>
+          <button onClick={() => router.push('/')} className="px-8 py-3.5 bg-[var(--surface-800)] text-[var(--text-100)] border border-[var(--glass-01)] hover:border-[var(--glass-02)] text-sm font-semibold rounded-[8px] hover-lift transition-all">
             Back to Inventory
           </button>
         </div>
@@ -283,27 +279,27 @@ export default function ItemDetail() {
     "w-full h-full object-contain transition-all duration-1000 ease-in-out",
     !imageLoaded ? "opacity-0 scale-95" : "opacity-100 scale-100",
     ['queued', 'processing_ocr', 'processing_resize'].includes(item.status)
-      ? "grayscale blur-[2px]"
+      ? "processing-grayscale blur-sm"
       : item.status === 'processing_ai'
-        ? "grayscale-0 saturate-50 opacity-80"
-        : "saturate-150 contrast-110"
+        ? "processing-mid"
+        : "processing-complete"
   );
 
   return (
-    <main className="min-h-screen bg-[#0B0D13] text-slate-200 pb-32 font-sans selection:bg-blue-500/30 selection:text-white">
+    <main className="min-h-screen bg-[var(--bg-900)] text-[var(--text-100)] pb-[120px] font-sans">
       
-      {/* ===== GLOBAL HEADER ===== */}
-      <header className="sticky top-0 z-40 bg-[#0B0D13]/80 backdrop-blur-2xl border-b border-white/5 px-4 sm:px-8 py-4 flex items-center justify-between">
+      {/* ===== HEADER ===== */}
+      <header className="sticky top-0 z-40 bg-[var(--bg-900)]/90 backdrop-blur-xl border-b border-[var(--glass-01)] px-[32px] py-[16px] flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/')}
-            className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white transition-all shadow-sm">
-            <ArrowLeft size={18} />
+            className="p-[8px] rounded-[6px] bg-transparent border border-[var(--glass-01)] hover:bg-[var(--glass-02)] text-[var(--text-200)] hover:text-[var(--text-100)] transition-colors">
+            <ArrowLeft size={16} />
           </button>
           <div className="flex items-center gap-3">
             <StatusPill status={item.status} />
             {item.guessedId && (
-              <span className="text-[11px] font-mono text-slate-400 bg-white/5 border border-white/5 px-2.5 py-1 rounded-md">
-                {item.guessedId}
+              <span className="text-[12px] font-mono text-[var(--text-300)] bg-[var(--surface-800)] px-2 py-1 rounded-[4px]">
+                ID: {item.guessedId}
               </span>
             )}
           </div>
@@ -318,8 +314,8 @@ export default function ItemDetail() {
               }, null, 2));
               toast.success('System Data Copied');
             }}
-              className="px-4 py-2 hover:bg-white/5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-colors flex items-center gap-2">
-              <Copy size={14} /> Data
+              className="px-4 py-2 hover:bg-[var(--glass-01)] rounded-[6px] text-[12px] font-semibold text-[var(--text-300)] hover:text-[var(--text-100)] transition-colors flex items-center gap-2">
+              <Copy size={14} /> JSON Data
             </button>
             <button onClick={() => {
               const listing = [
@@ -331,51 +327,49 @@ export default function ItemDetail() {
               navigator.clipboard.writeText(listing);
               toast.success('Listing Copied');
             }}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black tracking-wide rounded-xl transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 flex items-center gap-2">
+              className="px-5 py-2.5 bg-[var(--surface-800)] hover:bg-[var(--surface-780)] text-[var(--accent-warm)] border border-[var(--accent-warm)] text-[12px] font-semibold rounded-[6px] transition-all hover-lift flex items-center gap-2">
               <ExternalLink size={14} /> Export Listing
             </button>
           </div>
         )}
       </header>
 
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-8">
+      <div className="max-w-[1280px] mx-auto px-[16px] md:px-[32px] pt-[40px]">
         
         {/* ===== ERROR BANNER ===== */}
         {isError && item.errorMessage && (
-          <div className="mb-8 p-6 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-between gap-6 backdrop-blur-md shadow-2xl shadow-red-500/5">
+          <div className="mb-8 p-6 rounded-[8px] bg-[var(--status-review)]/10 border border-[var(--status-review)]/20 flex items-center justify-between gap-6 backdrop-blur-md">
             <div className="flex items-center gap-4 min-w-0">
-              <div className="p-3 bg-red-500/20 rounded-2xl">
-                <AlertCircle size={24} className="text-red-400" />
+              <div className="p-3 bg-[var(--status-review)]/20 rounded-full">
+                <AlertCircle size={24} className="text-[var(--status-review)]" />
               </div>
               <div>
-                <h3 className="text-red-400 font-black tracking-tight text-lg mb-1">Processing Failed</h3>
-                <p className="text-sm text-red-300/80 font-mono break-all">{item.errorMessage}</p>
+                <h3 className="text-[var(--status-review)] font-bold tracking-tight text-[16px] mb-1">Processing Failed</h3>
+                <p className="text-[12px] text-[var(--status-review)]/80 font-mono break-all">{item.errorMessage}</p>
               </div>
             </div>
             <button onClick={handleRetry} disabled={retrying}
-              className="shrink-0 flex items-center gap-2 px-6 py-3 bg-red-500 text-white text-sm font-black rounded-xl hover:bg-red-600 disabled:opacity-50 transition-all shadow-lg shadow-red-500/20">
+              className="shrink-0 flex items-center gap-2 px-6 py-3 bg-[var(--status-review)] text-[#0A0A0B] text-[14px] font-bold rounded-[6px] hover:opacity-90 disabled:opacity-50 transition-all hover-lift">
               <RefreshCw size={16} className={retrying ? 'animate-spin' : ''} />
               {retrying ? 'Retrying' : 'Retry Processing'}
             </button>
           </div>
         )}
 
-        {/* ===== MAIN SPLIT LAYOUT ===== */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.2fr] gap-10 items-start">
+        {/* ===== MAIN SPLIT LAYOUT (56% / 44%) ===== */}
+        <div className="grid grid-cols-1 lg:grid-cols-[56%_44%] gap-[48px] items-start">
           
-          {/* --- LEFT COLUMN: Focus Image --- */}
-          <div className="xl:sticky xl:top-28 space-y-6">
+          {/* --- LEFT COLUMN: Image & Primary Identity --- */}
+          <div className="lg:sticky lg:top-[120px] space-y-[32px]">
             
-            <div className="relative group rounded-[2rem] overflow-hidden bg-[#0F111A] border border-white/5 shadow-2xl">
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="aspect-[3/4] lg:aspect-square relative flex items-center justify-center p-4">
+            {/* Image Container */}
+            <div className="relative group rounded-[8px] overflow-hidden bg-[var(--surface-800)] border border-[var(--glass-01)] shadow-2xl h-[400px] md:h-[600px] lg:h-[700px] flex items-center justify-center p-[24px]">
                 {!imageLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-slate-700 animate-spin" />
+                    <RefreshCw className="w-6 h-6 text-[var(--accent-cool)] animate-spin" />
                   </div>
                 )}
-                {/* Visual state effects apply to the image wrapper or image itself */}
+                
                 <div className="w-full h-full relative z-0">
                   <BespokeMagnifier
                     src={`/api/items/${item.id}/image`}
@@ -385,180 +379,165 @@ export default function ItemDetail() {
                   />
                 </div>
                 
-                {/* Floating Processing Overlay (if analyzing) */}
+                {/* Floating Processing Overlay */}
                 {isProcessing && (
-                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0B0D13]/60 backdrop-blur-md transition-opacity">
-                    <div className="w-16 h-16 relative flex items-center justify-center mb-6">
-                      <div className="absolute inset-0 rounded-full border-4 border-blue-500/20"></div>
-                      <div className="absolute inset-0 rounded-full border-4 border-t-blue-500 animate-spin"></div>
-                      <RefreshCw size={24} className="text-blue-400 animate-pulse" />
-                    </div>
-                    <div className="px-6 py-2 bg-black/50 rounded-full border border-white/10 backdrop-blur-xl">
-                      <p className="text-sm font-black text-white tracking-widest uppercase">
-                        {item.status.replace('_', ' ')}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Quick Stats Metadata Row */}
-            <div className="flex gap-4">
-              <div className="flex-1 py-4 px-6 rounded-2xl bg-[#0F111A] border border-white/5 flex flex-col justify-center items-center">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Confidence</p>
-                <p className="text-2xl font-black text-white">{((item.confidence || 0) * 100).toFixed(0)}<span className="text-slate-500 text-lg">%</span></p>
-              </div>
-              <div className="flex-1 py-4 px-6 rounded-2xl bg-[#0F111A] border border-white/5 flex flex-col justify-center items-center">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Processed</p>
-                <p className="text-sm font-bold text-slate-300 mt-1">
-                  {item.processedAt ? formatDistanceToNow(new Date(item.processedAt), { addSuffix: true }) : '—'}
-                </p>
-              </div>
-            </div>
-
-            {/* Collection Assign button */}
-            <button onClick={() => setShowCollectionModal(true)}
-              className={cn(
-                'w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border transition-all duration-300 font-bold',
-                currentCollection
-                  ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20'
-                  : 'bg-[#0F111A] border-white/5 text-slate-400 hover:text-white hover:border-white/10'
-              )}>
-              {currentCollection ? <Tag size={18} /> : <Plus size={18} />}
-              <span>{currentCollection?.name || 'Assign to Collection'}</span>
-            </button>
-            
-          </div>
-
-          {/* --- RIGHT COLUMN: Identity & Analytics --- */}
-          <div className="space-y-8">
-            
-            {/* 1. IDENTITY & PRICE (The core of the app) */}
-            <section className="space-y-6">
-              
-              <div className="space-y-4">
-                {edit.field === 'title' ? (
-                  <div className="flex items-center gap-3 bg-[#0F111A] p-4 rounded-2xl border border-white/10 shadow-2xl">
-                    <input autoFocus value={edit.value} onChange={e => edit.setValue(e.target.value)}
-                      className="text-3xl lg:text-4xl font-black text-white bg-transparent outline-none w-full tracking-tight" />
-                    <button onClick={() => edit.save()} className="p-3 bg-blue-600 rounded-xl text-white hover:bg-blue-500 transition-colors"><Save size={18} /></button>
-                    <button onClick={edit.cancel} className="p-3 hover:bg-white/10 rounded-xl text-slate-400 transition-colors"><X size={18} /></button>
-                  </div>
-                ) : (
-                  <h1 className="text-4xl lg:text-5xl font-black text-white hover:text-slate-200 transition-colors tracking-tight leading-[1.1] group cursor-pointer flex items-start gap-4"
-                    onClick={() => isComplete && edit.start('title', item.title || '')}>
-                    {item.title || 'Awaiting Identification...'}
-                    {isComplete && <div className="mt-2 p-2 bg-white/5 rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow-sm"><Pencil size={18} className="text-slate-400" /></div>}
-                  </h1>
-                )}
-                
-                {/* TAGS */}
-                {(item.tags && item.tags.length > 0) && (
-                  <div className="flex flex-wrap gap-2 pt-2 group/tags relative">
-                    {edit.field === 'tags' ? (
-                      <div className="w-full flex items-center gap-2 bg-[#0F111A] p-2 rounded-xl border border-white/10">
-                        <input autoFocus value={edit.value} onChange={e => edit.setValue(e.target.value)} placeholder="tag1, tag2..."
-                          className="flex-1 bg-transparent px-2 text-sm text-white outline-none font-bold placeholder:text-slate-600" />
-                        <button onClick={edit.save} className="px-3 py-1.5 bg-blue-600 rounded-lg text-white text-xs font-bold">Save</button>
-                        <button onClick={edit.cancel} className="px-3 py-1.5 hover:bg-white/10 rounded-lg text-slate-400 text-xs font-bold">Cancel</button>
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[var(--surface-800)]/50 backdrop-blur-sm transition-opacity">
+                      {item.status === 'processing_ai' && <div className="absolute inset-0 scan-sweep-bar opacity-30" />}
+                      <div className="flex bg-[var(--glass-02)] backdrop-blur-md px-[16px] py-[8px] rounded-[6px] items-center gap-3 border border-[var(--glass-01)]">
+                        <RefreshCw size={14} className="text-[var(--accent-warm)] animate-spin" />
+                        <span className="text-[12px] font-medium text-[var(--text-100)] tracking-widest uppercase">
+                            {item.status.replace('_', ' ')}
+                        </span>
                       </div>
-                    ) : (
-                      <>
-                        {item.tags.map((tag, i) => (
-                          <span key={i} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-xs font-bold text-slate-300 tracking-wide transition-colors">
-                            {tag}
-                          </span>
-                        ))}
-                        {isComplete && (
-                          <button onClick={() => edit.start('tags', (item.tags || []).join(', '))}
-                            className="p-1.5 hover:bg-white/10 rounded-lg text-slate-500 opacity-0 group-hover/tags:opacity-100 transition-opacity">
-                            <Pencil size={14} />
-                          </button>
-                        )}
-                      </>
-                    )}
                   </div>
                 )}
-              </div>
+            </div>
 
-              {/* Price Callout */}
-              <div className="mt-8 rounded-[2rem] bg-gradient-to-br from-[#121520] to-[#0A0C13] border border-blue-500/20 p-8 shadow-2xl relative overflow-hidden group">
-                <div className="absolute -inset-2 bg-blue-500/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-                
-                <div className="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
-                  <div className="space-y-1">
-                    <h2 className="text-xs font-black text-blue-400 uppercase tracking-[0.2em] mb-3">Estimated Market Value</h2>
-                    {price ? (
-                      <span className="text-5xl md:text-6xl font-black text-white tabular-nums tracking-tighter drop-shadow-md">{price}</span>
-                    ) : (
-                      <span className="text-3xl font-black text-slate-600 italic tracking-tight">
-                        {isProcessing ? 'Analyzing Data...' : 'No Value Available'}
-                      </span>
-                    )}
-                  </div>
+            {/* Left Column Identity Block (Tags, Title) */}
+            <div className="space-y-[16px]">
+                {/* TAGS */}
+                <div className="flex flex-wrap gap-2 group/tags min-h-[28px]">
+                  {edit.field === 'tags' ? (
+                    <div className="w-full flex items-center gap-2 bg-[var(--surface-800)] p-2 rounded-[6px] border border-[var(--glass-01)]">
+                      <input autoFocus value={edit.value} onChange={e => edit.setValue(e.target.value)} placeholder="tag1, tag2..."
+                        className="flex-1 bg-transparent px-2 text-[12px] text-[var(--text-100)] outline-none font-medium placeholder:text-[var(--text-300)]" />
+                      <button onClick={edit.save} className="px-3 py-1.5 bg-[var(--accent-warm)] text-[#0A0A0B] rounded-[4px] text-[10px] font-bold">Save</button>
+                      <button onClick={edit.cancel} className="px-3 py-1.5 hover:bg-[var(--glass-01)] rounded-[4px] text-[var(--text-300)] text-[10px] font-bold">Cancel</button>
+                    </div>
+                  ) : (
+                    <>
+                      {item.tags && item.tags.length > 0 ? item.tags.map((tag, i) => (
+                        <span key={i} className="px-3 py-1 bg-[var(--surface-800)] hover:bg-[var(--surface-780)] border border-[var(--glass-01)] rounded-[4px] text-[10px] font-medium text-[var(--text-200)] uppercase tracking-wider transition-colors cursor-default">
+                          {tag}
+                        </span>
+                      )) : (
+                        <span className="text-[12px] text-[var(--text-300)] italic pl-1">No tags</span>
+                      )}
+                      
+                      {isComplete && (
+                        <button onClick={() => edit.start('tags', (item.tags || []).join(', '))}
+                          className="px-2 hover:bg-[var(--glass-01)] rounded-[4px] text-[var(--text-300)] opacity-0 group-hover/tags:opacity-100 transition-opacity flex items-center border border-transparent hover:border-[var(--glass-01)]">
+                          <Pencil size={12} className="mr-1" /> Add
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
 
-                {item.valuation && (
-                  <div className="relative z-10 mt-8 pt-6 border-t border-blue-500/10">
-                    <div className="prose prose-invert prose-p:text-slate-300 prose-p:leading-relaxed prose-strong:text-white max-w-none text-sm font-medium">
-                      <ReactMarkdown>{item.valuation.replace(price || '', '')}</ReactMarkdown>
-                    </div>
+                {/* TITLE */}
+                {edit.field === 'title' ? (
+                  <div className="flex items-center gap-3 bg-[var(--surface-800)] p-4 rounded-[6px] border border-[var(--accent-warm)]/30">
+                    <input autoFocus value={edit.value} onChange={e => edit.setValue(e.target.value)}
+                      className="text-[24px] md:text-[32px] font-serif text-[var(--text-100)] bg-transparent outline-none w-full leading-tight" />
+                    <button onClick={() => edit.save()} className="p-2 bg-[var(--accent-warm)] rounded-[4px] text-[#0A0A0B] hover:opacity-90"><Save size={16} /></button>
+                    <button onClick={edit.cancel} className="p-2 hover:bg-[var(--glass-01)] rounded-[4px] text-[var(--text-300)]"><X size={16} /></button>
                   </div>
+                ) : (
+                  <h1 className="text-[32px] md:text-[40px] font-serif text-[var(--text-100)] leading-tight tracking-tight group cursor-pointer flex items-start gap-4"
+                    onClick={() => isComplete && edit.start('title', item.title || '')}>
+                    {item.title || 'Awaiting Identification...'}
+                    {isComplete && <div className="mt-2 p-1.5 opacity-0 group-hover:opacity-100 transition-all"><Pencil size={16} className="text-[var(--text-300)] hover:text-[var(--text-100)]" /></div>}
+                  </h1>
                 )}
-              </div>
-            </section>
-
-            {/* 2. REASONING & SIGNIFICANCE */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <section className="rounded-[2rem] bg-[#0F111A] border border-white/5 p-8 shadow-xl">
-                <EditableText
-                  label="Historical Context"
-                  fieldName="historicalContext"
-                  content={item.historicalContext}
-                  locked={isLocked('historicalContext')}
-                  editable={isComplete}
-                  edit={edit}
-                  multiline
-                />
-              </section>
-
-              <section className="rounded-[2rem] bg-[#0F111A] border border-white/5 p-8 shadow-xl">
-                <EditableText
-                  label="Collector Significance"
-                  fieldName="collectorSignificance"
-                  content={item.collectorSignificance}
-                  locked={isLocked('collectorSignificance')}
-                  editable={isComplete}
-                  edit={edit}
-                  multiline
-                />
-              </section>
             </div>
 
-            {/* 3. VERIFICATION (Warnings / Next steps) */}
+          </div>
+
+          {/* --- RIGHT COLUMN: Analytics, Pricing & Metadata --- */}
+          <div className="space-y-[40px] pt-2">
+            
+            {/* Prominent Price Row */}
+            <div className="border border-[var(--glass-01)] rounded-[8px] bg-[var(--surface-800)] p-[32px] relative overflow-hidden">
+                <p className="text-[12px] font-bold text-[var(--accent-cool)] uppercase tracking-widest mb-[16px]">Current Estimate</p>
+                {price ? (
+                    <div className="text-[48px] md:text-[64px] font-serif text-[var(--accent-warm)] leading-none tracking-tight">
+                        {price}
+                    </div>
+                ) : (
+                    <div className="text-[24px] font-serif text-[var(--text-300)] italic">
+                        {isProcessing ? 'Analyzing value...' : 'Indeterminate Value'}
+                    </div>
+                )}
+            </div>
+
+            {/* AI Reasoning Module */}
+            <div className="relative pl-[24px] border-l-[3px] border-[var(--accent-cool)] bg-[var(--surface-800)]/30 p-[24px] pr-0 rounded-r-[8px]">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-cool)] mb-[16px]">Market Rationale</h3>
+                {item.valuation ? (
+                   <div className="text-[14px] text-[var(--text-200)] leading-[1.6] prose prose-invert prose-p:my-2 prose-strong:text-[var(--text-100)] max-w-none font-normal">
+                      <ReactMarkdown>{item.valuation.replace(price || '', '')}</ReactMarkdown>
+                   </div>
+                ) : (
+                   <div className="text-[14px] text-[var(--text-300)] italic font-normal">Pending deep dive rationale.</div>
+                )}
+            </div>
+
+            {/* Other Metadata Blocks */}
+            <div className="space-y-[24px]">
+                <section className="bg-[var(--surface-800)] border border-[var(--glass-01)] rounded-[8px] p-[24px]">
+                    <EditableText
+                      label="Historical Context"
+                      fieldName="historicalContext"
+                      content={item.historicalContext}
+                      locked={isLocked('historicalContext')}
+                      editable={isComplete}
+                      edit={edit}
+                      multiline
+                    />
+                </section>
+
+                <section className="bg-[var(--surface-800)] border border-[var(--glass-01)] rounded-[8px] p-[24px]">
+                    <EditableText
+                      label="Collector Significance"
+                      fieldName="collectorSignificance"
+                      content={item.collectorSignificance}
+                      locked={isLocked('collectorSignificance')}
+                      editable={isComplete}
+                      edit={edit}
+                      multiline
+                    />
+                </section>
+            </div>
+
+            {/* Verification Checklist */}
             {item.verification_questions && item.verification_questions.length > 0 && (
-              <section className="rounded-3xl bg-amber-500/5 border border-amber-500/20 p-8 shadow-xl">
-                <h3 className="text-xs font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2 mb-6">
-                  <HelpCircle size={16} /> Verification Checklist
+              <section className="bg-[var(--surface-800)] border border-[var(--accent-warm)]/20 p-[24px] rounded-[8px]">
+                <h3 className="text-[10px] font-bold text-[var(--accent-warm)] uppercase tracking-[0.2em] flex items-center gap-2 mb-[24px]">
+                  <HelpCircle size={14} /> Verification Protocol
                 </h3>
-                <ul className="space-y-4">
+                <ul className="space-y-[16px]">
                   {item.verification_questions.map((q, i) => (
-                    <li key={i} className="flex gap-4 items-start bg-[#0A0C13]/50 p-4 rounded-2xl border border-amber-500/10 hover:border-amber-500/30 transition-colors">
-                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-500 text-xs font-bold shrink-0 mt-0.5">{i + 1}</span>
-                      <span className="text-sm font-medium text-slate-300 leading-relaxed">{q}</span>
+                    <li key={i} className="flex gap-[16px] items-start">
+                      <span className="flex items-center justify-center w-5 h-5 rounded-[4px] bg-[var(--accent-warm)]/10 text-[var(--accent-warm)] text-[10px] font-bold shrink-0 mt-0.5 border border-[var(--accent-warm)]/30">{i + 1}</span>
+                      <span className="text-[14px] font-normal text-[var(--text-200)] leading-[1.5]">{q}</span>
                     </li>
                   ))}
                 </ul>
               </section>
             )}
 
-            {/* 4. EXPANDABLE: Tech Details & OCR */}
-            <section className="pt-8">
-              <button onClick={() => setShowDetails(!showDetails)}
-                className="w-full flex items-center justify-between p-6 rounded-3xl bg-[#0F111A] border border-white/5 hover:bg-white/5 text-sm font-bold text-slate-400 hover:text-white transition-all">
-                <span className="uppercase tracking-widest text-xs">Deep Dive Analytics & OCR</span>
-                <ChevronDown size={18} className={cn('transition-transform duration-500', showDetails && 'rotate-180 text-blue-400')} />
+            {/* Collection Assign */}
+            <div className="pt-4 hidden md:block">
+                <button onClick={() => setShowCollectionModal(true)}
+                  className={cn(
+                    'w-full flex items-center justify-center gap-3 px-6 py-4 rounded-[8px] border transition-luxury text-[14px] font-medium h-[56px]',
+                    currentCollection
+                      ? 'bg-[var(--surface-780)] border-[var(--accent-cool)] text-[var(--text-100)] hover:bg-[var(--surface-800)]'
+                      : 'bg-[var(--surface-800)] border-dashed border-[var(--glass-02)] text-[var(--text-300)] hover:text-[var(--text-100)] hover:border-[var(--glass-01)]'
+                  )}>
+                  {currentCollection ? <Tag size={16} className="text-[var(--accent-cool)]" /> : <Plus size={16} />}
+                  <span>{currentCollection?.name || 'Assign to Collection...'}</span>
+                </button>
+            </div>
+
+            {/* Extracted Entities / Deep Dive Accordion */}
+            <section className="pt-4">
+              <button 
+                onClick={() => setShowDetails(!showDetails)}
+                className="w-full flex items-center justify-between py-[16px] border-b border-[var(--glass-01)] text-[14px] font-bold text-[var(--text-200)] hover:text-[var(--text-100)] transition-colors group"
+              >
+                <span>Deep Dive Analytics & OCR Raw Data</span>
+                <ChevronDown size={16} className={cn('transition-transform duration-300 text-[var(--text-300)] group-hover:text-[var(--text-100)]', showDetails && 'rotate-180')} />
               </button>
 
               <AnimatePresence>
@@ -569,70 +548,66 @@ export default function ItemDetail() {
                     exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="pt-6 space-y-6">
+                    <div className="pt-[32px] space-y-[40px] pb-4">
                       
-                      {/* OCR Box */}
-                      <div className="rounded-3xl bg-[#0A0C13] border border-white/5 p-8">
-                        <div className="flex items-center justify-between mb-6">
-                          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Document OCR</h3>
-                          <div className="flex items-center gap-3">
-                            {isComplete && edit.field !== 'cleanedTranscription' && (
-                              <button onClick={() => edit.start('cleanedTranscription', item.cleanedTranscription || '')}
-                                className="text-xs font-bold text-slate-500 hover:text-white flex items-center gap-1.5"><Pencil size={12} /> Edit</button>
-                            )}
+                      {/* Perf Data */}
+                      <div className="grid grid-cols-2 gap-[16px]">
+                          <div className="bg-[var(--surface-800)] border border-[var(--glass-01)] p-[24px] rounded-[8px] text-center">
+                              <p className="text-[32px] font-serif text-[var(--text-100)]">{item.aiDurationMs ? `${(item.aiDurationMs / 1000).toFixed(1)}` : '—'}<span className="text-[var(--text-300)] text-[14px] ml-1">s</span></p>
+                              <p className="text-[10px] font-bold text-[var(--text-300)] uppercase tracking-wider mt-2">AI Execution</p>
                           </div>
-                        </div>
-                        
-                        {edit.field === 'cleanedTranscription' ? (
-                          <div className="space-y-3">
-                            <textarea autoFocus value={edit.value} onChange={e => edit.setValue(e.target.value)}
-                              className="w-full bg-[#0F111A] border border-blue-500/30 rounded-2xl p-6 font-mono text-xs text-blue-200 leading-relaxed outline-none resize-y min-h-[300px]" />
-                            <div className="flex gap-2 justify-end">
-                              <button onClick={edit.cancel} className="px-4 py-2 hover:bg-white/5 rounded-xl text-slate-400 text-xs font-bold transition-colors">Cancel</button>
-                              <button onClick={edit.save} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-colors">Save Updates</button>
-                            </div>
+                          <div className="bg-[var(--surface-800)] border border-[var(--glass-01)] p-[24px] rounded-[8px] text-center">
+                              <p className="text-[32px] font-serif text-[var(--text-100)]">{item.totalProcessingMs ? `${(item.totalProcessingMs / 1000).toFixed(1)}` : '—'}<span className="text-[var(--text-300)] text-[14px] ml-1">s</span></p>
+                              <p className="text-[10px] font-bold text-[var(--text-300)] uppercase tracking-wider mt-2">Total Time</p>
                           </div>
-                        ) : (
-                          <div className="font-mono text-xs text-slate-500 leading-relaxed whitespace-pre-wrap max-h-[400px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                            {item.cleanedTranscription || <span className="italic text-slate-700">No transcription data available.</span>}
-                          </div>
-                        )}
                       </div>
 
-                      {/* Entities & Perf Data */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {item.identifiedNames && item.identifiedNames.length > 0 && (
-                          <div className="rounded-3xl bg-[#0F111A] border border-white/5 p-8">
-                            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-6">Linked Entities</h3>
-                            <div className="space-y-4">
+                      {/* Entities */}
+                      {item.identifiedNames && item.identifiedNames.length > 0 && (
+                          <div className="bg-[var(--surface-800)] border border-[var(--glass-01)] p-[32px] rounded-[8px]">
+                            <h3 className="text-[10px] font-bold text-[var(--text-300)] uppercase tracking-[0.2em] mb-[24px]">Linked Entities</h3>
+                            <div className="space-y-[16px]">
                               {item.identifiedNames.map((e, i) => (
-                                <div key={i} className="flex items-start justify-between gap-4 p-4 rounded-xl bg-white/5">
+                                <div key={i} className="flex items-start justify-between gap-4 pb-[16px] border-b border-[var(--glass-01)] last:border-0 last:pb-0">
                                   <div>
-                                    <span className="text-sm font-bold text-white">{e.name}</span>
-                                    {e.historicalNote && <p className="text-xs font-medium text-slate-500 mt-1 line-clamp-2">{e.historicalNote}</p>}
+                                    <span className="text-[14px] font-bold text-[var(--text-100)]">{e.name}</span>
+                                    {e.historicalNote && <p className="text-[12px] text-[var(--text-300)] mt-1">{e.historicalNote}</p>}
                                   </div>
-                                  <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-1 rounded-md shrink-0">
+                                  <span className="text-[10px] uppercase tracking-wider bg-[var(--surface-780)] px-2 py-1 rounded-[4px] text-[var(--accent-cool)] shrink-0 border border-[var(--glass-01)]">
                                     {e.type}
                                   </span>
                                 </div>
                               ))}
                             </div>
                           </div>
-                        )}
+                      )}
 
-                        <div className="rounded-3xl bg-[#0F111A] border border-white/5 p-8 flex flex-col justify-center">
-                          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-8 text-center">Pipeline Metrics</h3>
-                          <div className="grid grid-cols-2 gap-8 text-center">
-                            <div>
-                              <p className="text-4xl font-black text-white tabular-nums tracking-tighter">{item.aiDurationMs ? `${(item.aiDurationMs / 1000).toFixed(1)}` : '—'}<span className="text-slate-500 text-xl font-bold ml-1">s</span></p>
-                              <p className="text-xs font-bold text-slate-500 mt-2">AI Execution</p>
-                            </div>
-                            <div>
-                              <p className="text-4xl font-black text-blue-400 tabular-nums tracking-tighter">{item.totalProcessingMs ? `${(item.totalProcessingMs / 1000).toFixed(1)}` : '—'}<span className="text-blue-500/50 text-xl font-bold ml-1">s</span></p>
-                              <p className="text-xs font-bold text-slate-500 mt-2">Total Time</p>
+                      {/* OCR Raw */}
+                      <div className="bg-[var(--surface-800)] border border-[var(--glass-01)] p-[32px] rounded-[8px]">
+                        <div className="flex items-center justify-between mb-[24px]">
+                          <h3 className="text-[10px] font-bold text-[var(--text-300)] uppercase tracking-[0.2em]">Raw OCR Transcript</h3>
+                        </div>
+                        
+                        {edit.field === 'cleanedTranscription' ? (
+                          <div className="space-y-4">
+                            <textarea autoFocus value={edit.value} onChange={e => edit.setValue(e.target.value)}
+                              className="w-full bg-[var(--surface-780)] border border-[var(--glass-02)] rounded-[6px] p-4 font-mono text-[12px] text-[var(--text-200)] leading-[1.6] outline-none resize-y min-h-[300px]" />
+                            <div className="flex gap-3 justify-end">
+                              <button onClick={edit.cancel} className="px-4 py-2 hover:bg-[var(--glass-01)] rounded-[4px] text-[var(--text-300)] text-[12px] font-semibold transition-colors">Cancel</button>
+                              <button onClick={edit.save} className="px-5 py-2 bg-[var(--surface-780)] border border-[var(--glass-02)] hover:border-[var(--glass-01)] text-[var(--text-100)] text-[12px] font-semibold rounded-[4px] transition-colors">Save Updates</button>
                             </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="font-mono text-[12px] text-[var(--text-300)] leading-[1.6] whitespace-pre-wrap max-h-[400px] overflow-y-auto pr-4 custom-scrollbar group relative">
+                            {item.cleanedTranscription || <span className="italic">No transcription data available.</span>}
+                            {isComplete && (
+                               <button onClick={() => edit.start('cleanedTranscription', item.cleanedTranscription || '')}
+                                 className="absolute top-0 right-4 p-2 bg-[var(--surface-780)] border border-[var(--glass-01)] rounded-[4px] text-[var(--text-300)] hover:text-[var(--text-100)] opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <Pencil size={14} />
+                               </button>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                     </div>
@@ -648,41 +623,41 @@ export default function ItemDetail() {
       {/* ===== COLLECTION MODAL ===== */}
       <AnimatePresence>
         {showCollectionModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowCollectionModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-xl" />
-            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative bg-[#0B0D13] w-full max-w-lg rounded-[2rem] border border-white/10 shadow-[0_0_100px_-20px_rgba(0,0,0,1)] p-8">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black text-white tracking-tight">Organization</h3>
-                <button onClick={() => setShowCollectionModal(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"><X size={20} /></button>
+              onClick={() => setShowCollectionModal(false)} className="absolute inset-0 bg-[#0A0A0B]/80 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.98, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.98, opacity: 0, y: 10 }}
+              className="relative bg-[var(--surface-800)] w-full max-w-md rounded-[12px] border border-[var(--glass-02)] shadow-2xl p-[32px]">
+              <div className="flex items-center justify-between mb-[32px]">
+                <h3 className="text-[18px] font-serif font-bold text-[var(--text-100)] tracking-tight">Select Collection</h3>
+                <button onClick={() => setShowCollectionModal(false)} className="p-2 hover:bg-[var(--glass-01)] rounded-[6px] transition-colors text-[var(--text-300)] hover:text-[var(--text-100)]"><X size={16} /></button>
               </div>
               
-              <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 mb-8 custom-scrollbar">
+              <div className="space-y-[8px] max-h-[40vh] overflow-y-auto pr-2 mb-[32px] custom-scrollbar">
                 {collections.map(c => (
                   <button key={c.id} onClick={() => handleAssignCollection(c.id)}
                     className={cn(
-                      'w-full flex items-center justify-between p-4 rounded-2xl border text-left text-sm font-bold transition-all',
-                      item.collection_id === c.id ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-[#0F111A] border-white/5 hover:border-white/20 hover:bg-white/5 text-slate-300'
+                      'w-full flex items-center justify-between p-4 rounded-[6px] border text-left text-[14px] font-medium transition-luxury',
+                      item.collection_id === c.id ? 'bg-[var(--surface-780)] border-[var(--accent-cool)] text-[var(--text-100)]' : 'bg-transparent border-transparent hover:bg-[var(--glass-01)] border-[var(--glass-01)] text-[var(--text-200)]'
                     )}>
                     <span className="truncate">{c.name}</span>
-                    {item.collection_id === c.id && <Check size={16} className="shrink-0" />}
+                    {item.collection_id === c.id && <Check size={16} className="text-[var(--accent-cool)]" />}
                   </button>
                 ))}
                 {item.collection_id && (
                   <button onClick={() => handleAssignCollection(null)}
-                    className="w-full p-4 mt-4 rounded-xl border border-dashed border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-bold transition-colors">
-                    Remove from current collection
+                    className="w-full p-4 mt-[16px] rounded-[6px] border-none text-[var(--status-review)] hover:bg-[var(--status-review)]/10 text-[14px] font-medium transition-colors text-left">
+                    Remove from current
                   </button>
                 )}
               </div>
               
-              <div className="p-4 bg-[#0F111A] border border-white/5 rounded-2xl flex gap-3 focus-within:border-blue-500/50 transition-colors">
+              <div className="p-[8px] bg-[var(--surface-780)] border border-[var(--glass-01)] rounded-[6px] flex gap-3 focus-within:border-[var(--accent-cool)] transition-colors">
                 <input type="text" value={newCollectionName} onChange={e => setNewCollectionName(e.target.value)}
-                  placeholder="Create new collection..."
-                  className="flex-1 bg-transparent px-2 text-sm text-white font-medium outline-none placeholder:text-slate-600" />
+                  placeholder="New collection name..."
+                  className="flex-1 bg-transparent pl-3 text-[14px] text-[var(--text-100)] font-medium outline-none placeholder:text-[var(--text-300)]" />
                 <button onClick={handleCreateCollection} disabled={!newCollectionName.trim()}
-                  className="p-3 bg-white text-black rounded-xl hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-transform"><Plus size={18} strokeWidth={3} /></button>
+                  className="p-[8px] px-[16px] bg-[var(--surface-800)] border border-[var(--glass-02)] text-[var(--text-100)] rounded-[4px] disabled:opacity-50 transition-colors text-[12px] font-semibold"><Plus size={14} /></button>
               </div>
             </motion.div>
           </div>

@@ -94,25 +94,30 @@ export function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_items_createdAt ON items(createdAt);
 
     CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
-        title, cleanedTranscription, identifiedNames,
-        content='items', content_rowid='rowid'
+        title,
+        cleanedTranscription,
+        identifiedNames,
+        historicalContext,
+        collectorSignificance,
+        content='items',
+        content_rowid='rowid'
     );
 
     CREATE TRIGGER IF NOT EXISTS items_ai AFTER INSERT ON items BEGIN
-      INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames)
-      VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames);
+        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
+        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance);
     END;
 
     CREATE TRIGGER IF NOT EXISTS items_ad AFTER DELETE ON items BEGIN
-      INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames)
-      VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames);
+        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
+        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance);
     END;
 
     CREATE TRIGGER IF NOT EXISTS items_au AFTER UPDATE ON items BEGIN
-      INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames)
-      VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames);
-      INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames)
-      VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames);
+        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
+        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance);
+        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
+        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance);
     END;
   `);
 
@@ -151,22 +156,33 @@ export function initSchema() {
       DROP TRIGGER IF EXISTS items_ai;
       DROP TRIGGER IF EXISTS items_ad;
       DROP TRIGGER IF EXISTS items_au;
+      DROP TABLE IF EXISTS items_fts;
+
+      CREATE VIRTUAL TABLE items_fts USING fts5(
+          title,
+          cleanedTranscription,
+          identifiedNames,
+          historicalContext,
+          collectorSignificance,
+          content='items',
+          content_rowid='rowid'
+      );
 
       CREATE TRIGGER items_ai AFTER INSERT ON items BEGIN
-        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames)
-        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames);
+        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
+        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance);
       END;
 
       CREATE TRIGGER items_ad AFTER DELETE ON items BEGIN
-        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames)
-        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames);
+        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
+        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance);
       END;
 
       CREATE TRIGGER items_au AFTER UPDATE ON items BEGIN
-        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames)
-        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames);
-        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames)
-        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames);
+        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
+        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance);
+        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
+        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance);
       END;
     `);
     console.log('[Migration] FTS5 triggers recreated with correct columns.');

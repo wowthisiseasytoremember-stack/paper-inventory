@@ -22,11 +22,18 @@ function loadSettings() {
   try {
     const raw = localStorage.getItem(LS_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+  } catch (err) {
+    console.error('Failed to load settings:', err);
+    return null;
+  }
 }
 
 function saveSettings(s: any) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch {}
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(s));
+  } catch (err) {
+    console.error('Failed to save settings:', err);
+  }
 }
 
 function Select({ label, value, options, onChange }: {

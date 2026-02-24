@@ -107,6 +107,7 @@ export default function ItemDetail() {
       setItem({ ...item, user_decision: decision });
       toast.success(`Decision set to ${decision.toUpperCase()}`);
     } catch (err) {
+      console.error('Failed to save decision:', err);
       toast.error('Failed to save decision');
     } finally {
       setIsUpdatingDecision(false);

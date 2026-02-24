@@ -7,6 +7,7 @@
 
 import { ItemService, Item } from './db/items';
 import { db } from './db';
+import { resizeImage } from './processing/resize';
 
 const POLLING_INTERVAL_MS = 2000;
 const MAX_CONCURRENT_JOBS = 1;
@@ -97,11 +98,25 @@ async function processItem(item: Item) {
     }
 
     if (item.status === 'processing_resize') {
-      // TODO: Call Sharp resize handler (Task 2.6)
-      console.log(`[Scheduler] ${item.id}: Resize pending`);
+      try {
+        const { thumbnailPath, resizedPath, durationMs } = await resizeImage(item.originalImagePath!, item.id);
 
-      db.prepare(`UPDATE items SET status = 'resize_complete', statusUpdatedAt = ? WHERE id = ?`)
-        .run(new Date().toISOString(), item.id);
+        // Update DB
+        ItemService.updateMetadata(item.id, {
+          thumbnailPath,
+          resizedImagePath: resizedPath,
+          resizeDurationMs: durationMs
+        });
+
+        db.prepare(`UPDATE items SET status = 'resize_complete', statusUpdatedAt = ? WHERE id = ?`)
+          .run(new Date().toISOString(), item.id);
+
+        console.log(`[Scheduler] ${item.id}: resize complete`);
+      } catch (err: any) {
+        console.error(`[Scheduler] ${item.id}: resize failed -`, err.message);
+        db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
+          .run(err.message, new Date().toISOString(), item.id);
+      }
       return;
     }
 

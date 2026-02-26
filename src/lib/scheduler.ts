@@ -169,6 +169,15 @@ async function processItem(item: Item) {
         const conductorResult = await runConductor(item.rawOcr || '');
         console.log(`[Scheduler] ${item.id}: Conductor → "${conductorResult.category}" (${conductorResult.confidence_score})`);
 
+        // ---> IMMEDIATE UPDATE FOR UI FEEDBACK <---
+        ItemService.updateMetadata(item.id, {
+          title: `[Identified] ${conductorResult.category.replace(/_/g, ' ')}`,
+          category: conductorResult.category,
+          confidence: conductorResult.confidence_score,
+        });
+        // Also update status to show progress, but keep it in the AI stage
+        db.prepare(`UPDATE items SET statusUpdatedAt = ? WHERE id = ?`).run(now(), item.id);
+
         // Step 2: Perplexity — live web search for market data, sold prices, historical context
         const researchResult = await runPerplexityResearcher(
           conductorResult.category,

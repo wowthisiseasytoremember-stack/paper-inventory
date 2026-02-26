@@ -10,7 +10,6 @@ import { db } from './db';
 import { resizeImage } from './processing/resize';
 import { performCloudVisionOCR } from './ocr/cloud-vision';
 import { runConductor } from './ai/conductor';
-import { runExpert } from './ai/expert';
 import { runPerplexityResearcher } from './ai/perplexity-researcher';
 import { extractValuation } from './ai/valuator';
 
@@ -73,19 +72,19 @@ async function processItem(item: Item) {
   try {
     console.log(`[Scheduler] Processing ${item.id} (status: ${item.status})`);
 
-    // Router: dispatch to appropriate handler based on status
-    if (item.status === 'queued') {
-      // Move to OCR stage
+    // Router: dispatch to appropriate handler based on status.
+    // Each stage runs its work to completion before returning,
+    // so the lock is held through the full stage (not just the transition).
+
+    if (item.status === 'queued' || item.status === 'processing_ocr' || item.status === 'ocr_pending_retry') {
+      // Signal OCR in progress
       db.prepare(`UPDATE items SET status = 'processing_ocr', statusUpdatedAt = ? WHERE id = ?`)
         .run(new Date().toISOString(), item.id);
-      return;
-    }
 
-    if (item.status === 'processing_ocr') {
       try {
         const ocrResult = await performCloudVisionOCR(item.originalImagePath!);
 
-        const webEntitiesText = ocrResult.webEntities && ocrResult.webEntities.length > 0 
+        const webEntitiesText = ocrResult.webEntities && ocrResult.webEntities.length > 0
           ? '\n\n--- Web Entities (Knowledge Graph) ---\n' + ocrResult.webEntities.map(e => `- ${e.description} (${(e.score * 100).toFixed(1)}%)`).join('\n')
           : '';
 
@@ -101,10 +100,9 @@ async function processItem(item: Item) {
         console.log(`[Scheduler] ${item.id}: OCR complete (confidence: ${(ocrResult.confidence * 100).toFixed(1)}%)`);
 
       } catch (err: any) {
-        // Handle specific errors
         if (err.message.includes('QUOTA_EXCEEDED')) {
           console.warn(`[Scheduler] ${item.id}: GCV quota exceeded, retrying later`);
-          db.prepare(`UPDATE items SET status = 'ocr_pending_retry', statusUpdatedAt = ? WHERE id = ?`)
+          db.prepare(`UPDATE items SET status = 'ocr_pending_retry', processingLock = 0, watchdogLockedAt = NULL, statusUpdatedAt = ? WHERE id = ?`)
             .run(new Date().toISOString(), item.id);
         } else {
           console.error(`[Scheduler] ${item.id}: OCR failed -`, err.message);
@@ -115,27 +113,14 @@ async function processItem(item: Item) {
       return;
     }
 
-    // Handle retry state
-    if (item.status === 'ocr_pending_retry') {
-      console.log(`[Scheduler] ${item.id}: retrying OCR...`);
-      // Move back to processing_ocr to retry
-      db.prepare(`UPDATE items SET status = 'processing_ocr', statusUpdatedAt = ? WHERE id = ?`)
-        .run(new Date().toISOString(), item.id);
-      return;
-    }
-
-    if (item.status === 'ocr_complete') {
-      // Move to resize stage
+    if (item.status === 'ocr_complete' || item.status === 'processing_resize') {
+      // Signal resize in progress
       db.prepare(`UPDATE items SET status = 'processing_resize', statusUpdatedAt = ? WHERE id = ?`)
         .run(new Date().toISOString(), item.id);
-      return;
-    }
 
-    if (item.status === 'processing_resize') {
       try {
         const { thumbnailPath, resizedPath, durationMs } = await resizeImage(item.originalImagePath!, item.id);
 
-        // Update DB
         ItemService.updateMetadata(item.id, {
           thumbnailPath,
           resizedImagePath: resizedPath,
@@ -154,19 +139,20 @@ async function processItem(item: Item) {
       return;
     }
 
-    if (item.status === 'resize_complete') {
-      // Move to AI stage
+    if (item.status === 'resize_complete' || item.status === 'processing_ai') {
+      // Signal AI in progress
       db.prepare(`UPDATE items SET status = 'processing_ai', statusUpdatedAt = ? WHERE id = ?`)
         .run(new Date().toISOString(), item.id);
-      return;
-    }
 
-    if (item.status === 'processing_ai') {
       try {
         const now = () => new Date().toISOString();
 
+        // Load image for multimodal Conductor
+        const imageBuffer = fs.readFileSync(item.originalImagePath!);
+        const imageBase64 = imageBuffer.toString('base64');
+
         // Step 1: Conductor — categorize the item
-        const conductorResult = await runConductor(item.rawOcr || '');
+        const conductorResult = await runConductor(item.rawOcr || '', imageBase64);
         console.log(`[Scheduler] ${item.id}: Conductor → "${conductorResult.category}" (${conductorResult.confidence_score})`);
 
         // ---> IMMEDIATE UPDATE FOR UI FEEDBACK <---
@@ -182,26 +168,22 @@ async function processItem(item: Item) {
         const researchResult = await runPerplexityResearcher(
           conductorResult.category,
           item.rawOcr || '',
+          conductorResult.basic_id
         );
         console.log(`[Scheduler] ${item.id}: Perplexity research complete (${researchResult.citations.length} citations)`);
 
-        // Step 3: Expert (Sonnet) — deep extraction using Perplexity research as context
-        const expertResult = await runExpert(conductorResult.category, item.rawOcr || '', researchResult.notes);
-        console.log(`[Scheduler] ${item.id}: Expert extraction → "${expertResult.title}"`);
-
-        // Step 4: Valuator (Sonnet 4.6) — synthesize everything into a structured sale valuation
+        // Step 3: Valuator (Claude 4.6) — synthesize everything into a formal ID, archival notes, and sale valuation
         const valuationResult = await extractValuation(
-          expertResult.title,
+          conductorResult.basic_id,
           conductorResult.category,
-          expertResult.historical_context,
-          expertResult.collector_significance,
-          expertResult.estimated_value_signals.join('; '),
           item.rawOcr || '',
           researchResult.notes,
         );
-        console.log(`[Scheduler] ${item.id}: Valuation → $${valuationResult?.estimated_value_point ?? '?'} (${valuationResult?.value_confidence ?? 'unknown'} confidence)`);
+        
+        if (!valuationResult) throw new Error("Valuation step returned null");
+        console.log(`[Scheduler] ${item.id}: Valuation → $${valuationResult.estimated_value_point ?? '?'} (${valuationResult.value_confidence} confidence)`);
 
-        // Step 5: Build analysis history entry
+        // Step 4: Build analysis history entry
         let analysisHistory: any[] = [];
         if (item.analysis_history) {
           try { analysisHistory = JSON.parse(item.analysis_history); } catch {}
@@ -210,25 +192,29 @@ async function processItem(item: Item) {
           timestamp: now(),
           category: conductorResult.category,
           conductor_confidence: conductorResult.confidence_score,
-          expert_extracted_title: expertResult.title,
-          extracted_fields: {
-            identified_names: expertResult.identified_names,
-            historical_context: expertResult.historical_context,
-            collector_significance: expertResult.collector_significance,
-            estimated_value_signals: expertResult.estimated_value_signals,
-            condition_issues: expertResult.visible_condition_issues,
-            ebay_keywords: expertResult.ebay_search_keywords,
+          archival_data: {
+            formal_title: valuationResult.title,
+            historical_context: valuationResult.historical_context,
+            collector_significance: valuationResult.collector_significance,
+            identified_names: valuationResult.identified_names,
+            condition_issues: valuationResult.visible_condition_issues,
+            potential_value_factors: valuationResult.potential_value_factors,
           },
           perplexity_citations: researchResult.citations,
-          valuation: valuationResult,
+          valuation: {
+            point: valuationResult.estimated_value_point,
+            low: valuationResult.estimated_value_low,
+            high: valuationResult.estimated_value_high,
+            confidence: valuationResult.value_confidence,
+            reasoning: valuationResult.value_reasoning,
+          },
           raw_data: {
             conductor: conductorResult.raw_response,
             researcher: researchResult.raw_response,
-            expert: expertResult.raw_response,
           },
         });
 
-        // Step 6: Persist all fields directly (updateMetadata whitelist is too restrictive)
+        // Step 5: Persist all fields directly
         db.prepare(`
           UPDATE items SET
             title = ?,
@@ -237,35 +223,31 @@ async function processItem(item: Item) {
             collectorSignificance = ?,
             category = ?,
             analysis_history = ?,
-            aiRawResponse = ?,
             status = 'complete',
             statusUpdatedAt = ?
           WHERE id = ?
         `).run(
-          expertResult.title,
-          JSON.stringify(expertResult.identified_names),
-          expertResult.historical_context,
-          expertResult.collector_significance,
+          valuationResult.title,
+          JSON.stringify(valuationResult.identified_names),
+          valuationResult.historical_context,
+          valuationResult.collector_significance,
           conductorResult.category,
           JSON.stringify(analysisHistory),
-          JSON.stringify({ expert: expertResult.raw_response, researcher: researchResult.raw_response }),
           now(),
           item.id,
         );
 
-        // Step 7: Save structured valuation fields (separate method for clarity)
-        if (valuationResult) {
-          ItemService.updateValuation(item.id, {
-            estimated_value_low: valuationResult.estimated_value_low,
-            estimated_value_high: valuationResult.estimated_value_high,
-            estimated_value_point: valuationResult.estimated_value_point,
-            value_confidence: valuationResult.value_confidence,
-            is_high_value: valuationResult.is_high_value,
-            ebay_keywords: valuationResult.ebay_keywords,
-          });
-        }
+        // Step 6: Save structured valuation fields
+        ItemService.updateValuation(item.id, {
+          estimated_value_low: valuationResult.estimated_value_low,
+          estimated_value_high: valuationResult.estimated_value_high,
+          estimated_value_point: valuationResult.estimated_value_point,
+          value_confidence: valuationResult.value_confidence,
+          is_high_value: valuationResult.is_high_value,
+          ebay_keywords: valuationResult.ebay_keywords,
+        });
 
-        console.log(`[Scheduler] ${item.id}: Pipeline complete — "${expertResult.title}" → $${valuationResult?.estimated_value_point ?? '?'}`);
+        console.log(`[Scheduler] ${item.id}: Pipeline complete — "${valuationResult.title}" → $${valuationResult.estimated_value_point ?? '?'}`);
 
       } catch (err: any) {
         console.error(`[Scheduler] ${item.id}: AI enrichment failed -`, err.message);

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { BulkUpload } from '@/components/BulkUpload';
 import { ItemCard } from '@/components/ItemCard';
 import { ProcessingPhaseIndicator } from '@/components/ProcessingPhaseIndicator';
@@ -12,34 +13,21 @@ import {
   Plus, 
   LayoutGrid, 
   List,
-  ArrowUpDown,
-  Calendar,
   DollarSign,
-  Tag,
   Sparkles,
-  Filter,
-  Layers3,
-  Trash2
-} from 'lucide-react';
-import { Toaster } from '@/components/ui/toaster';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import Link from 'next/link';
+    Layers3, 
+    Trash2
+  } from 'lucide-react';
+  import { toast } from 'sonner';
+  import { cn } from '@/lib/utils';import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-
-interface Item {
-    id: string;
-    title?: string;
-    status: string;
-    createdAt: string;
-    statusUpdatedAt?: string;
-    thumbnailPath?: string;
-    valuation?: string;
-    tags?: string; // JSON string
-    historicalContext?: string;
-    is_high_value?: boolean;
-}
+import { ExportMenu } from '@/components/ExportMenu';
+import { StatsBar } from '@/components/StatsBar';
+import { FilterBar } from '@/components/FilterBar';
+import { useItemStore } from '@/store/itemStore';
+import { useItems } from '@/hooks/useItems';
+import { ItemDetailModal } from '@/components/ItemDetailModal';
+import type { Item } from '@/lib/db/items';
 
 type SortOption = 'newest' | 'oldest' | 'title';
 
@@ -50,10 +38,20 @@ const SkeletonCard = () => (
 );
 
 export default function Dashboard() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
-  const [showUpload, setShowUpload] = useState(false);
+  const items = useItemStore(state => state.items);
+  const loading = useItemStore(state => state.status === 'loading');
+  const query = useItemStore(state => state.query);
+  const setQuery = useItemStore(state => state.setQuery);
+  const filters = useItemStore(state => state.filters);
+  const setFilters = useItemStore(state => state.setFilters);
+  const setSelectedItemId = useItemStore(state => state.setSelectedItemId);
+  const nukeArchive = useItemStore(state => state.nukeArchive);
+  
+  const { isLoading: queryLoading } = useItems();
+  const isActuallyLoading = loading || queryLoading;
+  
+  const searchParams = useSearchParams();
+  const [showUpload, setShowUpload] = useState(searchParams.get('upload') === 'true');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [nuking, setNuking] = useState(false);
@@ -61,59 +59,26 @@ export default function Dashboard() {
   const [treasureTrigger, setTreasureTrigger] = useState(false);
   const prevItemsRef = useRef<Set<string>>(new Set());
   
-  const [filters, setFilters] = useState<FilterState>({
-    decision: null, high_value: false, category: null
-  });
-
-  const fetchItems = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      if (query) params.set('q', query);
-      if (filters.decision) params.set('decision', filters.decision);
-      if (filters.high_value) params.set('high_value', '1');
-      if (filters.category) params.set('category', filters.category);
-
-      const res = await fetch(`/api/items?${params.toString()}`);
-      const data = await res.json();
-      setItems(data.data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [query, filters]);
-
   const handleNuke = async () => {
-    if (!confirm("NUKE ARCHIVE? This will permanently delete all scanned items and images.")) return;
-    
+    if (!confirm("PURGE ENTIRE ARCHIVE? This action is irreversible.")) return;
     setNuking(true);
     try {
-      const res = await fetch('/api/system/nuke', { method: 'POST' });
-      if (!res.ok) throw new Error("Nuke failed");
-      toast.success("Archive Purged", { description: "All research data has been erased." });
-      fetchItems();
+      await nukeArchive();
+      toast.success("Archive Purged", { description: "Vault has been zeroed out." });
     } catch (err: any) {
-      toast.error("Critical Fault", { description: "Could not clear archive." });
+      toast.error("Critical Fault", { description: "Archive purge failed." });
     } finally {
       setNuking(false);
     }
   };
 
   useEffect(() => {
-    fetchItems();
-    const hasProcessing = items.some(i => !['complete', 'error'].includes(i.status));
-    const interval = setInterval(fetchItems, hasProcessing ? 3000 : 20000);
-    return () => clearInterval(interval);
-  }, [query, fetchItems, items, filters]);
-
-  useEffect(() => {
     const completedHighValue = items.filter(
       i => i.status === 'complete' && i.is_high_value && !prevItemsRef.current.has(i.id)
     );
     if (completedHighValue.length > 0) {
-      setTreasureTrigger(t => !t); // toggle to re-trigger
+      setTreasureTrigger(t => !t);
     }
-    // Update the seen set
     items.forEach(i => {
       if (i.status === 'complete') prevItemsRef.current.add(i.id);
     });
@@ -142,213 +107,214 @@ export default function Dashboard() {
   }), [items]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 p-3 md:p-6 selection:bg-blue-500/30">
+    <div className="p-8 md:p-12 lg:p-16 space-y-12">
       <TreasureFoundEffect trigger={treasureTrigger} />
       
-      {/* Ambient background glow */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-[-5%] right-[-5%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[100px]" />
-      </div>
-
-      <div className="max-w-7xl mx-auto space-y-6 fade-in">
-        
-        {/* Compact Header */}
-        <header className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Layers3 size={18} className="text-white" strokeWidth={2.5} />
-              </div>
-              <div className="hidden sm:block">
-                  <h1 className="text-lg font-black text-white tracking-tight leading-none mb-0.5">Vault</h1>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1">
-                    <Sparkles size={10} className="text-blue-500" /> Pro 2.0 Ingest
-                  </p>
+      {/* Refined Minimal Header */}
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-2xl">
+                  <Layers3 size={20} className="text-slate-950" strokeWidth={3} />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-black text-white tracking-tighter leading-none">Archive Vault</h1>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1 flex items-center gap-1.5">
+                      <Sparkles size={10} className="text-blue-500" /> Professional Ingest 2.0
+                    </p>
+                </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
                 <ExportMenu />
-                <button
-                  onClick={handleNuke}
-                  disabled={nuking}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-red-900/50 bg-red-950/20 text-red-500 font-bold text-[10px] uppercase tracking-widest transition-luxury hover:bg-red-500 hover:text-white disabled:opacity-50"
-                  title="Wipe everything"
-                >
-                  {nuking ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                  <span className="hidden sm:inline">Nuke</span>
-                </button>
                 
                 <button
                   onClick={() => setShowUpload(!showUpload)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-xl border font-bold text-xs transition-luxury active:scale-95 shadow-sm",
-                    showUpload ? "bg-slate-800 text-slate-300 border-slate-700" : "bg-blue-600 text-white border-blue-500 hover:bg-blue-500"
+                    "flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-[0.98] shadow-lg",
+                    showUpload 
+                        ? "bg-slate-800 text-white border border-white/10" 
+                        : "bg-blue-600 text-white hover:bg-blue-500 shadow-blue-500/20"
                   )}
                 >
                   <Plus size={16} className={cn("transition-transform duration-500", showUpload && "rotate-45")} />
-                  <span className="hidden xs:inline">{showUpload ? "Cancel" : "Add Papers"}</span>
+                  <span>{showUpload ? "Cancel Ingest" : "Ingest Assets"}</span>
+                </button>
+
+                <div className="h-8 w-[1px] bg-white/5 mx-2" />
+
+                <button
+                  onClick={handleNuke}
+                  disabled={nuking}
+                  className="p-2.5 rounded-xl border border-white/5 bg-white/5 text-slate-500 hover:text-red-400 hover:bg-red-400/5 transition-all disabled:opacity-50"
+                  title="Purge Archive"
+                >
+                  {nuking ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                 </button>
             </div>
         </header>
 
-        <StatsBar 
-            total={items.length}
-            complete={items.filter(i => i.status === 'complete').length}
-            high_value={counts.high_value}
-            interested={counts.interested}
-            total_value={items.reduce((acc, i) => acc + (i.estimated_value_point || 0), 0)}
-        />
+        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-1 shadow-inner">
+            <StatsBar 
+                total={items.length}
+                complete={items.filter(i => i.status === 'complete').length}
+                high_value={counts.high_value}
+                interested={counts.interested}
+                total_value={items.reduce((acc, i) => acc + (i.estimated_value_point || 0), 0)}
+            />
+        </div>
         
-        {/* Compact Controls */}
-        <div className="flex flex-col md:flex-row gap-2">
-            <div className="relative group flex-grow">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 w-3.5 h-3.5" />
+        {/* Utility Controls */}
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="relative group w-full md:max-w-md">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 w-4 h-4" />
                 <input 
                     type="text" 
-                    placeholder="Search sequence..." 
-                    className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-900 bg-slate-900/60 text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 outline-none transition-luxury text-xs backdrop-blur-md"
+                    placeholder="Search archival sequences..." 
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-white/5 bg-slate-900/50 text-white placeholder:text-slate-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 outline-none transition-all text-sm"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                 />
             </div>
 
-            <div className="flex items-center gap-2">
-                <select 
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="appearance-none bg-slate-900/50 backdrop-blur-md border border-slate-900 text-slate-400 text-[10px] font-bold uppercase tracking-wider rounded-xl px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer transition-luxury"
-                >
-                    <option value="newest">Recent</option>
-                    <option value="oldest">Legacy</option>
-                    <option value="title">A-Z</option>
-                </select>
-
-                <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl">
+            <div className="flex items-center gap-3 ml-auto">
+                <div className="flex items-center p-1 bg-slate-900/50 border border-white/5 rounded-xl shadow-inner">
                     <button 
                         onClick={() => setViewMode('grid')}
                         className={cn(
-                            "p-1.5 rounded-lg transition-luxury",
-                            viewMode === 'grid' ? "bg-slate-800 text-blue-400 shadow-sm" : "text-slate-600 hover:text-slate-400"
+                            "p-2 rounded-lg transition-all",
+                            viewMode === 'grid' ? "bg-white text-slate-950 shadow-md" : "text-slate-500 hover:text-slate-300"
                         )}
                     >
-                        <LayoutGrid size={14} />
+                        <LayoutGrid size={16} />
                     </button>
                     <button 
                         onClick={() => setViewMode('list')}
                         className={cn(
-                            "p-1.5 rounded-lg transition-luxury",
-                            viewMode === 'list' ? "bg-slate-800 text-blue-400 shadow-sm" : "text-slate-600 hover:text-slate-400"
+                            "p-2 rounded-lg transition-all",
+                            viewMode === 'list' ? "bg-white text-slate-950 shadow-md" : "text-slate-500 hover:text-slate-300"
                         )}
                     >
-                        <List size={14} />
+                        <List size={16} />
                     </button>
                 </div>
+
+                <select 
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="appearance-none bg-slate-900/50 border border-white/5 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl px-6 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer transition-all hover:border-white/10"
+                >
+                    <option value="newest">Recent</option>
+                    <option value="oldest">Legacy</option>
+                    <option value="title">Alphabetical</option>
+                </select>
             </div>
         </div>
 
         <AnimatePresence>
           {showUpload && (
             <motion.section 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="pb-8"
             >
-                <div className="pb-4">
+                <div className="bg-slate-900/30 border border-white/5 rounded-2xl p-8 shadow-inner">
                   <BulkUpload />
                 </div>
             </motion.section>
           )}
         </AnimatePresence>
         
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center py-4 border-t border-white/5">
             <ProcessingPhaseIndicator isActive={hasProcessing} />
             <FilterBar filters={filters} onChange={setFilters} categories={categories} counts={counts} />
         </div>
 
-        {/* Dense Grid/List */}
-        <section className="space-y-4">
-            <h2 className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] flex items-center gap-2">
-              Sequence Log <span className="text-blue-500/50">[{items.length}]</span>
-            </h2>
+        <section className="space-y-6">
+            <div className="flex items-center gap-4">
+                <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Vault Inventory</h2>
+                <div className="h-[1px] flex-grow bg-white/5" />
+                <span className="text-[10px] font-mono text-slate-600">[{items.length} units]</span>
+            </div>
             
-            {loading ? (
-                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
+            {isActuallyLoading && items.length === 0 ? (
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
                   {[...Array(20)].map((_, i) => <SkeletonCard key={i} />)}
                 </div>
             ) : items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center rounded-[2rem] border border-slate-900 bg-slate-900/10">
-                    <Archive className="w-8 h-8 text-slate-800 mb-4" />
-                    <h3 className="text-sm font-black text-slate-400 mb-6">Archive Empty</h3>
+                <div className="flex flex-col items-center justify-center py-32 text-center rounded-2xl border border-dashed border-white/5 bg-white/[0.01]">
+                    <Archive className="w-12 h-12 text-slate-800 mb-6" />
+                    <h3 className="text-sm font-black text-slate-500 mb-8 uppercase tracking-widest">Archive Empty</h3>
                     <button
                       onClick={() => setShowUpload(true)}
-                      className="px-6 py-2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 transition-luxury active:scale-95"
+                      className="px-8 py-3 bg-white text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 transition-all shadow-xl shadow-white/5"
                     >
-                      Init Sequence
+                      Initialize First Ingest
                     </button>
                 </div>
             ) : viewMode === 'grid' ? (
-                <motion.div layout className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
+                <motion.div layout className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
                     <AnimatePresence mode="popLayout">
-                        {sortedItems.map((item, idx) => (
+                        {sortedItems.map((item) => (
                           <ItemCard key={item.id} item={item} />
                         ))}
                     </AnimatePresence>
                 </motion.div>
             ) : (
-                /* Tiny List View */
-                <motion.div layout className="space-y-1">
+                <motion.div layout className="space-y-2">
                     <AnimatePresence mode="popLayout">
                         {sortedItems.map((item, idx) => {
                             return (
                                 <motion.div
                                   layout
                                   key={item.id}
-                                  initial={{ opacity: 0, x: -5 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  exit={{ opacity: 0, x: -5 }}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: 10 }}
                                   transition={{ delay: idx * 0.01 }}
                                 >
-                                  <Link 
-                                    href={`/items/${item.id}`}
-                                    className="group flex items-center gap-3 p-1.5 pr-4 rounded-xl glass border border-transparent hover:border-slate-800 hover:bg-slate-900/40 transition-luxury"
+                                  <div 
+                                    onClick={() => setSelectedItemId(item.id)}
+                                    className="group flex items-center gap-4 p-2 pr-6 rounded-xl border border-white/5 bg-slate-900/20 hover:bg-white/5 hover:border-white/10 transition-all cursor-pointer"
                                   >
-                                      <div className="w-8 h-8 flex-shrink-0 bg-slate-950 rounded-lg overflow-hidden border border-slate-900">
+                                      <div className="w-10 h-10 flex-shrink-0 bg-slate-950 rounded-lg overflow-hidden border border-white/5 shadow-inner">
                                           {item.thumbnailPath ? (
-                                              <img src={`/api/items/${item.id}/thumbnail`} className="w-full h-full object-cover group-hover:scale-110 transition-luxury" alt="" />
+                                              <img src={`/api/items/${item.id}/thumbnail`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" alt="" />
                                           ) : (
                                               <div className="w-full h-full flex items-center justify-center">
-                                                  <Archive size={12} className="text-slate-800" />
+                                                  <Archive size={14} className="text-slate-800" />
                                               </div>
                                           )}
                                       </div>
                                       
-                                      <div className="flex-grow min-w-0 flex items-center gap-4">
-                                          <h3 className="text-[11px] font-bold text-slate-200 group-hover:text-blue-400 transition-colors truncate flex-grow">
-                                            {item.title || "Processing..."}
+                                      <div className="flex-grow min-w-0 flex items-center gap-6">
+                                          <h3 className="text-[12px] font-bold text-slate-300 group-hover:text-white transition-colors truncate flex-grow">
+                                            {item.title || "Unidentified Unit"}
                                           </h3>
                                           
-                                          <div className="hidden md:flex items-center gap-4 flex-shrink-0">
-                                              {item.valuation && (
-                                                  <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-black tracking-tighter w-20">
-                                                      <DollarSign size={10} />
-                                                      {item.valuation}
+                                          <div className="hidden md:flex items-center gap-8 flex-shrink-0">
+                                              {item.estimated_value_point && (
+                                                  <div className="flex items-center gap-1.5 text-emerald-500 text-[11px] font-black tabular-nums w-24">
+                                                      <DollarSign size={12} strokeWidth={3} />
+                                                      {item.estimated_value_point.toLocaleString()}
                                                   </div>
                                               )}
                                               
-                                              <div className="w-24 text-[9px] font-bold text-slate-600 uppercase tracking-tighter">
-                                                  {formatDistanceToNow(new Date(item.createdAt), { addSuffix: false })}
+                                              <div className="w-32 text-[10px] font-bold text-slate-600 uppercase tracking-tight">
+                                                  {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
                                               </div>
                                           </div>
                                       </div>
 
                                       <div className={cn(
-                                          "w-1.5 h-1.5 rounded-full",
-                                          item.status === 'complete' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" :
-                                          item.status === 'error' ? "bg-red-500" :
+                                          "w-2 h-2 rounded-full",
+                                          item.status === 'complete' ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)]" :
+                                          item.status === 'error' ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]" :
                                           "bg-blue-500 animate-pulse"
                                       )} />
-                                  </Link>
+                                  </div>
                                 </motion.div>
                             );
                         })}
@@ -356,8 +322,8 @@ export default function Dashboard() {
                 </motion.div>
             )}
         </section>
-      </div>
-      <Toaster />
-    </main>
+
+        <ItemDetailModal />
+    </div>
   );
 }

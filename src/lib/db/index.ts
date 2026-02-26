@@ -21,6 +21,7 @@ const globalForDb = global as unknown as { db: Database.Database };
 
 export const db = globalForDb.db || new Database(DB_PATH, {
   verbose: process.env.NODE_ENV === 'development' ? console.log : undefined,
+  timeout: 5000, // 5 second busy timeout
 });
 
 if (process.env.NODE_ENV !== 'production') globalForDb.db = db;

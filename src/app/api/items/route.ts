@@ -97,6 +97,7 @@ export async function GET(req: NextRequest) {
       liquidity_score: item.liquidity_score,
       target_buy_price: item.target_buy_price,
       user_decision: item.user_decision || 'none',
+      analysis_history: item.analysis_history ? JSON.parse(item.analysis_history) : [],
       processingLock: Boolean(item.processingLock)
     }));
 

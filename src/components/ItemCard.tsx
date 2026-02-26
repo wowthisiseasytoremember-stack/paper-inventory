@@ -1,29 +1,16 @@
 "use client";
 
-import Link from 'next/link';
 import { RefreshCw, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { ValuationBlock } from './ValuationBlock';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import type { ValueConfidence } from '@/types/research';
-
-interface Item {
-  id: string;
-  title?: string;
-  status: string;
-  thumbnailPath?: string;
-  createdAt: string;
-  is_high_value?: boolean;
-  estimated_value_low?: number | null;
-  estimated_value_high?: number | null;
-  estimated_value_point?: number | null;
-  value_confidence?: ValueConfidence | null;
-  ebay_keywords?: string | null;
-  confidence?: number | null;
-}
+import { useItemStore } from '@/store/itemStore';
+import type { Item } from '@/lib/db/items';
 
 export function ItemCard({ item }: { item: Item }) {
+  const setSelectedItemId = useItemStore(state => state.setSelectedItemId);
   const isComplete = item.status === 'complete';
   const isError = item.status === 'error';
   // Has a title but not complete indicates mid-processing (e.g. AI analysis running)
@@ -39,14 +26,17 @@ export function ItemCard({ item }: { item: Item }) {
   );
 
   const cardClass = cn(
-    "relative bg-[var(--surface-800)] rounded-[6px] overflow-hidden hover-lift flex flex-col min-h-[420px] satin-shadow border transition-colors",
+    "relative bg-[var(--surface-800)] rounded-[6px] overflow-hidden hover-lift flex flex-col min-h-[420px] satin-shadow border transition-colors cursor-pointer",
     item.is_high_value
       ? "border-[var(--accent-warm)] shadow-[0_0_16px_rgba(191,164,106,0.25)]"
       : "border-transparent hover:border-[var(--glass-01)]"
   );
 
   return (
-    <Link href={`/items/${item.id}`} className="block group w-full max-w-[320px] mx-auto">
+    <div 
+      onClick={() => setSelectedItemId(item.id)} 
+      className="group w-full max-w-[320px] mx-auto"
+    >
       <motion.div 
         layout
         initial={{ opacity: 0, scale: 0.88 }}
@@ -117,6 +107,6 @@ export function ItemCard({ item }: { item: Item }) {
            />
         </div>
       </motion.div>
-    </Link>
+    </div>
   );
 }

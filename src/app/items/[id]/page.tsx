@@ -29,6 +29,7 @@ import { ResearchContextPanel } from '@/components/ResearchContextPanel';
 import { ValuationBlock } from '@/components/ValuationBlock';
 import { ConfidenceBadge } from '@/components/ConfidenceBadge';
 import type { PurchaseDecision } from '@/types/research';
+import { useItemStore } from '@/store/itemStore';
 
 interface Entity {
   name: string;
@@ -93,8 +94,11 @@ interface Item {
 export default function ItemDetail() {
   const { id } = useParams();
   const router = useRouter();
-  const [item, setItem] = useState<Item | null>(null);
-  const [loading, setLoading] = useState(true);
+  const storeItems = useItemStore(state => state.items);
+  const updateItemStatus = useItemStore(state => state.updateItemStatus);
+  
+  const item = storeItems.find(i => i.id === id);
+  const [loading, setLoading] = useState(!item);
   const [retrying, setRetrying] = useState(false);
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -106,10 +110,11 @@ export default function ItemDetail() {
       const res = await fetch(`/api/items/${id}`);
       if (!res.ok) throw new Error('Failed to fetch item');
       const data = await res.json();
-      setItem(data);
+      // Update global store which will update 'item' via find()
+      updateItemStatus(id as string, data.status, data);
     } catch (err) {
       console.error(err);
-      toast.error('Could not load archive unit');
+      if (!item) toast.error('Could not load archive unit');
     } finally {
       setLoading(false);
     }
@@ -125,7 +130,7 @@ export default function ItemDetail() {
         body: JSON.stringify({ user_decision: decision })
       });
       if (!res.ok) throw new Error('Failed to update decision');
-      setItem({ ...item, user_decision: decision });
+      updateItemStatus(id as string, undefined, { user_decision: decision });
       toast.success(`Decision set to ${decision.toUpperCase()}`);
     } catch (err) {
       console.error('Failed to save decision:', err);
@@ -136,14 +141,10 @@ export default function ItemDetail() {
   };
 
   useEffect(() => {
-    fetchItem();
-    const interval = setInterval(() => {
-      if (item && !['complete', 'error'].includes(item.status)) {
-        fetchItem();
-      }
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [id, item?.status]);
+    if (!item) {
+      fetchItem();
+    }
+  }, [id, item]);
 
   // Keyboard Navigation
   useEffect(() => {

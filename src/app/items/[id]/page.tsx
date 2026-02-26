@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { ResearchContextPanel } from '@/components/ResearchContextPanel';
 import { ValuationBlock } from '@/components/ValuationBlock';
+import { ConfidenceBadge } from '@/components/ConfidenceBadge';
 import type { PurchaseDecision } from '@/types/research';
 
 interface Entity {
@@ -774,43 +775,18 @@ export default function ItemDetail() {
               className="glass rounded-[2.5rem] overflow-hidden border border-white/10 shadow-3xl bg-gradient-to-br from-indigo-950/30 to-slate-950/50"
             >
                 <div className="p-8 space-y-6">
-                   <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Research Decision</h3>
-                      <div className="flex gap-1">
-                        {(['buy', 'pass', 'research'] as const).map((d) => (
-                          <button
-                            key={d}
-                            onClick={() => updateDecision(d)}
-                            disabled={isUpdatingDecision}
-                            className={cn(
-                              "px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-tighter transition-all",
-                              item.user_decision === d 
-                                ? (d === 'buy' ? "bg-emerald-500 text-white" : d === 'pass' ? "bg-red-500 text-white" : "bg-blue-500 text-white")
-                                : "bg-white/5 text-slate-500 hover:bg-white/10"
-                            )}
-                          >
-                            {d}
-                          </button>
-                        ))}
-                      </div>
+                   <ValuationBlock
+                     estimated_value_low={item.estimated_value_low ?? null}
+                     estimated_value_high={item.estimated_value_high ?? null}
+                     estimated_value_point={item.estimated_value_point ?? null}
+                     value_confidence={(item.value_confidence as any) ?? null}
+                     is_high_value={item.is_high_value || false}
+                     ebay_keywords={item.ebay_keywords ?? null}
+                   />
+                   <div className="pt-4">
+                     <ConfidenceBadge confidence={item.confidence ?? null} showLabel />
                    </div>
                    
-                   <div className="space-y-1">
-                      <p className="text-[10px] font-black text-emerald-500/50 uppercase tracking-[0.2em] mb-1">Estimated Value</p>
-                      <div className="text-3xl font-black text-emerald-400 tracking-tighter">
-                        {item.valuation || (isProcessing ? "Evaluating..." : "TBD")}
-                      </div>
-                   </div>
-
-                   {item.dealer_gut_check && (
-                     <div className="p-4 bg-slate-950/50 rounded-2xl border border-white/5 space-y-2">
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Dealer Assessment</p>
-                        <p className="text-[11px] font-medium text-slate-300 leading-relaxed italic">
-                          "{item.dealer_gut_check}"
-                        </p>
-                     </div>
-                   )}
-
                    <div className="space-y-3">
                      <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
                        <span>{progress.label}</span>

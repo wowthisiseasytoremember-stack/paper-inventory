@@ -60,11 +60,20 @@ export default function Dashboard() {
   
   const [treasureTrigger, setTreasureTrigger] = useState(false);
   const prevItemsRef = useRef<Set<string>>(new Set());
+  
+  const [filters, setFilters] = useState<FilterState>({
+    decision: null, high_value: false, category: null
+  });
 
   const fetchItems = useCallback(async () => {
     try {
-      const url = query ? `/api/items?q=${encodeURIComponent(query)}` : '/api/items';
-      const res = await fetch(url);
+      const params = new URLSearchParams();
+      if (query) params.set('q', query);
+      if (filters.decision) params.set('decision', filters.decision);
+      if (filters.high_value) params.set('high_value', '1');
+      if (filters.category) params.set('category', filters.category);
+
+      const res = await fetch(`/api/items?${params.toString()}`);
       const data = await res.json();
       setItems(data.data || []);
     } catch (err) {
@@ -72,7 +81,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [query]);
+  }, [query, filters]);
 
   const handleNuke = async () => {
     if (!confirm("NUKE ARCHIVE? This will permanently delete all scanned items and images.")) return;
@@ -95,7 +104,7 @@ export default function Dashboard() {
     const hasProcessing = items.some(i => !['complete', 'error'].includes(i.status));
     const interval = setInterval(fetchItems, hasProcessing ? 3000 : 20000);
     return () => clearInterval(interval);
-  }, [query, fetchItems, items.length]);
+  }, [query, fetchItems, items, filters]);
 
   useEffect(() => {
     const completedHighValue = items.filter(
@@ -124,6 +133,14 @@ export default function Dashboard() {
     .includes(i.status)
   );
 
+  const categories = useMemo(() => [...new Set(items.map(i => i.category).filter(Boolean))], [items]) as string[];
+  const counts = useMemo(() => ({
+    interested: items.filter(i => i.purchase_decision === 'interested').length,
+    purchased: items.filter(i => i.purchase_decision === 'purchased').length,
+    passed: items.filter(i => i.purchase_decision === 'passed').length,
+    high_value: items.filter(i => i.is_high_value).length,
+  }), [items]);
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200 p-3 md:p-6 selection:bg-blue-500/30">
       <TreasureFoundEffect trigger={treasureTrigger} />
@@ -150,6 +167,7 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center gap-2">
+                <ExportMenu />
                 <button
                   onClick={handleNuke}
                   disabled={nuking}
@@ -172,6 +190,14 @@ export default function Dashboard() {
                 </button>
             </div>
         </header>
+
+        <StatsBar 
+            total={items.length}
+            complete={items.filter(i => i.status === 'complete').length}
+            high_value={counts.high_value}
+            interested={counts.interested}
+            total_value={items.reduce((acc, i) => acc + (i.estimated_value_point || 0), 0)}
+        />
         
         {/* Compact Controls */}
         <div className="flex flex-col md:flex-row gap-2">
@@ -235,7 +261,10 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
         
-        <ProcessingPhaseIndicator isActive={hasProcessing} />
+        <div className="flex justify-between items-center">
+            <ProcessingPhaseIndicator isActive={hasProcessing} />
+            <FilterBar filters={filters} onChange={setFilters} categories={categories} counts={counts} />
+        </div>
 
         {/* Dense Grid/List */}
         <section className="space-y-4">

@@ -5,6 +5,7 @@ import { RefreshCw, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { ValuationBlock } from './ValuationBlock';
+import { ConfidenceBadge } from './ConfidenceBadge';
 import type { ValueConfidence } from '@/types/research';
 
 interface Item {
@@ -19,6 +20,7 @@ interface Item {
   estimated_value_point?: number | null;
   value_confidence?: ValueConfidence | null;
   ebay_keywords?: string | null;
+  confidence?: number | null;
 }
 
 export function ItemCard({ item }: { item: Item }) {
@@ -99,6 +101,9 @@ export function ItemCard({ item }: { item: Item }) {
               <h2 className="text-[14px] font-semibold text-[var(--text-100)] leading-tight line-clamp-2">
                   {item.title || "Unidentified Item..."}
               </h2>
+              <div className="mt-1">
+                <ConfidenceBadge confidence={item.confidence ?? null} />
+              </div>
            </div>
            
            <ValuationBlock

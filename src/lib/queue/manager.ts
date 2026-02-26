@@ -7,6 +7,7 @@
 
 import { ItemService, Item } from '../db/items';
 import { performOCR } from '../ocr';
+import { extractValuation } from '../ai/valuator';
 
 const POLLING_INTERVAL_MS = 2000;
 const MAX_CONCURRENT_JOBS = 2;
@@ -143,6 +144,16 @@ export class QueueManager {
     const startTime = Date.now();
     const metadata = await analyzeImage(item.resizedImagePath, item.rawOcr || '');
     const aiDurationMs = Date.now() - startTime;
+    
+    // Call valuator to get structured valuation
+    const valuation = await extractValuation(
+      metadata.title || '',
+      metadata.ai_category || '',
+      metadata.historicalContext || '',
+      metadata.collectorSignificance || '',
+      metadata.valuation || '',
+      metadata.cleanedTranscription || ''
+    );
 
     // Calculate total processing time from creation
     const createdDate = new Date(item.createdAt).getTime();
@@ -160,6 +171,7 @@ export class QueueManager {
       
       // Reseller Fields
       ai_category: metadata.ai_category,
+      category: metadata.ai_category, // map to new research field
       identification: metadata.identification,
       estimated_value: metadata.valuation, // Map estimated_value to database valuation field for compatibility
       liquidity_score: metadata.liquidity_score,
@@ -172,6 +184,19 @@ export class QueueManager {
       uncertain_fields: JSON.stringify(metadata.uncertain_fields),
       item_specifics: JSON.stringify(metadata.item_specifics),
 
+      // Structured Valuation Fields
+      ...(valuation ? {
+        estimated_value_low: valuation.estimated_value_low,
+        estimated_value_high: valuation.estimated_value_high,
+        estimated_value_point: valuation.estimated_value_point,
+        value_confidence: valuation.value_confidence,
+        is_high_value: valuation.is_high_value,
+        ebay_keywords: valuation.ebay_keywords,
+        research_stage: 'valued'
+      } : {
+        research_stage: 'identified'
+      }),
+
       // Metrics & Completion
       aiDurationMs,
       totalProcessingMs,
@@ -180,7 +205,7 @@ export class QueueManager {
       tags: JSON.stringify(metadata.tags || [])
     });
 
-    console.log(`[Queue] 🏁 AI Analysis Complete for ${item.id} (AI: ${aiDurationMs}ms, Total: ${totalProcessingMs}ms)`);
+    console.log(`[Queue] 🏁 AI Analysis & Valuation Complete for ${item.id} (AI: ${aiDurationMs}ms, Total: ${totalProcessingMs}ms)`);
   }
 }
 

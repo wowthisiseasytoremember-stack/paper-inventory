@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { BulkUpload } from '@/components/BulkUpload';
 import { ItemCard } from '@/components/ItemCard';
+import { ProcessingPhaseIndicator } from '@/components/ProcessingPhaseIndicator';
+import { TreasureFoundEffect } from '@/components/TreasureFoundEffect';
 import { 
   Loader2, 
   Search, 
@@ -36,6 +38,7 @@ interface Item {
     valuation?: string;
     tags?: string; // JSON string
     historicalContext?: string;
+    is_high_value?: boolean;
 }
 
 type SortOption = 'newest' | 'oldest' | 'title';
@@ -54,6 +57,9 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [nuking, setNuking] = useState(false);
+  
+  const [treasureTrigger, setTreasureTrigger] = useState(false);
+  const prevItemsRef = useRef<Set<string>>(new Set());
 
   const fetchItems = useCallback(async () => {
     try {
@@ -91,6 +97,19 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [query, fetchItems, items.length]);
 
+  useEffect(() => {
+    const completedHighValue = items.filter(
+      i => i.status === 'complete' && i.is_high_value && !prevItemsRef.current.has(i.id)
+    );
+    if (completedHighValue.length > 0) {
+      setTreasureTrigger(t => !t); // toggle to re-trigger
+    }
+    // Update the seen set
+    items.forEach(i => {
+      if (i.status === 'complete') prevItemsRef.current.add(i.id);
+    });
+  }, [items]);
+
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
       if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -100,8 +119,15 @@ export default function Dashboard() {
     });
   }, [items, sortBy]);
 
+  const hasProcessing = items.some(i =>
+    ['queued','processing_ocr','ocr_complete','processing_resize','resize_complete','processing_ai']
+    .includes(i.status)
+  );
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200 p-3 md:p-6 selection:bg-blue-500/30">
+      <TreasureFoundEffect trigger={treasureTrigger} />
+      
       {/* Ambient background glow */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-[-5%] right-[-5%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[100px]" />
@@ -208,6 +234,8 @@ export default function Dashboard() {
             </motion.section>
           )}
         </AnimatePresence>
+        
+        <ProcessingPhaseIndicator isActive={hasProcessing} />
 
         {/* Dense Grid/List */}
         <section className="space-y-4">
@@ -216,7 +244,7 @@ export default function Dashboard() {
             </h2>
             
             {loading ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
                   {[...Array(20)].map((_, i) => <SkeletonCard key={i} />)}
                 </div>
             ) : items.length === 0 ? (
@@ -231,73 +259,72 @@ export default function Dashboard() {
                     </button>
                 </div>
             ) : viewMode === 'grid' ? (
-                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
-                    {sortedItems.map((item, idx) => (
-                      <motion.div 
-                        key={item.id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: idx * 0.01 }}
-                      >
-                        <ItemCard item={item} />
-                      </motion.div>
-                    ))}
-                </div>
+                <motion.div layout className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
+                    <AnimatePresence mode="popLayout">
+                        {sortedItems.map((item, idx) => (
+                          <ItemCard key={item.id} item={item} />
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
             ) : (
                 /* Tiny List View */
-                <div className="space-y-1">
-                    {sortedItems.map((item, idx) => {
-                        return (
-                            <motion.div
-                              key={item.id}
-                              initial={{ opacity: 0, x: -5 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: idx * 0.01 }}
-                            >
-                              <Link 
-                                href={`/items/${item.id}`}
-                                className="group flex items-center gap-3 p-1.5 pr-4 rounded-xl glass border border-transparent hover:border-slate-800 hover:bg-slate-900/40 transition-luxury"
-                              >
-                                  <div className="w-8 h-8 flex-shrink-0 bg-slate-950 rounded-lg overflow-hidden border border-slate-900">
-                                      {item.thumbnailPath ? (
-                                          <img src={`/api/items/${item.id}/thumbnail`} className="w-full h-full object-cover group-hover:scale-110 transition-luxury" alt="" />
-                                      ) : (
-                                          <div className="w-full h-full flex items-center justify-center">
-                                              <Archive size={12} className="text-slate-800" />
-                                          </div>
-                                      )}
-                                  </div>
-                                  
-                                  <div className="flex-grow min-w-0 flex items-center gap-4">
-                                      <h3 className="text-[11px] font-bold text-slate-200 group-hover:text-blue-400 transition-colors truncate flex-grow">
-                                        {item.title || "Processing..."}
-                                      </h3>
-                                      
-                                      <div className="hidden md:flex items-center gap-4 flex-shrink-0">
-                                          {item.valuation && (
-                                              <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-black tracking-tighter w-20">
-                                                  <DollarSign size={10} />
-                                                  {item.valuation}
+                <motion.div layout className="space-y-1">
+                    <AnimatePresence mode="popLayout">
+                        {sortedItems.map((item, idx) => {
+                            return (
+                                <motion.div
+                                  layout
+                                  key={item.id}
+                                  initial={{ opacity: 0, x: -5 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: -5 }}
+                                  transition={{ delay: idx * 0.01 }}
+                                >
+                                  <Link 
+                                    href={`/items/${item.id}`}
+                                    className="group flex items-center gap-3 p-1.5 pr-4 rounded-xl glass border border-transparent hover:border-slate-800 hover:bg-slate-900/40 transition-luxury"
+                                  >
+                                      <div className="w-8 h-8 flex-shrink-0 bg-slate-950 rounded-lg overflow-hidden border border-slate-900">
+                                          {item.thumbnailPath ? (
+                                              <img src={`/api/items/${item.id}/thumbnail`} className="w-full h-full object-cover group-hover:scale-110 transition-luxury" alt="" />
+                                          ) : (
+                                              <div className="w-full h-full flex items-center justify-center">
+                                                  <Archive size={12} className="text-slate-800" />
                                               </div>
                                           )}
+                                      </div>
+                                      
+                                      <div className="flex-grow min-w-0 flex items-center gap-4">
+                                          <h3 className="text-[11px] font-bold text-slate-200 group-hover:text-blue-400 transition-colors truncate flex-grow">
+                                            {item.title || "Processing..."}
+                                          </h3>
                                           
-                                          <div className="w-24 text-[9px] font-bold text-slate-600 uppercase tracking-tighter">
-                                              {formatDistanceToNow(new Date(item.createdAt), { addSuffix: false })}
+                                          <div className="hidden md:flex items-center gap-4 flex-shrink-0">
+                                              {item.valuation && (
+                                                  <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-black tracking-tighter w-20">
+                                                      <DollarSign size={10} />
+                                                      {item.valuation}
+                                                  </div>
+                                              )}
+                                              
+                                              <div className="w-24 text-[9px] font-bold text-slate-600 uppercase tracking-tighter">
+                                                  {formatDistanceToNow(new Date(item.createdAt), { addSuffix: false })}
+                                              </div>
                                           </div>
                                       </div>
-                                  </div>
 
-                                  <div className={cn(
-                                      "w-1.5 h-1.5 rounded-full",
-                                      item.status === 'complete' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" :
-                                      item.status === 'error' ? "bg-red-500" :
-                                      "bg-blue-500 animate-pulse"
-                                  )} />
-                              </Link>
-                            </motion.div>
-                        );
-                    })}
-                </div>
+                                      <div className={cn(
+                                          "w-1.5 h-1.5 rounded-full",
+                                          item.status === 'complete' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" :
+                                          item.status === 'error' ? "bg-red-500" :
+                                          "bg-blue-500 animate-pulse"
+                                      )} />
+                                  </Link>
+                                </motion.div>
+                            );
+                        })}
+                    </AnimatePresence>
+                </motion.div>
             )}
         </section>
       </div>

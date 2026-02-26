@@ -7,6 +7,7 @@
 
 import { db } from './index';
 import { randomUUID } from 'crypto';
+import type { PurchaseDecision, ValueConfidence, ResearchStage } from '../../types/research';
 
 export type ItemStatus = 'queued' | 'processing_ocr' | 'ocr_complete' | 'ocr_pending_retry' | 'processing_resize' | 'resize_complete' | 'processing_ai' | 'complete' | 'error';
 
@@ -45,6 +46,21 @@ export interface Item {
   analysis_history?: string; // JSON array of past deep dives
   lockedFields?: string; // JSON
   originalFilename?: string;
+  
+  // Research Context & Valuation Fields
+  research_location?: string | null;
+  asking_price?: string | null;
+  purchase_decision?: PurchaseDecision;
+  research_notes?: string | null;
+  estimated_value_low?: number | null;
+  estimated_value_high?: number | null;
+  estimated_value_point?: number | null;
+  value_confidence?: ValueConfidence | null;
+  is_high_value?: boolean;
+  ebay_keywords?: string | null;
+  category?: string | null;
+  research_stage?: ResearchStage;
+
   // Legacy reseller fields (kept for backward compatibility)
   ai_category?: string;
   identification?: string;
@@ -61,6 +77,39 @@ export interface Item {
 }
 
 export const ItemService = {
+  
+  /**
+   * Updates the research valuation fields for an item.
+   */
+  updateValuation: (id: string, v: {
+    estimated_value_low: number | null;
+    estimated_value_high: number | null;
+    estimated_value_point: number | null;
+    value_confidence: string;
+    is_high_value: boolean;
+    ebay_keywords: string;
+  }) => {
+    db.prepare(`
+      UPDATE items SET
+        estimated_value_low = ?,
+        estimated_value_high = ?,
+        estimated_value_point = ?,
+        value_confidence = ?,
+        is_high_value = ?,
+        ebay_keywords = ?,
+        research_stage = 'valued',
+        statusUpdatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(
+      v.estimated_value_low,
+      v.estimated_value_high,
+      v.estimated_value_point,
+      v.value_confidence,
+      v.is_high_value ? 1 : 0,
+      v.ebay_keywords,
+      id
+    );
+  },
   
   /**
    * Creates a new item in 'queued' state.

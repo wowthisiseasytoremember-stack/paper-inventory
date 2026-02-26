@@ -147,10 +147,44 @@ export function initSchema() {
     // Column already exists â€” expected for existing DBs
   }
 
+  // Migration: add user_decision column to existing databases
+  try {
+    db.exec('ALTER TABLE items ADD COLUMN user_decision TEXT DEFAULT \'none\'');
+    console.log('[Migration] Added user_decision column.');
+  } catch (e) {
+    // Column already exists — expected for existing DBs
+  }
+
   // Migration: fix FK cascade on existing databases (SQLite can't ALTER FK,
   // but new databases get ON DELETE SET NULL from the CREATE above)
 
-  // Migration: drop and recreate FTS5 triggers to fix broken column references
+  // Migration: research context fields
+  const researchMigrations = [
+    `ALTER TABLE items ADD COLUMN research_location TEXT`,
+    `ALTER TABLE items ADD COLUMN asking_price TEXT`,
+    `ALTER TABLE items ADD COLUMN purchase_decision TEXT DEFAULT 'undecided' CHECK(purchase_decision IN ('undecided','interested','purchased','passed'))`,
+    `ALTER TABLE items ADD COLUMN research_notes TEXT`,
+    `ALTER TABLE items ADD COLUMN estimated_value_low REAL`,
+    `ALTER TABLE items ADD COLUMN estimated_value_high REAL`,
+    `ALTER TABLE items ADD COLUMN estimated_value_point REAL`,
+    `ALTER TABLE items ADD COLUMN value_confidence TEXT`,
+    `ALTER TABLE items ADD COLUMN is_high_value INTEGER DEFAULT 0`,
+    `ALTER TABLE items ADD COLUMN ebay_keywords TEXT`,
+    `ALTER TABLE items ADD COLUMN category TEXT`,
+    `ALTER TABLE items ADD COLUMN research_stage TEXT DEFAULT 'identified' CHECK(research_stage IN ('identified','valued','reviewed','exported'))`,
+  ];
+
+  for (const sql of researchMigrations) {
+    try {
+      db.exec(sql);
+      const col = sql.match(/ADD COLUMN (\w+)/)?.[1];
+      console.log(`[Migration] Added column: ${col}`);
+    } catch (e) {
+      // Column already exists — expected on existing DBs
+    }
+  }
+
+  // Migration: drop and recreate FTS5 triggers to fix broken column references and add research fields
   // Old triggers referenced non-existent columns (identification, dealer_gut_check, ai_category).
   // DROP + recreate is safe — the FTS table is rebuilt from content='items'.
   try {
@@ -166,28 +200,30 @@ export function initSchema() {
           identifiedNames,
           historicalContext,
           collectorSignificance,
+          research_location,
+          research_notes,
           content='items',
           content_rowid='rowid'
       );
 
       CREATE TRIGGER items_ai AFTER INSERT ON items BEGIN
-        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
-        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance);
+        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance, research_location, research_notes)
+        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance, new.research_location, new.research_notes);
       END;
 
       CREATE TRIGGER items_ad AFTER DELETE ON items BEGIN
-        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
-        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance);
+        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance, research_location, research_notes)
+        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance, old.research_location, old.research_notes);
       END;
 
       CREATE TRIGGER items_au AFTER UPDATE ON items BEGIN
-        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
-        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance);
-        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
-        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance);
+        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance, research_location, research_notes)
+        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance, old.research_location, old.research_notes);
+        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance, research_location, research_notes)
+        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance, new.research_location, new.research_notes);
       END;
     `);
-    console.log('[Migration] FTS5 triggers recreated with correct columns.');
+    console.log('[Migration] FTS5 triggers recreated with correct columns including research fields.');
   } catch (e: any) {
     console.error('[Migration] Failed to recreate FTS5 triggers:', e.message);
   }

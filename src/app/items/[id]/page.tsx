@@ -25,6 +25,9 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import { ResearchContextPanel } from '@/components/ResearchContextPanel';
+import { ValuationBlock } from '@/components/ValuationBlock';
+import type { PurchaseDecision } from '@/types/research';
 
 interface Entity {
   name: string;
@@ -71,6 +74,19 @@ interface Item {
   totalProcessingMs?: number;
   statusUpdatedAt?: string;
   watchdogLockedAt?: string;
+  user_decision?: string;
+
+  // Research Context fields
+  research_location?: string | null;
+  asking_price?: string | null;
+  purchase_decision?: PurchaseDecision;
+  research_notes?: string | null;
+  estimated_value_low?: number | null;
+  estimated_value_high?: number | null;
+  estimated_value_point?: number | null;
+  value_confidence?: string | null;
+  is_high_value?: boolean;
+  ebay_keywords?: string | null;
 }
 
 export default function ItemDetail() {
@@ -868,6 +884,24 @@ export default function ItemDetail() {
                    <button className="py-4 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/5 transition-luxury border-r border-white/5">Export JSON</button>
                    <button className="py-4 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/5 transition-luxury">Print Label</button>
                 </div>
+            </motion.div>
+            
+            {/* Phase 4: Research Context Panel */}
+            <motion.div 
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.35 }}
+              className="glass rounded-[2.5rem] p-8 border border-white/5 shadow-3xl bg-slate-950/40"
+            >
+               <ResearchContextPanel 
+                 itemId={item.id} 
+                 initial={{
+                   research_location: item.research_location || '',
+                   asking_price: item.asking_price || '',
+                   purchase_decision: item.purchase_decision || 'undecided',
+                   research_notes: item.research_notes || '',
+                 }} 
+               />
             </motion.div>
             
             {/* Unit Metadata Sidebar */}

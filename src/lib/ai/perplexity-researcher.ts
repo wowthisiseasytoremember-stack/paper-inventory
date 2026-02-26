@@ -111,7 +111,13 @@ ${itemRef}
 [OCR / EXTRACTED TEXT]:
 ${ocrText.slice(0, 3000)}
 
-Be specific with dollar amounts and dates. Cite actual sold listings. This research goes directly to a senior appraiser setting a final sale price.`;
+---
+CRITICAL RULES FOR SOLD PRICE DATA:
+- Only report prices from sources you actually retrieved in this search. Cite the URL.
+- If you cannot find real sold listings, say "No sold listings found" for that platform — do NOT estimate, extrapolate, or invent prices.
+- "Estimated" or "extrapolated" prices are worthless to an appraiser and actively harmful. A clear "not found" is far more useful than a made-up number.
+- For eBay: search "[item name] sold" or "[item name] completed" — if results are behind a login wall, note that and skip.
+- Price guide values (e.g. ComicBookRealm, Kovel's) are acceptable but must be labeled as guide price, not a recent sale.`;
 
   try {
     const response = await client.chat.completions.create({

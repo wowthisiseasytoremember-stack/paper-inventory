@@ -119,17 +119,16 @@ export class QueueManager {
 
     ItemService.updateStatus(item.id, 'processing_resize');
     
-    const { ImageProcessor } = await import('../processing/image-processor');
-    const result = await ImageProcessor.process(item.id, item.originalImagePath);
-
+    // --- BYPASS IMAGE PROCESSOR ---
+    console.log(`[Queue] ⚠️ Bypassing image processor for ${item.id}`);
     ItemService.unlock(item.id, 'resize_complete', {
-      resizedImagePath: result.resizedPath,
-      thumbnailPath: result.thumbnailPath,
-      mimeType: result.mimeType,
-      resizeDurationMs: result.resizeDurationMs
+      resizedImagePath: item.originalImagePath,
+      thumbnailPath: item.originalImagePath,
+      mimeType: 'image/jpeg',
+      resizeDurationMs: 0
     });
 
-    console.log(`[Queue] ✅ Resize & Hash Complete for ${item.id} (${result.resizeDurationMs}ms)`);
+    console.log(`[Queue] ✅ Bypass complete for ${item.id}`);
   }
 
   private async handleAI(item: any) {
@@ -180,19 +179,7 @@ export class QueueManager {
       valuation: metadata.valuation,
       
       // Reseller Fields
-      ai_category: metadata.ai_category,
       category: metadata.ai_category, // map to new research field
-      identification: metadata.identification,
-      estimated_value: metadata.valuation, // Map estimated_value to database valuation field for compatibility
-      liquidity_score: metadata.liquidity_score,
-      target_buy_price: metadata.target_buy_price,
-      ebay_title: metadata.ebay_title,
-      comp_search_keywords: JSON.stringify(metadata.comp_search_keywords),
-      visible_flaws: JSON.stringify(metadata.visible_flaws),
-
-      research_pathways: JSON.stringify(metadata.research_pathways),
-      uncertain_fields: JSON.stringify(metadata.uncertain_fields),
-      item_specifics: JSON.stringify(metadata.item_specifics),
 
       // Structured Valuation Fields
       ...(valuation ? {

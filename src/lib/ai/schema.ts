@@ -56,20 +56,7 @@ export const ItemMetadataSchema = z.object({
   collectorSignificance: z.string().optional(),
   valuation: z.string().optional(),
   tags: z.array(z.string()),
-  
-  // New Reseller Fields
-  ai_category: z.string().optional(),
-  identification: z.string().optional(),
-  estimated_value: z.string().optional(),
-  liquidity_score: z.number().optional(),
-  target_buy_price: z.string().optional(),
-  ebay_title: z.string().optional(),
-  comp_search_keywords: z.array(z.string()).optional(),
-  visible_flaws: z.array(z.string()).optional(),
-  dealer_gut_check: z.string().optional(),
-  research_pathways: z.array(z.string()).optional(),
-  uncertain_fields: z.array(z.string()).optional(),
-  item_specifics: z.record(z.string(), z.string()).optional()
+  ai_category: z.string().optional()
 });
 
 export type ItemMetadata = z.infer<typeof ItemMetadataSchema>;

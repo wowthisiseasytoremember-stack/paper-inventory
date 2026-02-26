@@ -57,18 +57,7 @@ export async function analyzeImage(
         identifiedNames: [], 
         tags: [route.category, ...(appraisal.comp_search_keywords || [])],
         valuation: appraisal.estimated_value, 
-        ai_category: route.category,
-        identification: appraisal.identification,
-        estimated_value: appraisal.estimated_value,
-        liquidity_score: appraisal.liquidity_score,
-        target_buy_price: appraisal.target_buy_price,
-        ebay_title: appraisal.identification,
-        comp_search_keywords: appraisal.comp_search_keywords,
-        visible_flaws: appraisal.visible_flaws,
-        dealer_gut_check: appraisal.dealer_gut_check,
-        research_pathways: appraisal.research_pathways,
-        uncertain_fields: appraisal.uncertain_fields,
-        item_specifics: appraisal.item_specifics
+        ai_category: route.category
       };
 
     } catch (error: any) {

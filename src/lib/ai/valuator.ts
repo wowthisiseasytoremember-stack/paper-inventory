@@ -119,6 +119,6 @@ ${researchNotes || 'No market research available — use expert signals only.'}`
     };
   } catch (e) {
     console.error('[Valuator] Failed to parse valuation:', e);
-    return null;
+    throw e;
   }
 }

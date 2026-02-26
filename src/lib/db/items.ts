@@ -60,19 +60,6 @@ export interface Item {
   ebay_keywords?: string | null;
   category?: string | null;
   research_stage?: ResearchStage;
-
-  // Legacy reseller fields (kept for backward compatibility)
-  ai_category?: string;
-  identification?: string;
-  estimated_value?: string;
-  liquidity_score?: number;
-  target_buy_price?: string;
-  ebay_title?: string;
-  comp_search_keywords?: string;
-  visible_flaws?: string;
-  research_pathways?: string;
-  uncertain_fields?: string;
-  item_specifics?: string;
   user_decision?: string;
 }
 

@@ -18,7 +18,8 @@ const INITIAL_BACKOFF_MS = 1000;
 export async function analyzeImage(
   imagePath: string,
   ocrText: string,
-  config: AIConfig = getAIConfig()
+  config: AIConfig = getAIConfig(),
+  onRouteComplete?: (route: ConductorResponse) => void
 ): Promise<ItemMetadata> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
@@ -34,6 +35,10 @@ export async function analyzeImage(
       } else {
         // Fallback or secondary logic (using Gemini as current active fallback)
         route = await routeItemGemini(imagePath, ocrText);
+      }
+
+      if (onRouteComplete) {
+        onRouteComplete(route);
       }
       
       // 2. Appraise

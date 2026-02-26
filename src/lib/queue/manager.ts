@@ -142,7 +142,17 @@ export class QueueManager {
     const { analyzeImage } = await import('../ai');
 
     const startTime = Date.now();
-    const metadata = await analyzeImage(item.resizedImagePath, item.rawOcr || '');
+    
+    // Provide a callback to receive fast initial routing info
+    const metadata = await analyzeImage(item.resizedImagePath, item.rawOcr || '', (route) => {
+      ItemService.updateStatus(item.id, 'processing_ai', {
+        title: `Identified as: ${route.category.replace(/_/g, ' ')}`,
+        category: route.category,
+        confidence: route.confidence_score
+      });
+      console.log(`[Queue] ⚡ Fast ID complete for ${item.id}: ${route.category}`);
+    });
+    
     const aiDurationMs = Date.now() - startTime;
     
     // Call valuator to get structured valuation

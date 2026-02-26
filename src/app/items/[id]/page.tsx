@@ -67,7 +67,7 @@ interface Item {
   resizedImagePath?: string;
   thumbnailPath?: string;
   tags?: string[];
-  analysis_history?: string; // JSON array of AnalysisEntry
+  analysis_history?: AnalysisEntry[]; // already parsed by API route
   createdAt: string;
   processedAt?: string;
   errorMessage?: string;
@@ -207,7 +207,7 @@ export default function ItemDetail() {
       case 'resize_complete':
         return { label: 'AI Queued', percent: 65 };
       case 'processing_ai':
-        return { label: 'AI Analysis', percent: 85 };
+        return { label: 'AI Pipeline', percent: 85 };
       case 'complete':
         return { label: 'Complete', percent: 100 };
       case 'error':
@@ -398,7 +398,7 @@ export default function ItemDetail() {
 
             {/* Reseller Valuation Dashboard */}
             <AnimatePresence>
-              {isComplete && (item.identification || item.ebay_title) && (
+              {isComplete && (item.estimated_value_point || item.estimated_value_low) && (
                 <motion.div 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -406,49 +406,41 @@ export default function ItemDetail() {
                 >
                   <div className="glass rounded-[2rem] p-6 border border-emerald-500/20 bg-emerald-500/5 space-y-3">
                     <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
-                      <Search size={12} /> Identification
+                      <Search size={12} /> Keywords
                     </h4>
                     <p className="text-xs font-bold text-slate-200 leading-tight">
-                      {item.identification || item.ebay_title}
+                      {item.ebay_keywords || 'N/A'}
                     </p>
                   </div>
 
                   <div className="glass rounded-[2rem] p-6 border border-blue-500/20 bg-blue-500/5 space-y-3">
                     <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2">
-                      <Sparkles size={12} /> Market Score
+                      <Sparkles size={12} /> Category
                     </h4>
                     <div className="space-y-1">
                       <p className="text-[11px] font-black text-slate-200">
-                        {item.liquidity_score ? `${item.liquidity_score}/10 LIQUIDITY` : 'NO SCORE'}
+                        {item.category ? item.category.toUpperCase() : 'UNIDENTIFIED'}
                       </p>
-                      <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-500" 
-                          style={{ width: `${(item.liquidity_score || 0) * 10}%` }}
-                        />
-                      </div>
                     </div>
                   </div>
 
                   <div className="glass rounded-[2rem] p-6 border border-emerald-500/20 bg-emerald-500/5 space-y-3">
                     <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
-                      <DollarSign size={12} /> Buy Target
+                      <DollarSign size={12} /> Point Value
                     </h4>
                     <p className="text-lg font-black text-emerald-400 tracking-tighter">
-                      {item.target_buy_price || 'N/A'}
+                      {item.estimated_value_point ? `$${item.estimated_value_point.toLocaleString()}` : 'N/A'}
                     </p>
                   </div>
 
                   <div className="glass rounded-[2rem] p-6 border border-orange-500/20 bg-orange-500/5 space-y-3">
                     <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest flex items-center gap-2">
-                      <AlertCircle size={12} /> Condition
+                      <AlertCircle size={12} /> Value Confidence
                     </h4>
                     <ul className="space-y-1">
-                      {item.visible_flaws?.slice(0, 2).map((flaw, i) => (
-                        <li key={i} className="text-[9px] font-bold text-slate-300 truncate">
-                          • {flaw}
-                        </li>
-                      ))}
+                      <p className="text-[9px] font-bold text-slate-300 truncate">
+                        {item.value_confidence ? item.value_confidence.toUpperCase() : 'N/A'}
+                      </p>
                     </ul>
                   </div>
                 </motion.div>
@@ -565,166 +557,161 @@ export default function ItemDetail() {
 
             {/* Analysis Intelligence - NEW GCV/AI Pipeline Results */}
             <AnimatePresence>
-              {item.analysis_history && (() => {
-                try {
-                  const history = JSON.parse(item.analysis_history) as AnalysisEntry[];
-                  const latestAnalysis = history[history.length - 1];
-                  if (!latestAnalysis) return null;
+              {item.analysis_history && item.analysis_history.length > 0 && (() => {
+                const latestAnalysis = item.analysis_history[item.analysis_history.length - 1];
+                if (!latestAnalysis) return null;
 
-                  return (
+                return (
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="space-y-6 border-t border-white/5 pt-8"
+                  >
+                    {/* Category & Confidence */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <motion.div
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        className="glass rounded-[2rem] p-6 border border-green-500/20 bg-green-500/5"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <Target size={16} className="text-green-400" />
+                          <h4 className="text-xs font-black text-green-400 uppercase tracking-widest">Category</h4>
+                        </div>
+                        <p className="text-2xl font-black text-green-300 mb-2">{latestAnalysis.category.replace(/_/g, ' ').toUpperCase()}</p>
+                        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-green-500" style={{width: `${latestAnalysis.conductor_confidence * 100}%`}} />
+                        </div>
+                        <p className="text-xs text-slate-400 mt-2">{(latestAnalysis.conductor_confidence * 100).toFixed(1)}% confidence</p>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ x: 20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        className="glass rounded-[2rem] p-6 border border-purple-500/20 bg-purple-500/5"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <Sparkles size={16} className="text-purple-400" />
+                          <h4 className="text-xs font-black text-purple-400 uppercase tracking-widest">Identified Names</h4>
+                        </div>
+                        <div className="space-y-1">
+                          {latestAnalysis.extracted_fields.identified_names.length > 0 ? (
+                            latestAnalysis.extracted_fields.identified_names.slice(0, 3).map((name, i) => (
+                              <p key={i} className="text-sm text-purple-200">• {name}</p>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-500">No names identified</p>
+                          )}
+                        </div>
+                      </motion.div>
+                    </div>
+
+                    {/* Condition Issues & Value Signals */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <motion.div
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className="glass rounded-[2rem] p-6 border border-orange-500/20 bg-orange-500/5"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <AlertCircle size={16} className="text-orange-400" />
+                          <h4 className="text-xs font-black text-orange-400 uppercase tracking-widest">Condition Issues</h4>
+                        </div>
+                        <div className="space-y-1">
+                          {latestAnalysis.extracted_fields.condition_issues.length > 0 ? (
+                            latestAnalysis.extracted_fields.condition_issues.map((issue, i) => (
+                              <p key={i} className="text-sm text-orange-200">• {issue}</p>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-500">No major condition issues detected</p>
+                          )}
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ x: 20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className="glass rounded-[2rem] p-6 border border-yellow-500/20 bg-yellow-500/5"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <DollarSign size={16} className="text-yellow-400" />
+                          <h4 className="text-xs font-black text-yellow-400 uppercase tracking-widest">Value Signals</h4>
+                        </div>
+                        <div className="space-y-1">
+                          {latestAnalysis.extracted_fields.estimated_value_signals.length > 0 ? (
+                            latestAnalysis.extracted_fields.estimated_value_signals.map((signal, i) => (
+                              <p key={i} className="text-sm text-yellow-200">• {signal}</p>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-500">No premium value indicators</p>
+                          )}
+                        </div>
+                      </motion.div>
+                    </div>
+
+                    {/* eBay Keywords */}
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      className="space-y-6 border-t border-white/5 pt-8"
+                      transition={{ delay: 0.2 }}
+                      className="glass rounded-[2rem] p-6 border border-blue-500/20 bg-blue-500/5"
                     >
-                      {/* Category & Confidence */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <motion.div
-                          initial={{ x: -20, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          className="glass rounded-[2rem] p-6 border border-green-500/20 bg-green-500/5"
-                        >
-                          <div className="flex items-center gap-2 mb-3">
-                            <Target size={16} className="text-green-400" />
-                            <h4 className="text-xs font-black text-green-400 uppercase tracking-widest">Category</h4>
-                          </div>
-                          <p className="text-2xl font-black text-green-300 mb-2">{latestAnalysis.category.replace(/_/g, ' ').toUpperCase()}</p>
-                          <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-500" style={{width: `${latestAnalysis.conductor_confidence * 100}%`}} />
-                          </div>
-                          <p className="text-xs text-slate-400 mt-2">{(latestAnalysis.conductor_confidence * 100).toFixed(1)}% confidence</p>
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ x: 20, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          className="glass rounded-[2rem] p-6 border border-purple-500/20 bg-purple-500/5"
-                        >
-                          <div className="flex items-center gap-2 mb-3">
-                            <Sparkles size={16} className="text-purple-400" />
-                            <h4 className="text-xs font-black text-purple-400 uppercase tracking-widest">Identified Names</h4>
-                          </div>
-                          <div className="space-y-1">
-                            {latestAnalysis.extracted_fields.identified_names.length > 0 ? (
-                              latestAnalysis.extracted_fields.identified_names.slice(0, 3).map((name, i) => (
-                                <p key={i} className="text-sm text-purple-200">• {name}</p>
-                              ))
-                            ) : (
-                              <p className="text-xs text-slate-500">No names identified</p>
-                            )}
-                          </div>
-                        </motion.div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <Search size={16} className="text-blue-400" />
+                        <h4 className="text-xs font-black text-blue-400 uppercase tracking-widest">eBay Search Keywords</h4>
                       </div>
-
-                      {/* Condition Issues & Value Signals */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <motion.div
-                          initial={{ x: -20, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: 0.1 }}
-                          className="glass rounded-[2rem] p-6 border border-orange-500/20 bg-orange-500/5"
-                        >
-                          <div className="flex items-center gap-2 mb-3">
-                            <AlertCircle size={16} className="text-orange-400" />
-                            <h4 className="text-xs font-black text-orange-400 uppercase tracking-widest">Condition Issues</h4>
-                          </div>
-                          <div className="space-y-1">
-                            {latestAnalysis.extracted_fields.condition_issues.length > 0 ? (
-                              latestAnalysis.extracted_fields.condition_issues.map((issue, i) => (
-                                <p key={i} className="text-sm text-orange-200">• {issue}</p>
-                              ))
-                            ) : (
-                              <p className="text-xs text-slate-500">No major condition issues detected</p>
-                            )}
-                          </div>
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ x: 20, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: 0.1 }}
-                          className="glass rounded-[2rem] p-6 border border-yellow-500/20 bg-yellow-500/5"
-                        >
-                          <div className="flex items-center gap-2 mb-3">
-                            <DollarSign size={16} className="text-yellow-400" />
-                            <h4 className="text-xs font-black text-yellow-400 uppercase tracking-widest">Value Signals</h4>
-                          </div>
-                          <div className="space-y-1">
-                            {latestAnalysis.extracted_fields.estimated_value_signals.length > 0 ? (
-                              latestAnalysis.extracted_fields.estimated_value_signals.map((signal, i) => (
-                                <p key={i} className="text-sm text-yellow-200">• {signal}</p>
-                              ))
-                            ) : (
-                              <p className="text-xs text-slate-500">No premium value indicators</p>
-                            )}
-                          </div>
-                        </motion.div>
+                      <div className="flex flex-wrap gap-2">
+                        {latestAnalysis.extracted_fields.ebay_keywords.map((keyword, i) => (
+                          <span key={i} className="px-3 py-1 bg-blue-500/10 text-blue-300 rounded-lg text-xs font-bold border border-blue-500/30">
+                            {keyword}
+                          </span>
+                        ))}
                       </div>
-
-                      {/* eBay Keywords */}
-                      <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="glass rounded-[2rem] p-6 border border-blue-500/20 bg-blue-500/5"
-                      >
-                        <div className="flex items-center gap-2 mb-4">
-                          <Search size={16} className="text-blue-400" />
-                          <h4 className="text-xs font-black text-blue-400 uppercase tracking-widest">eBay Search Keywords</h4>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {latestAnalysis.extracted_fields.ebay_keywords.map((keyword, i) => (
-                            <span key={i} className="px-3 py-1 bg-blue-500/10 text-blue-300 rounded-lg text-xs font-bold border border-blue-500/30">
-                              {keyword}
-                            </span>
-                          ))}
-                        </div>
-                      </motion.div>
-
-                      {/* Historical Context from Expert */}
-                      <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="glass rounded-[2rem] p-6 border border-indigo-500/20 bg-indigo-500/5"
-                      >
-                        <div className="flex items-center gap-2 mb-4">
-                          <History size={16} className="text-indigo-400" />
-                          <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest">Expert Context</h4>
-                        </div>
-                        <div className="text-slate-300 text-sm leading-relaxed prose prose-invert prose-indigo max-w-none">
-                          {latestAnalysis.extracted_fields.historical_context ? (
-                            <ReactMarkdown>{latestAnalysis.extracted_fields.historical_context}</ReactMarkdown>
-                          ) : (
-                            <p className="text-xs text-slate-500">No historical context extracted</p>
-                          )}
-                        </div>
-                      </motion.div>
-
-                      {/* Collector Significance from Expert */}
-                      <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.4 }}
-                        className="glass rounded-[2rem] p-6 border border-cyan-500/20 bg-cyan-500/5"
-                      >
-                        <div className="flex items-center gap-2 mb-4">
-                          <Sparkles size={16} className="text-cyan-400" />
-                          <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest">Collector Significance</h4>
-                        </div>
-                        <div className="text-slate-300 text-sm leading-relaxed prose prose-invert prose-cyan max-w-none">
-                          {latestAnalysis.extracted_fields.collector_significance ? (
-                            <ReactMarkdown>{latestAnalysis.extracted_fields.collector_significance}</ReactMarkdown>
-                          ) : (
-                            <p className="text-xs text-slate-500">No collector significance identified</p>
-                          )}
-                        </div>
-                      </motion.div>
                     </motion.div>
-                  );
-                } catch (e) {
-                  return null;
-                }
+
+                    {/* Historical Context from Expert */}
+                    <motion.div
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="glass rounded-[2rem] p-6 border border-indigo-500/20 bg-indigo-500/5"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <History size={16} className="text-indigo-400" />
+                        <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest">Expert Context</h4>
+                      </div>
+                      <div className="text-slate-300 text-sm leading-relaxed prose prose-invert prose-indigo max-w-none">
+                        {latestAnalysis.extracted_fields.historical_context ? (
+                          <ReactMarkdown>{latestAnalysis.extracted_fields.historical_context}</ReactMarkdown>
+                        ) : (
+                          <p className="text-xs text-slate-500">No historical context extracted</p>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Collector Significance from Expert */}
+                    <motion.div
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                      className="glass rounded-[2rem] p-6 border border-cyan-500/20 bg-cyan-500/5"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Sparkles size={16} className="text-cyan-400" />
+                        <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest">Collector Significance</h4>
+                      </div>
+                      <div className="text-slate-300 text-sm leading-relaxed prose prose-invert prose-cyan max-w-none">
+                        {latestAnalysis.extracted_fields.collector_significance ? (
+                          <ReactMarkdown>{latestAnalysis.extracted_fields.collector_significance}</ReactMarkdown>
+                        ) : (
+                          <p className="text-xs text-slate-500">No collector significance identified</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                );
               })()}
             </AnimatePresence>
 

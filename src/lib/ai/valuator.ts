@@ -15,24 +15,30 @@ export interface ValuationOutput {
   value_reasoning: string;
 }
 
-const VALUATION_PROMPT = `You are an expert appraiser specializing in vintage collectibles, ephemera, and paper goods.
+const VALUATION_PROMPT = `You are a senior appraiser specializing in vintage collectibles, ephemera, and paper goods.
 
-Given the following item description, provide a structured valuation.
+You will be given:
+- Item identification and category
+- Expert extraction (historical context, collector significance, condition, value signals)
+- Market research from Perplexity (live web search with actual sold prices and citations)
+
+Your job is to synthesize ALL of this into a final, grounded sale valuation.
 
 Respond ONLY with valid JSON matching this exact schema:
 {
-  "estimated_value_low": <number or null — floor price in USD>,
-  "estimated_value_high": <number or null — ceiling price in USD>,
-  "estimated_value_point": <number or null — single best estimate in USD>,
+  "estimated_value_low": <number or null — conservative floor price in USD>,
+  "estimated_value_high": <number or null — optimistic ceiling price in USD>,
+  "estimated_value_point": <number or null — single best estimate for pricing/listing in USD>,
   "value_confidence": "high" | "medium" | "low",
   "is_high_value": <boolean — true if item is likely worth $75 or more>,
   "ebay_keywords": "<3-6 specific search terms a buyer would use, comma separated>",
-  "value_reasoning": "<1-2 sentences explaining the valuation>"
+  "value_reasoning": "<2-3 sentences synthesizing the market research and expert notes into a pricing rationale>"
 }
 
 Rules:
-- Base estimates on ACTUAL recent eBay sold listings for this type of item
-- If you genuinely cannot estimate, use null for price fields and "low" confidence
+- Anchor your estimates to the ACTUAL sold prices in the market research — do not guess blindly
+- If market research found specific comps, use them as your primary reference
+- If no sold data exists, use "low" confidence and wider low/high range
 - is_high_value = true for anything likely $75+
 - ebay_keywords should be SPECIFIC (e.g. "1952 topps baseball card grade 4" not "baseball card")
 - Do NOT include dollar signs in numeric fields — numbers only`;
@@ -43,9 +49,9 @@ async function callTextAI(prompt: string): Promise<string> {
   if (config.provider === 'anthropic' || process.env.ANTHROPIC_API_KEY) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || '' });
     const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 512,
-      system: "You are a helpful expert appraiser. Respond only with JSON.",
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      system: "You are a senior expert appraiser. Respond only with JSON.",
       messages: [
         { role: "user", content: prompt },
         { role: "assistant", content: "{" }
@@ -80,18 +86,22 @@ export async function extractValuation(
   category: string,
   historicalContext: string,
   collectorSignificance: string,
-  rawSignals: string,      // the existing estimated_value_signals from expert pass
+  rawSignals: string,      // estimated_value_signals from expert pass
   ocrText: string,
+  researchNotes?: string,  // Perplexity market research with actual sold prices
 ): Promise<ValuationOutput | null> {
   const prompt = `${VALUATION_PROMPT}
 
-Item Details:
+## Item Details
 - Title: ${title}
 - Category: ${category}
 - Historical Context: ${historicalContext}
 - Collector Significance: ${collectorSignificance}
 - OCR Text: ${ocrText?.slice(0, 500) || 'none'}
-- Previous Value Signals: ${rawSignals}`;
+- Expert Value Signals: ${rawSignals}
+
+## Market Research (Perplexity Live Web Search)
+${researchNotes || 'No market research available — use expert signals only.'}`;
 
   try {
     const raw = await callTextAI(prompt);

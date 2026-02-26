@@ -11,7 +11,8 @@ import { resizeImage } from './processing/resize';
 import { performCloudVisionOCR } from './ocr/cloud-vision';
 import { runConductor } from './ai/conductor';
 import { runExpert } from './ai/expert';
-import { runResearcher } from './ai/researcher';
+import { runPerplexityResearcher } from './ai/perplexity-researcher';
+import { extractValuation } from './ai/valuator';
 
 const POLLING_INTERVAL_MS = 2000;
 const MAX_CONCURRENT_JOBS = 1;
@@ -162,20 +163,42 @@ async function processItem(item: Item) {
 
     if (item.status === 'processing_ai') {
       try {
-        // Step 1: Run Conductor to categorize
+        const now = () => new Date().toISOString();
+
+        // Step 1: Conductor — categorize the item
         const conductorResult = await runConductor(item.rawOcr || '');
-        console.log(`[Scheduler] ${item.id}: Conductor categorized as "${conductorResult.category}" (confidence: ${conductorResult.confidence_score})`);
+        console.log(`[Scheduler] ${item.id}: Conductor → "${conductorResult.category}" (${conductorResult.confidence_score})`);
 
-        // Step 2: Run Researcher (Gemini) for Google Search Grounding
-        const researcherResult = await runResearcher(conductorResult.category, item.rawOcr || '');
-        console.log(`[Scheduler] ${item.id}: Researcher completed grounding search`);
+        // Step 2: Perplexity — live web search for market data, sold prices, historical context
+        const researchResult = await runPerplexityResearcher(
+          conductorResult.category,
+          item.rawOcr || '',
+        );
+        console.log(`[Scheduler] ${item.id}: Perplexity research complete (${researchResult.citations.length} citations)`);
 
-        // Step 3: Run Expert (Sonnet) for detailed extraction, passing researcher data
-        const expertResult = await runExpert(conductorResult.category, item.rawOcr || '', researcherResult.notes);
+        // Step 3: Expert (Sonnet) — deep extraction using Perplexity research as context
+        const expertResult = await runExpert(conductorResult.category, item.rawOcr || '', researchResult.notes);
+        console.log(`[Scheduler] ${item.id}: Expert extraction → "${expertResult.title}"`);
 
-        // Step 4: Build analysis history entry (saving ALL raw data for the user)
-        const analysisEntry = {
-          timestamp: new Date().toISOString(),
+        // Step 4: Valuator (Sonnet 4.6) — synthesize everything into a structured sale valuation
+        const valuationResult = await extractValuation(
+          expertResult.title,
+          conductorResult.category,
+          expertResult.historical_context,
+          expertResult.collector_significance,
+          expertResult.estimated_value_signals.join('; '),
+          item.rawOcr || '',
+          researchResult.notes,
+        );
+        console.log(`[Scheduler] ${item.id}: Valuation → $${valuationResult?.estimated_value_point ?? '?'} (${valuationResult?.value_confidence ?? 'unknown'} confidence)`);
+
+        // Step 5: Build analysis history entry
+        let analysisHistory: any[] = [];
+        if (item.analysis_history) {
+          try { analysisHistory = JSON.parse(item.analysis_history); } catch {}
+        }
+        analysisHistory.push({
+          timestamp: now(),
           category: conductorResult.category,
           conductor_confidence: conductorResult.confidence_score,
           expert_extracted_title: expertResult.title,
@@ -187,38 +210,53 @@ async function processItem(item: Item) {
             condition_issues: expertResult.visible_condition_issues,
             ebay_keywords: expertResult.ebay_search_keywords,
           },
+          perplexity_citations: researchResult.citations,
+          valuation: valuationResult,
           raw_data: {
             conductor: conductorResult.raw_response,
-            researcher: researcherResult.raw_response,
-            expert: expertResult.raw_response
-          }
-        };
-
-        // Parse existing analysis_history
-        let analysisHistory: any[] = [];
-        if (item.analysis_history) {
-          try {
-            analysisHistory = JSON.parse(item.analysis_history);
-          } catch (err) {
-            console.warn(`[Scheduler] ${item.id}: Could not parse existing analysis_history`);
-          }
-        }
-        analysisHistory.push(analysisEntry);
-
-        // Step 5: Update DB
-        ItemService.updateMetadata(item.id, {
-          title: expertResult.title,
-          identifiedNames: JSON.stringify(expertResult.identified_names),
-          historicalContext: expertResult.historical_context,
-          collectorSignificance: expertResult.collector_significance,
-          analysis_history: JSON.stringify(analysisHistory),
-          aiRawResponse: JSON.stringify({ expert: expertResult.raw_response, researcher: researcherResult.raw_response })
+            researcher: researchResult.raw_response,
+            expert: expertResult.raw_response,
+          },
         });
 
-        db.prepare(`UPDATE items SET status = 'complete', statusUpdatedAt = ? WHERE id = ?`)
-          .run(new Date().toISOString(), item.id);
+        // Step 6: Persist all fields directly (updateMetadata whitelist is too restrictive)
+        db.prepare(`
+          UPDATE items SET
+            title = ?,
+            identifiedNames = ?,
+            historicalContext = ?,
+            collectorSignificance = ?,
+            category = ?,
+            analysis_history = ?,
+            aiRawResponse = ?,
+            status = 'complete',
+            statusUpdatedAt = ?
+          WHERE id = ?
+        `).run(
+          expertResult.title,
+          JSON.stringify(expertResult.identified_names),
+          expertResult.historical_context,
+          expertResult.collector_significance,
+          conductorResult.category,
+          JSON.stringify(analysisHistory),
+          JSON.stringify({ expert: expertResult.raw_response, researcher: researchResult.raw_response }),
+          now(),
+          item.id,
+        );
 
-        console.log(`[Scheduler] ${item.id}: Enrichment complete - "${expertResult.title}"`);
+        // Step 7: Save structured valuation fields (separate method for clarity)
+        if (valuationResult) {
+          ItemService.updateValuation(item.id, {
+            estimated_value_low: valuationResult.estimated_value_low,
+            estimated_value_high: valuationResult.estimated_value_high,
+            estimated_value_point: valuationResult.estimated_value_point,
+            value_confidence: valuationResult.value_confidence,
+            is_high_value: valuationResult.is_high_value,
+            ebay_keywords: valuationResult.ebay_keywords,
+          });
+        }
+
+        console.log(`[Scheduler] ${item.id}: Pipeline complete — "${expertResult.title}" → $${valuationResult?.estimated_value_point ?? '?'}`);
 
       } catch (err: any) {
         console.error(`[Scheduler] ${item.id}: AI enrichment failed -`, err.message);

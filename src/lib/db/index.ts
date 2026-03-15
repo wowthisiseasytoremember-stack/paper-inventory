@@ -95,32 +95,11 @@ export function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_items_contentHash ON items(contentHash);
     CREATE INDEX IF NOT EXISTS idx_items_createdAt ON items(createdAt);
 
-    CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
-        title,
-        cleanedTranscription,
-        identifiedNames,
-        historicalContext,
-        collectorSignificance,
-        content='items',
-        content_rowid='rowid'
-    );
-
-    CREATE TRIGGER IF NOT EXISTS items_ai AFTER INSERT ON items BEGIN
-        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
-        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance);
-    END;
-
-    CREATE TRIGGER IF NOT EXISTS items_ad AFTER DELETE ON items BEGIN
-        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
-        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance);
-    END;
-
-    CREATE TRIGGER IF NOT EXISTS items_au AFTER UPDATE ON items BEGIN
-        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
-        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance);
-        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance)
-        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance);
-    END;
+    /* FTS DISABLED TEMPORARILY DUE TO WINDOWS CORRUPTION ISSUES */
+    DROP TABLE IF EXISTS items_fts;
+    DROP TRIGGER IF EXISTS items_ai;
+    DROP TRIGGER IF EXISTS items_ad;
+    DROP TRIGGER IF EXISTS items_au;
   `);
 
   // Migration: add lockedFields column to existing databases
@@ -184,48 +163,17 @@ export function initSchema() {
     }
   }
 
-  // Migration: drop and recreate FTS5 triggers to fix broken column references and add research fields
-  // Old triggers referenced non-existent columns (identification, dealer_gut_check, ai_category).
-  // DROP + recreate is safe — the FTS table is rebuilt from content='items'.
+  // Migration: drop FTS5 triggers permanently for now
   try {
     db.exec(`
       DROP TRIGGER IF EXISTS items_ai;
       DROP TRIGGER IF EXISTS items_ad;
       DROP TRIGGER IF EXISTS items_au;
       DROP TABLE IF EXISTS items_fts;
-
-      CREATE VIRTUAL TABLE items_fts USING fts5(
-          title,
-          cleanedTranscription,
-          identifiedNames,
-          historicalContext,
-          collectorSignificance,
-          research_location,
-          research_notes,
-          content='items',
-          content_rowid='rowid'
-      );
-
-      CREATE TRIGGER items_ai AFTER INSERT ON items BEGIN
-        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance, research_location, research_notes)
-        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance, new.research_location, new.research_notes);
-      END;
-
-      CREATE TRIGGER items_ad AFTER DELETE ON items BEGIN
-        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance, research_location, research_notes)
-        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance, old.research_location, old.research_notes);
-      END;
-
-      CREATE TRIGGER items_au AFTER UPDATE ON items BEGIN
-        INSERT INTO items_fts(items_fts, rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance, research_location, research_notes)
-        VALUES('delete', old.rowid, old.title, old.cleanedTranscription, old.identifiedNames, old.historicalContext, old.collectorSignificance, old.research_location, old.research_notes);
-        INSERT INTO items_fts(rowid, title, cleanedTranscription, identifiedNames, historicalContext, collectorSignificance, research_location, research_notes)
-        VALUES (new.rowid, new.title, new.cleanedTranscription, new.identifiedNames, new.historicalContext, new.collectorSignificance, new.research_location, new.research_notes);
-      END;
     `);
-    console.log('[Migration] FTS5 triggers recreated with correct columns including research fields.');
+    console.log('[Migration] FTS5 disabled for stability.');
   } catch (e: any) {
-    console.error('[Migration] Failed to recreate FTS5 triggers:', e.message);
+    console.error('[Migration] Failed to drop FTS5:', e.message);
   }
 
   console.log('Database Schema Initialized Successfully.');

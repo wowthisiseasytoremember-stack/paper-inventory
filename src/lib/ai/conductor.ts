@@ -53,7 +53,7 @@ export async function runConductor(ocrText: string, imageBase64?: string): Promi
     ];
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       temperature: 0,
       messages: [

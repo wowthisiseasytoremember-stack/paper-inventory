@@ -11,6 +11,7 @@ import { AIConfig, getAIConfig } from './config';
 import { getPrompt, EXPERT_PROMPT_MAP, CONDUCTOR_PROMPT_FILE } from './prompts';
 import { routeItemAnthropic, appraiseItemAnthropic } from './anthropic-manual';
 import { routeItemGemini, appraiseItemGemini } from './gemini-manual';
+import { categorizeForDeepDive } from './gemini-triage';
 
 const MAX_RETRIES = 2;
 const INITIAL_BACKOFF_MS = 1000;
@@ -27,21 +28,30 @@ export async function analyzeImage(
     try {
       console.log(`[AI] Using ${config.provider} (Attempt ${attempt + 1})...`);
 
-      // 1. Route
+      // 1. Route (fast Haiku pass — gets broad category)
       let route: ConductorResponse;
       if (config.provider === 'anthropic' && apiKey) {
         route = await routeItemAnthropic(imagePath, ocrText);
       } else {
-        // Fallback or secondary logic (using Gemini as current active fallback)
         route = await routeItemGemini(imagePath, ocrText);
       }
-      
-      // 2. Appraise
+
+      // 1b. Gemini Triage — refine category using Flash (comics_1990s / drg_railroadiana / other)
+      // Runs fast and cheap; overrides broad route category when a specific match is found.
+      const triageCategory = await categorizeForDeepDive({
+        title: route.category,
+        transcription: ocrText.slice(0, 2000),
+        tags: [route.category],
+      });
+      const appraiseCategory = triageCategory !== 'other' ? triageCategory : route.category;
+      console.log(`[AI] Triage: ${route.category} → ${appraiseCategory}`);
+
+      // 2. Appraise (Sonnet for full expert analysis)
       let appraisal: ExpertResponse;
       if (config.provider === 'anthropic' && apiKey) {
-        appraisal = await appraiseItemAnthropic(route.category, imagePath, ocrText);
+        appraisal = await appraiseItemAnthropic(appraiseCategory, imagePath, ocrText);
       } else {
-        appraisal = await appraiseItemGemini(route.category, imagePath, ocrText);
+        appraisal = await appraiseItemGemini(appraiseCategory, imagePath, ocrText);
       }
       
       // 3. Combine

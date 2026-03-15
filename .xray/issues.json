@@ -1,0 +1,254 @@
+[
+  {
+    "id": "ISSUE-001",
+    "severity": "P0",
+    "status": "UNFIXED",
+    "category": "Security",
+    "description": "Real API keys are still committed in the .env file. ANTHROPIC_API_KEY (sk-ant-api03-toxj...) and PERPLEXITY_API_KEY (pplx-fXEtZZ11...) are live plaintext credentials tracked by git. GEMINI_API_KEY is now empty and GROQ_API_KEY was removed -- partial progress but the two remaining keys are active. The .gitignore correctly excludes .env* patterns but the damage is done: keys are in git history regardless.",
+    "affected_paths": [".env"],
+    "line": null,
+    "change_vs_previous": "PARTIALLY ADDRESSED: GEMINI_API_KEY cleared, GROQ_API_KEY removed. But ANTHROPIC_API_KEY and PERPLEXITY_API_KEY remain live and committed."
+  },
+  {
+    "id": "ISSUE-002",
+    "severity": "P0",
+    "status": "UNFIXED",
+    "category": "Security",
+    "description": "The /api/admin/clear endpoint has no authentication or authorization. Any caller with network access to the server can POST to this route and wipe the entire inventory database and all uploaded files. Method changed from DELETE to POST but authentication is still completely absent.",
+    "affected_paths": ["src/app/api/admin/clear/route.ts"],
+    "line": 6,
+    "change_vs_previous": "UNFIXED. Method signature changed (now POST, was DELETE/POST) but zero authentication added."
+  },
+  {
+    "id": "ISSUE-003",
+    "severity": "P0",
+    "status": "PARTIALLY ADDRESSED",
+    "category": "Build/Deploy",
+    "description": "Tesseract OCR worker path is still a placeholder in production (ocr/index.ts line 49: 'Placeholder for prod'). The old queue/manager.ts which is the active upload pipeline still uses this Tesseract OCR path. The new scheduler.ts uses Google Cloud Vision OCR which avoids this issue, but scheduler.ts is not connected to any upload route -- it is orphaned code. OCR in the active pipeline remains broken in production.",
+    "affected_paths": ["src/lib/ocr/index.ts", "src/lib/scheduler.ts"],
+    "line": 49,
+    "change_vs_previous": "NEW scheduler.ts uses Cloud Vision and avoids this issue, but it is not connected to the active upload route. Old path still broken in production."
+  },
+  {
+    "id": "ISSUE-019",
+    "severity": "P0",
+    "status": "NEW",
+    "category": "Security",
+    "description": "A Google Cloud Platform service account private key JSON file (paper-inventory-488411-4f90bf2f1afc.json) has been committed to the project root. This file contains a complete RSA private key (-----BEGIN PRIVATE KEY-----), project ID, client email, and client ID for the service account paper-inventory@paper-inventory-488411.iam.gserviceaccount.com. The .gitignore does NOT exclude *.json files, so this file is tracked by git. Anyone with read access to this repository can impersonate this service account, make Cloud Vision API calls at the project's expense, and potentially access other GCP resources the service account has been granted.",
+    "affected_paths": ["paper-inventory-488411-4f90bf2f1afc.json"],
+    "line": null,
+    "change_vs_previous": "NEW ISSUE: This file did not exist in the previous audit. Introduced when Cloud Vision OCR was added."
+  },
+  {
+    "id": "ISSUE-020",
+    "severity": "P0",
+    "status": "NEW",
+    "category": "Security",
+    "description": "A second unauthenticated destructive endpoint /api/system/nuke was added. This endpoint accepts a POST with no credentials and permanently deletes all items from the database and all uploaded files from disk. Unlike admin/clear which was known from the last audit, this is a new route with no authentication at all. The endpoint is at src/app/api/system/nuke/route.ts.",
+    "affected_paths": ["src/app/api/system/nuke/route.ts"],
+    "line": 6,
+    "change_vs_previous": "NEW ISSUE: This route did not exist in the previous audit."
+  },
+  {
+    "id": "ISSUE-021",
+    "severity": "P0",
+    "status": "NEW",
+    "category": "Architecture",
+    "description": "The new scheduler.ts pipeline (Cloud Vision OCR + Conductor + Expert + Researcher) is completely disconnected from the upload flow. upload/route.ts still calls queue.start() from the old queue/manager.ts. The new scheduler.ts is never called by any API route or application startup hook. This means all the new AI architecture work (conductor.ts, expert.ts, researcher.ts, cloud-vision.ts, resize.ts) is dead code in the running application. Items uploaded via the UI are processed by the old pipeline (Tesseract OCR + legacy AI index.ts), not the new Conductor/Expert/Researcher chain.",
+    "affected_paths": [
+      "src/lib/scheduler.ts",
+      "src/app/api/upload/route.ts",
+      "src/lib/queue/manager.ts"
+    ],
+    "line": 14,
+    "change_vs_previous": "NEW ISSUE: Architectural split introduced in this audit cycle. The new pipeline exists but is orphaned."
+  },
+  {
+    "id": "ISSUE-004",
+    "severity": "P1",
+    "status": "REGRESSION",
+    "category": "Test Coverage",
+    "description": "The test suite was updated (from 5 to 7 assertions) but the code changes have caused MORE tests to fail than before. Current status: 4 of 7 tests are FAILING. (1) 'queued items run OCR before resize' FAILS -- manager.ts queued case calls handleResize not handleOCR. (2) 'baseline prompt is wired into analyzeImage()' FAILS -- openai-manual.ts was rewritten and no longer contains the string BASELINE_SYSTEM_PROMPT. (3) 'confidence display uses correct precedence' FAILS -- items/[id]/page.tsx uses (item.confidence * 100).toFixed(0) without the 0.85 fallback the test expects. PASSING: rawOcr overwrite (passes), collection delete (passes), admin clear wipes originals (passes), BespokeMagnifier onLoad (passes).",
+    "affected_paths": [
+      "tests/audit-fixes.test.js",
+      "src/lib/queue/manager.ts",
+      "src/lib/ai/openai-manual.ts",
+      "src/app/items/[id]/page.tsx"
+    ],
+    "line": null,
+    "change_vs_previous": "REGRESSION: Was 3/5 failing, now estimated 3/7 failing (same absolute count, worse rate). The BASELINE_SYSTEM_PROMPT test is a new failure caused by the AI rewrite."
+  },
+  {
+    "id": "ISSUE-022",
+    "severity": "P1",
+    "status": "NEW",
+    "category": "Runtime Bug",
+    "description": "The SSE events endpoint (src/app/api/items/[id]/events/route.ts) calls ItemService.getEnrichmentLogs(id) on line 21, but this method does not exist in src/lib/db/items.ts. The ItemService object has no getEnrichmentLogs method. This will cause a runtime TypeError ('ItemService.getEnrichmentLogs is not a function') every time any client opens the SSE stream for an item. The entire real-time progress update feature is broken for all items.",
+    "affected_paths": [
+      "src/app/api/items/[id]/events/route.ts",
+      "src/lib/db/items.ts"
+    ],
+    "line": 21,
+    "change_vs_previous": "NEW ISSUE: The SSE endpoint was rewritten to call a method that was never implemented in ItemService."
+  },
+  {
+    "id": "ISSUE-005",
+    "severity": "P1",
+    "status": "PARTIALLY ADDRESSED",
+    "category": "Technical Debt",
+    "description": "Source code continues to diverge from test expectations. New AI pipeline rewrites (openai-manual.ts no longer uses BASELINE_SYSTEM_PROMPT) have broken the baseline prompt test. The queue manager still routes queued items to handleResize instead of handleOCR per the test expectation. The old P1 issues around Promise.all and claude-sonnet fallbacks are no longer detectable (the code was rewritten entirely), so those specific failures resolved, but new divergence was introduced.",
+    "affected_paths": [
+      "src/lib/queue/manager.ts",
+      "src/lib/ai/openai-manual.ts"
+    ],
+    "line": null,
+    "change_vs_previous": "Previous failures around Promise.all and claude-sonnet are gone (code replaced). New failures around BASELINE_SYSTEM_PROMPT and OCR routing were introduced."
+  },
+  {
+    "id": "ISSUE-006",
+    "severity": "P1",
+    "status": "UNFIXED",
+    "category": "Technical Debt",
+    "description": "src/lib/ai/openai.ts still uses the @ai-sdk/openai and ai (Vercel AI SDK) packages. The file is still present and still imports from deprecated paths. It is not in the active code path (ai/index.ts delegates to openai-manual.ts), but the packages are still in package.json. Three packages are dead weight: @ai-sdk/anthropic, @ai-sdk/openai, and ai.",
+    "affected_paths": ["src/lib/ai/openai.ts", "package.json"],
+    "line": null,
+    "change_vs_previous": "UNFIXED. Still present."
+  },
+  {
+    "id": "ISSUE-007",
+    "severity": "P1",
+    "status": "WORSENED",
+    "category": "Code Quality",
+    "description": "Schema drift between sources of truth has worsened. The inline schema in db/index.ts now includes over 12 additional columns added via ALTER TABLE migrations (research_location, asking_price, purchase_decision, research_notes, estimated_value_low, estimated_value_high, estimated_value_point, value_confidence, is_high_value, ebay_keywords, category, research_stage). These new columns are not in schema.sql (reference DDL). The Item interface in items.ts was updated to include the research fields, but schema.sql remains the stale original. The growing pile of ALTER TABLE migrations (now 8+ separate try/catch blocks) is increasingly fragile -- no migration tracking, no version numbering.",
+    "affected_paths": [
+      "src/lib/db/schema.sql",
+      "src/lib/db/index.ts",
+      "src/lib/db/items.ts"
+    ],
+    "line": null,
+    "change_vs_previous": "WORSENED: 12+ additional columns added to migration pile since last audit."
+  },
+  {
+    "id": "ISSUE-008",
+    "severity": "P1",
+    "status": "REGRESSION",
+    "category": "Documentation",
+    "description": "README.md remains the unmodified Next.js boilerplate. The improved README written by the previous audit was either never committed or was deleted. docs/api.md written by the previous audit is also gone -- the docs/ directory is now empty. All documentation improvements from the previous audit cycle have been lost.",
+    "affected_paths": ["README.md", "docs/"],
+    "line": null,
+    "change_vs_previous": "REGRESSION: Previous audit generated README.md and docs/api.md. Both are gone."
+  },
+  {
+    "id": "ISSUE-023",
+    "severity": "P1",
+    "status": "NEW",
+    "category": "Architecture",
+    "description": "upload/route.ts has a dead code comment indicating the queue push step was removed. Line 79 has an empty comment '// 6. Push to Queue' with no actual code below it before the return statement. This means uploaded files are inserted into the database as 'queued' but the queue is never explicitly notified of the new item. The queue.start() call does start polling, but the item will not be processed until the next polling cycle (up to 2 seconds). More critically, this suggests code was intentionally removed during a refactor and never replaced, indicating the upload handler is in a half-migrated state between the old and new pipeline.",
+    "affected_paths": ["src/app/api/upload/route.ts"],
+    "line": 79,
+    "change_vs_previous": "NEW ISSUE: The queue push call was deleted, leaving an empty comment stub."
+  },
+  {
+    "id": "ISSUE-009",
+    "severity": "P2",
+    "status": "PARTIALLY ADDRESSED",
+    "category": "Quality Gap",
+    "description": "JSON.parse error handling improved in the new conductor.ts and expert.ts modules (both wrap JSON.parse in try/catch with fallback values). However, the openai-manual.ts (active pipeline) still lacks try/catch around JSON parsing in some paths. The old issues in gemini-client.ts and openai-sdk.ts remain unaddressed since those files were not rewritten.",
+    "affected_paths": [
+      "src/lib/ai/openai-manual.ts",
+      "src/lib/ai/gemini-client.ts"
+    ],
+    "line": null,
+    "change_vs_previous": "PARTIALLY ADDRESSED: New conductor.ts and expert.ts have proper error handling. Old files still lack it."
+  },
+  {
+    "id": "ISSUE-010",
+    "severity": "P2",
+    "status": "PARTIALLY ADDRESSED",
+    "category": "Quality Gap",
+    "description": "SSE endpoint still polls every 1 second with no backpressure or connection limit. However, the stream now closes when the abort signal fires (req.signal.addEventListener('abort')). The interval still does not close when an item reaches 'complete' or 'error' status -- the code has a comment noting this is intentional but the interval continues running indefinitely. Combined with ISSUE-022 (getEnrichmentLogs undefined), the SSE endpoint crashes before even reaching the interval logic.",
+    "affected_paths": ["src/app/api/items/[id]/events/route.ts"],
+    "line": 47,
+    "change_vs_previous": "PARTIALLY ADDRESSED: abort signal handling added. Interval leak on completion still present. Crash from missing method supersedes this."
+  },
+  {
+    "id": "ISSUE-011",
+    "severity": "P2",
+    "status": "UNFIXED",
+    "category": "Quality Gap",
+    "description": "Naming inconsistency in database schema persists. camelCase fields (processingLock, retryCount, watchdogLockedAt, originalHash, contentHash, aiDurationMs, resizeDurationMs) coexist with snake_case fields (collection_id, verification_questions, deleted_at, research_location, asking_price, purchase_decision, research_notes, value_confidence, is_high_value, ebay_keywords, research_stage). The new research fields added in this cycle all use snake_case, worsening the inconsistency.",
+    "affected_paths": ["src/lib/db/items.ts", "src/lib/db/index.ts"],
+    "line": null,
+    "change_vs_previous": "WORSENED: New columns added in snake_case while old columns remain in camelCase."
+  },
+  {
+    "id": "ISSUE-012",
+    "severity": "P2",
+    "status": "UNFIXED",
+    "category": "Quality Gap",
+    "description": "Dead/disconnected code: pdf_reader.py still exists in the project root with no bridge to the TypeScript pipeline. Additionally, src/lib/ai/openai.ts (Vercel AI SDK) is still present and unused in the active pipeline. The new scheduler.ts is also effectively dead code (not connected to any running process).",
+    "affected_paths": ["pdf_reader.py", "src/lib/ai/openai.ts", "src/lib/scheduler.ts"],
+    "line": null,
+    "change_vs_previous": "WORSENED: scheduler.ts added as another significant disconnected dead code file."
+  },
+  {
+    "id": "ISSUE-013",
+    "severity": "P2",
+    "status": "UNFIXED",
+    "category": "Quality Gap",
+    "description": "Deduplication hash is still metadata-based (file.name|file.size|file.lastModified), not content-based. No change since last audit.",
+    "affected_paths": ["src/app/api/upload/route.ts"],
+    "line": 40,
+    "change_vs_previous": "UNFIXED."
+  },
+  {
+    "id": "ISSUE-014",
+    "severity": "P2",
+    "status": "UNFIXED",
+    "category": "Quality Gap",
+    "description": "BulkUpload.tsx stale closure memory leak: useEffect cleanup still captures 'files' at mount time (empty array), so URL.revokeObjectURL is never called on unmount. No change since last audit.",
+    "affected_paths": ["src/components/BulkUpload.tsx"],
+    "line": 96,
+    "change_vs_previous": "UNFIXED."
+  },
+  {
+    "id": "ISSUE-015",
+    "severity": "P3",
+    "status": "PARTIALLY ADDRESSED",
+    "category": "Hygiene",
+    "description": "Root directory still contains numerous debug artifacts. Most of the previously identified log files remain. Some files from previous audit list have been partially moved or renamed. New additions: COMPS_ROADMAP.md, COMPS_ROADMAP_UPDATED.md, roadmpa (typo filename), MANUAL_TEST.md, test-error-openai.json, VAULT_vs_PAPER_ANALYSIS.md. The 3 JPG test images persist.",
+    "affected_paths": [],
+    "line": null,
+    "change_vs_previous": "WORSENED: More root-level files added."
+  },
+  {
+    "id": "ISSUE-016",
+    "severity": "P3",
+    "status": "UNFIXED",
+    "category": "Hygiene",
+    "description": "No CHANGELOG exists. No version history or release notes document.",
+    "affected_paths": [],
+    "line": null,
+    "change_vs_previous": "UNFIXED."
+  },
+  {
+    "id": "ISSUE-017",
+    "severity": "P3",
+    "status": "ADDRESSED",
+    "category": "Hygiene",
+    "description": "inventory.db in root was flagged in previous audit. The data/ directory now exists but is empty -- no stray root-level .db file was found. This issue appears resolved.",
+    "affected_paths": [],
+    "line": null,
+    "change_vs_previous": "RESOLVED: Root-level inventory.db appears to have been removed."
+  },
+  {
+    "id": "ISSUE-018",
+    "severity": "P3",
+    "status": "UNFIXED",
+    "category": "Hygiene",
+    "description": "No CI/CD pipeline configured. No .github/workflows, no pre-commit hooks, no automated lint or type-check gate.",
+    "affected_paths": [],
+    "line": null,
+    "change_vs_previous": "UNFIXED."
+  }
+]

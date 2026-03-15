@@ -33,11 +33,11 @@ export async function performCloudVisionOCR(filePath: string): Promise<OCRResult
     const imageBuffer = fs.readFileSync(filePath);
     const base64Image = imageBuffer.toString('base64');
 
-    const request = {
+    const request: vision.AnnotateImageRequest = {
       image: { content: base64Image },
       features: [
-        { type: 'TEXT_DETECTION' as const },
-        { type: 'WEB_DETECTION' as const }
+        { type: 'TEXT_DETECTION' },
+        { type: 'WEB_DETECTION' } // Re-enable web detection
       ]
     };
 

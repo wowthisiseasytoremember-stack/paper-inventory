@@ -13,9 +13,9 @@ export async function analyzeImage(imagePath: string, ocrText: string): Promise<
   const config = getAIConfig();
   switch (config.provider) {
     case 'openai':
-      return openaiClient.analyzeImage(imagePath, ocrText, config);
     case 'anthropic':
     case 'gemini':
+      return openaiClient.analyzeImage(imagePath, ocrText, config);
     default:
       throw new Error(`AI_PROVIDER_UNSUPPORTED: ${config.provider}`);
   }

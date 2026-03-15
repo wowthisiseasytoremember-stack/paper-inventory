@@ -13,8 +13,8 @@ const apiKey = process.env.ANTHROPIC_API_KEY || "";
 const anthropic = new Anthropic({ apiKey });
 
 // Model names
-const PRIMARY_MODEL = "claude-3-haiku-20240307"; 
-const ROUTER_MODEL = "claude-3-haiku-20240307";
+const PRIMARY_MODEL = "claude-sonnet-4-6";          // Full appraisal — use Sonnet for quality
+const ROUTER_MODEL = "claude-haiku-4-5-20251001";   // Fast routing — latest Haiku
 
 export async function routeItemAnthropic(
   imagePath: string,

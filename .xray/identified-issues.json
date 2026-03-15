@@ -1,0 +1,32 @@
+[
+  {
+    "file": "src/lib/ai/openai.ts",
+    "issue": "Uses deprecated Vercel AI SDK ('ai', '@ai-sdk/openai') which is reported to crash on Windows.",
+    "severity": "High",
+    "recommendation": "Delete this file. Use 'src/lib/ai/openai-sdk.ts' instead."
+  },
+  {
+    "file": "package.json",
+    "issue": "Unused dependencies: '@ai-sdk/anthropic', '@ai-sdk/openai', 'ai'.",
+    "severity": "Low",
+    "recommendation": "Uninstall these packages to reduce bundle size and maintenance overhead."
+  },
+  {
+    "file": ".",
+    "issue": "Numerous stale log files and debug artifacts in the project root.",
+    "severity": "Low",
+    "recommendation": "Delete: ab-test-anthropic.json, ab-test-deep-dive.log, ab-test-deep-dive2.log, ab-test-deep-dive-utf8.log, ab-test-deep-dive2-utf8.log, ab-test-final.json, ab-test-results.json, ab-test-results-iteration-2.json, ai-debug.log, test-ai.log, build.log, tsc.log, worker.log, worker_debug.log."
+  },
+  {
+    "file": "src/components/BulkUpload.tsx",
+    "issue": "Missing real-time progress UI for batch uploads.",
+    "severity": "Medium",
+    "recommendation": "Implement a polling mechanism or server-sent events to show progress (Queued/Processing/Complete) for items in the bulk upload queue."
+  },
+  {
+    "file": "src/app/items/[id]/page.tsx",
+    "issue": "Missing one-click 'Retry' button for failed items.",
+    "severity": "Medium",
+    "recommendation": "Add a button to retry processing for items with status='error'."
+  }
+]

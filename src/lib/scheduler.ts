@@ -62,6 +62,8 @@ async function processingLoop() {
     }
   } catch (err: any) {
     console.error('[Scheduler] Loop error:', err.message);
+    // If we have a loop error, wait a bit longer to avoid spamming
+    await new Promise(resolve => setTimeout(resolve, 10000));
   }
 
   // Schedule next iteration
@@ -75,8 +77,7 @@ async function processItem(item: Item) {
     // Router: dispatch to appropriate handler based on status
     if (item.status === 'queued') {
       // Move to OCR stage
-      db.prepare(`UPDATE items SET status = 'processing_ocr', statusUpdatedAt = ? WHERE id = ?`)
-        .run(new Date().toISOString(), item.id);
+      ItemService.updateStatus(item.id, 'processing_ocr');
       return;
     }
 
@@ -88,14 +89,11 @@ async function processItem(item: Item) {
           ? '\n\n--- Web Entities (Knowledge Graph) ---\n' + ocrResult.webEntities.map(e => `- ${e.description} (${(e.score * 100).toFixed(1)}%)`).join('\n')
           : '';
 
-        ItemService.updateMetadata(item.id, {
+        ItemService.updateStatus(item.id, 'ocr_complete', {
           rawOcr: ocrResult.text + webEntitiesText,
           confidence: ocrResult.confidence,
           ocrDurationMs: ocrResult.duration_ms
         });
-
-        db.prepare(`UPDATE items SET status = 'ocr_complete', statusUpdatedAt = ? WHERE id = ?`)
-          .run(new Date().toISOString(), item.id);
 
         console.log(`[Scheduler] ${item.id}: OCR complete (confidence: ${(ocrResult.confidence * 100).toFixed(1)}%)`);
 
@@ -103,12 +101,10 @@ async function processItem(item: Item) {
         // Handle specific errors
         if (err.message.includes('QUOTA_EXCEEDED')) {
           console.warn(`[Scheduler] ${item.id}: GCV quota exceeded, retrying later`);
-          db.prepare(`UPDATE items SET status = 'ocr_pending_retry', statusUpdatedAt = ? WHERE id = ?`)
-            .run(new Date().toISOString(), item.id);
+          ItemService.updateStatus(item.id, 'ocr_pending_retry');
         } else {
           console.error(`[Scheduler] ${item.id}: OCR failed -`, err.message);
-          db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
-            .run(err.message, new Date().toISOString(), item.id);
+          ItemService.fail(item.id, err.message);
         }
       }
       return;
@@ -118,15 +114,13 @@ async function processItem(item: Item) {
     if (item.status === 'ocr_pending_retry') {
       console.log(`[Scheduler] ${item.id}: retrying OCR...`);
       // Move back to processing_ocr to retry
-      db.prepare(`UPDATE items SET status = 'processing_ocr', statusUpdatedAt = ? WHERE id = ?`)
-        .run(new Date().toISOString(), item.id);
+      ItemService.updateStatus(item.id, 'processing_ocr');
       return;
     }
 
     if (item.status === 'ocr_complete') {
       // Move to resize stage
-      db.prepare(`UPDATE items SET status = 'processing_resize', statusUpdatedAt = ? WHERE id = ?`)
-        .run(new Date().toISOString(), item.id);
+      ItemService.updateStatus(item.id, 'processing_resize');
       return;
     }
 
@@ -134,29 +128,23 @@ async function processItem(item: Item) {
       try {
         const { thumbnailPath, resizedPath, durationMs } = await resizeImage(item.originalImagePath!, item.id);
 
-        // Update DB
-        ItemService.updateMetadata(item.id, {
+        ItemService.updateStatus(item.id, 'resize_complete', {
           thumbnailPath,
           resizedImagePath: resizedPath,
           resizeDurationMs: durationMs
         });
 
-        db.prepare(`UPDATE items SET status = 'resize_complete', statusUpdatedAt = ? WHERE id = ?`)
-          .run(new Date().toISOString(), item.id);
-
         console.log(`[Scheduler] ${item.id}: resize complete`);
       } catch (err: any) {
         console.error(`[Scheduler] ${item.id}: resize failed -`, err.message);
-        db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
-          .run(err.message, new Date().toISOString(), item.id);
+        ItemService.fail(item.id, err.message);
       }
       return;
     }
 
     if (item.status === 'resize_complete') {
       // Move to AI stage
-      db.prepare(`UPDATE items SET status = 'processing_ai', statusUpdatedAt = ? WHERE id = ?`)
-        .run(new Date().toISOString(), item.id);
+      ItemService.updateStatus(item.id, 'processing_ai');
       return;
     }
 
@@ -166,25 +154,24 @@ async function processItem(item: Item) {
         const conductorResult = await runConductor(item.rawOcr || '');
         console.log(`[Scheduler] ${item.id}: Conductor categorized as "${conductorResult.category}" (confidence: ${conductorResult.confidence_score})`);
 
-        // Step 2: Run Researcher (Gemini) for Google Search Grounding
+        // Step 2: Run Researcher (Gemini/Perplexity) for grounding
         const researcherResult = await runResearcher(conductorResult.category, item.rawOcr || '');
-        console.log(`[Scheduler] ${item.id}: Researcher completed grounding search`);
+        console.log(`[Scheduler] ${item.id}: Researcher completed grounding via ${researcherResult.provider}`);
 
         // Step 3: Run Expert (Sonnet) for detailed extraction, passing researcher data
         const expertResult = await runExpert(conductorResult.category, item.rawOcr || '', researcherResult.notes);
 
-        // Step 4: Build analysis history entry (saving ALL raw data for the user)
+        // Step 4: Build analysis history entry
         const analysisEntry = {
           timestamp: new Date().toISOString(),
           category: conductorResult.category,
           conductor_confidence: conductorResult.confidence_score,
-          expert_extracted_title: expertResult.title,
+          expert_extracted_title: expertResult.identification,
+          research_provider: researcherResult.provider,
           extracted_fields: {
-            identified_names: expertResult.identified_names,
             historical_context: expertResult.historical_context,
             collector_significance: expertResult.collector_significance,
-            estimated_value_signals: expertResult.estimated_value_signals,
-            condition_issues: expertResult.visible_condition_issues,
+            estimated_value: expertResult.estimated_value,
             ebay_keywords: expertResult.ebay_search_keywords,
           },
           raw_data: {
@@ -205,30 +192,29 @@ async function processItem(item: Item) {
         }
         analysisHistory.push(analysisEntry);
 
-        // Step 5: Update DB
-        ItemService.updateMetadata(item.id, {
-          title: expertResult.title,
-          identifiedNames: JSON.stringify(expertResult.identified_names),
+        // Step 5: Update DB and UNLOCK
+        ItemService.unlock(item.id, 'complete', {
+          title: expertResult.identification,
           historicalContext: expertResult.historical_context,
           collectorSignificance: expertResult.collector_significance,
           analysis_history: JSON.stringify(analysisHistory),
-          aiRawResponse: JSON.stringify({ expert: expertResult.raw_response, researcher: researcherResult.raw_response })
+          aiRawResponse: JSON.stringify({ 
+            expert: expertResult.raw_response, 
+            researcher: researcherResult.raw_response,
+            conductor: conductorResult.raw_response 
+          })
         });
 
-        db.prepare(`UPDATE items SET status = 'complete', statusUpdatedAt = ? WHERE id = ?`)
-          .run(new Date().toISOString(), item.id);
-
-        console.log(`[Scheduler] ${item.id}: Enrichment complete - "${expertResult.title}"`);
+        console.log(`[Scheduler] ${item.id}: Enrichment complete - "${expertResult.identification}"`);
 
       } catch (err: any) {
         console.error(`[Scheduler] ${item.id}: AI enrichment failed -`, err.message);
-        db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
-          .run(err.message, new Date().toISOString(), item.id);
+        ItemService.fail(item.id, err.message);
       }
       return;
     }
 
-    // Release lock for completed items
+    // Release lock for completed items (if they somehow get here)
     if (item.status === 'complete' || item.status === 'error') {
       db.prepare(`UPDATE items SET processingLock = 0, watchdogLockedAt = NULL WHERE id = ?`)
         .run(item.id);
@@ -236,8 +222,8 @@ async function processItem(item: Item) {
     }
 
   } catch (err: any) {
-    console.error(`[Scheduler] ${item.id}: Error -`, err.message);
-    db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
-      .run(err.message, new Date().toISOString(), item.id);
+    console.error(`[Scheduler Fatal] ${item.id}: Error -`, err.message);
+    if (err.stack) console.error(err.stack);
+    ItemService.fail(item.id, err.message);
   }
 }

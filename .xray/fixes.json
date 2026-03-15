@@ -1,0 +1,66 @@
+[
+  {
+    "issue_id": "ISSUE-019",
+    "severity": "P0",
+    "title": "Revoke and remove committed GCP service account private key",
+    "immediate": "Step 1: Go to Google Cloud Console -> IAM & Admin -> Service Accounts -> find paper-inventory@paper-inventory-488411.iam.gserviceaccount.com -> Keys tab -> delete key ID 4f90bf2f1afc. This revokes the leaked private key. Step 2: Create a new key and store it OUTSIDE the repository directory. Step 3: Update GOOGLE_APPLICATION_CREDENTIALS in .env to point to the new location. Step 4: Add the old filename to .gitignore immediately.",
+    "command": "git rm --cached paper-inventory-488411-4f90bf2f1afc.json && echo 'paper-inventory-*.json' >> .gitignore && git commit -m 'Remove committed GCP service account key'",
+    "prevention": "Store GCP key files in a user-level directory outside any repo (e.g. ~/.gcp/). Never store service account JSON inside a project directory."
+  },
+  {
+    "issue_id": "ISSUE-001",
+    "severity": "P0",
+    "immediate": "Rotate remaining live keys: Anthropic Console (ANTHROPIC_API_KEY starts sk-ant-api03-toxj) and Perplexity (PERPLEXITY_API_KEY starts pplx-fXEtZZ11). After rotating, run git rm --cached .env and create a .env.example with placeholder values.",
+    "command": "git rm --cached .env && echo 'GEMINI_API_KEY=your_key_here\nANTHROPIC_API_KEY=your_key_here\nPERPLEXITY_API_KEY=your_key_here\nGROQ_API_KEY=your_key_here' > .env.example && git add .env.example && git commit -m 'security: remove .env from tracking, add .env.example'",
+    "prevention": "Install git-secrets or gitleaks as a pre-commit hook to prevent future accidental key commits. Add '.env' to .gitignore (it already is, but ensure git rm --cached is run). Use a secrets manager (1Password, Doppler, AWS Secrets Manager) for team environments."
+  },
+  {
+    "issue_id": "ISSUE-002",
+    "severity": "P0",
+    "immediate": "Add a secret-based guard to the /api/admin/clear endpoint. At minimum, require a matching ADMIN_SECRET header checked against an environment variable. For a single-user local app, add an IP whitelist check (127.0.0.1 only) or simply remove the route entirely and rely on scripts/clear-db.ts for local development.",
+    "command": "# In src/app/api/admin/clear/route.ts, add at the top of the handler:\n# const adminSecret = req.headers.get('x-admin-secret');\n# if (adminSecret !== process.env.ADMIN_SECRET) {\n#   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });\n# }",
+    "prevention": "Never expose destructive admin operations as unauthenticated HTTP endpoints, even for local-only apps. Use environment-variable-gated middleware or remove the route and use CLI scripts instead."
+  },
+  {
+    "issue_id": "ISSUE-003",
+    "severity": "P0",
+    "immediate": "The OCR worker needs a reliable production path. The most robust solution for Next.js is to copy the compiled worker to the public/ directory during the build step, or to use a custom webpack configuration to emit the worker as a standalone file. Alternatively, use ts-node in production or switch to a Next.js-compatible worker bundling approach.",
+    "command": "# Add to package.json scripts:\n# \"postbuild\": \"mkdir -p .next/server/chunks/workers && cp src/workers/ocr.worker.ts .next/server/chunks/workers/\"\n# Or use tsx in production: change workerPath logic to always use tsx with ts-node for the worker",
+    "prevention": "Worker thread files in Next.js projects need explicit bundling strategy. Document the production worker deployment process and add a build-time check that validates the worker file exists before deployment completes."
+  },
+  {
+    "issue_id": "ISSUE-004",
+    "severity": "P1",
+    "immediate": "Fix the three failing tests by updating the source code to match the intended architecture: (1) Change 'if (item.status === 'queued')' to 'if (!item.rawOcr)' in queue/manager.ts. (2) Replace the Promise.all in index.ts with sequential awaits for triage and grounding. (3) Remove 'claude-sonnet' from all DEEP_DIVE_FALLBACKS arrays in index.ts.",
+    "command": "# In src/lib/queue/manager.ts line 70:\n# Change: if (item.status === 'queued') {\n# To:     if (!item.rawOcr) {\n#\n# In src/lib/ai/index.ts, replace Promise.all block with:\n# const category = await categorizeForDeepDive(baselineData).catch(...);\n# const grounded = enableGrounding ? await getGroundedResearch(...).catch(...) : null;\n#\n# In DEEP_DIVE_FALLBACKS, remove 'claude-sonnet' from all arrays",
+    "prevention": "Run 'npm test' as part of every development session. The failing tests are architecture regression guards that prevent known bad patterns from being reintroduced."
+  },
+  {
+    "issue_id": "ISSUE-005",
+    "severity": "P1",
+    "immediate": "Same fix as ISSUE-004 -- the source code needs to be brought into conformance with the documented architecture. The three specific changes are: OCR gate condition, sequential pipeline execution, and claude-sonnet removal from fallbacks.",
+    "command": "npm test  # Run after applying fixes to verify all 5 tests pass",
+    "prevention": "Add 'npm test' to the git pre-commit hook so architecture regressions are caught before commit."
+  },
+  {
+    "issue_id": "ISSUE-006",
+    "severity": "P1",
+    "immediate": "Delete src/lib/ai/openai.ts (the deprecated Vercel AI SDK file) and remove the unused packages from package.json. Verify no other files import from this path before deletion.",
+    "command": "# 1. Grep to verify no other imports:\n# grep -r 'from.*lib/ai/openai' src/ (should only find openai.ts itself)\n# 2. Delete the file: rm src/lib/ai/openai.ts\n# 3. Uninstall unused deps:\n# npm uninstall ai @ai-sdk/anthropic @ai-sdk/openai",
+    "prevention": "When adding a new provider adapter, immediately remove or replace the old one. Maintain a single, clear import path for each AI provider to avoid divergence."
+  },
+  {
+    "issue_id": "ISSUE-007",
+    "severity": "P1",
+    "immediate": "Consolidate the database schema to a single source of truth. Either (a) make schema.sql the runtime source and read it with fs.readFileSync in db/index.ts, or (b) remove schema.sql and keep only the inlined version in db/index.ts. Update the Item interface to include all fields present in the runtime schema (especially lockedFields, valuation, analysis_history).",
+    "command": "# Option B (keep inlined schema): Delete schema.sql and add a code comment:\n# rm src/lib/db/schema.sql\n# Then update Item interface in items.ts to include lockedFields: string",
+    "prevention": "Never maintain the same schema in more than one place. Use a migration library (drizzle-orm, Kysely) for future projects to enforce schema-as-code with proper version control."
+  },
+  {
+    "issue_id": "ISSUE-008",
+    "severity": "P1",
+    "immediate": "Replace the boilerplate README with a project-specific one. At minimum include: (1) what paper-inventory does, (2) required environment variables, (3) setup instructions, (4) how to run in dev, (5) how to run the worker, (6) how to run tests. A proper README.md has been generated at the project root as part of this X-Ray analysis.",
+    "command": "# README.md has been generated. Review and adjust to match current state.",
+    "prevention": "Treat README as part of the PR checklist. Add a check: 'Does the README reflect the current state of the project?' for any significant feature addition."
+  }
+]

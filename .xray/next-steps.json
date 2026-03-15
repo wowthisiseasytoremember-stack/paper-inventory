@@ -1,0 +1,72 @@
+[
+  {
+    "priority": 1,
+    "action": "Rotate all committed API keys (GEMINI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY) via their provider dashboards, then run 'git rm --cached .env' to stop tracking the file. Create .env.example with placeholder values.",
+    "effort": "low",
+    "impact": "critical",
+    "issue_ref": "ISSUE-001"
+  },
+  {
+    "priority": 2,
+    "action": "Add authentication to /api/admin/clear -- require a secret header checked against an ADMIN_SECRET environment variable, or remove the route entirely and rely on scripts/clear-db.ts for local DB management.",
+    "effort": "low",
+    "impact": "critical",
+    "issue_ref": "ISSUE-002"
+  },
+  {
+    "priority": 3,
+    "action": "Fix the three failing architecture tests by making the source code match the intended design: change OCR gate from 'item.status === queued' to '!item.rawOcr' in queue/manager.ts, replace Promise.all with sequential awaits in ai/index.ts, and remove claude-sonnet from DEEP_DIVE_FALLBACKS.",
+    "effort": "low",
+    "impact": "high",
+    "issue_ref": "ISSUE-004"
+  },
+  {
+    "priority": 4,
+    "action": "Delete src/lib/ai/openai.ts and uninstall unused packages (ai, @ai-sdk/anthropic, @ai-sdk/openai) to eliminate the deprecated Vercel AI SDK dependency and reduce maintenance surface.",
+    "effort": "low",
+    "impact": "medium",
+    "issue_ref": "ISSUE-006"
+  },
+  {
+    "priority": 5,
+    "action": "Fix the OCR worker production path. Add a postbuild script to package.json that copies the compiled worker to the expected production location, or implement a tsx-based worker approach that works without Next.js webpack bundling.",
+    "effort": "medium",
+    "impact": "critical",
+    "issue_ref": "ISSUE-003"
+  },
+  {
+    "priority": 6,
+    "action": "Add try/catch around JSON.parse() calls in all AI provider adapters (callGeminiDeepDive, callPerplexityDeepDive, callGroqDeepDive, analyzeItem in gemini-client.ts) to produce meaningful error messages when AI providers return non-JSON responses.",
+    "effort": "low",
+    "impact": "medium",
+    "issue_ref": "ISSUE-009"
+  },
+  {
+    "priority": 7,
+    "action": "Fix the BulkUpload.tsx memory leak by using a ref to track the current files for cleanup, or by including 'files' in the useEffect dependency array with proper cleanup semantics. Add a content-based hash (SHA-256 of buffer) to the upload deduplication instead of metadata-only hashing.",
+    "effort": "low",
+    "impact": "medium",
+    "issue_ref": "ISSUE-014"
+  },
+  {
+    "priority": 8,
+    "action": "Set up a GitHub Actions CI pipeline with three jobs: (1) npm ci + npm run lint, (2) npx tsc --noEmit, (3) npm test. This catches regressions before they land on the main branch.",
+    "effort": "medium",
+    "impact": "high",
+    "issue_ref": "ISSUE-018"
+  },
+  {
+    "priority": 9,
+    "action": "Fix the SSE event stream to close the interval after item status reaches 'complete' or 'error'. Change the setInterval block to call clearInterval when !active, preventing leaked intervals and accumulated DB polling for finished items.",
+    "effort": "low",
+    "impact": "medium",
+    "issue_ref": "ISSUE-010"
+  },
+  {
+    "priority": 10,
+    "action": "Add real automated tests beyond architecture assertions: write at minimum one integration test per API route (upload, items GET, items PATCH, enrich POST) using a test SQLite in-memory database. Target 30% line coverage as a first milestone.",
+    "effort": "high",
+    "impact": "high",
+    "issue_ref": "ISSUE-004"
+  }
+]

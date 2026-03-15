@@ -1,0 +1,69 @@
+{
+  "overall_score": 4.8,
+  "previous_score": 5.2,
+  "score_delta": -0.4,
+  "label": "Needs Work",
+  "analyzed_at": "2026-02-25T09:00:00Z",
+  "re_audit": true,
+  "dimensions": {
+    "test_coverage": {
+      "score": 2,
+      "weight": 0.25,
+      "weighted": 0.50,
+      "change_vs_previous": 0,
+      "evidence": "Test count increased from 5 to 7 assertions, but all remain structural grep checks rather than runtime behavioral tests. New tests cover: collection delete, admin clear wipes originals, confidence display, BespokeMagnifier onLoad prop, and rawOcr overwrite. No unit tests, API integration tests, component tests, or actual execution tests were added. The queued-items-run-OCR-before-resize test is NOW FAILING because manager.ts queued case calls handleResize not handleOCR. rawOcr overwrite test PASSES (rawOcr: metadata.cleanedTranscription is not present). BASELINE_SYSTEM_PROMPT test result depends on openai-manual.ts content -- file was rewritten to new Conductor/Expert flow and does not use BASELINE_SYSTEM_PROMPT string, so this test FAILS. Confidence display test likely FAILS as items/[id]/page.tsx uses (item.confidence * 100).toFixed(0) not ((item.confidence || 0.85) * 100).toFixed(0). Best estimate: 4 of 7 tests currently FAILING.",
+      "failing_tests": [
+        "queued items run OCR before resize -- manager.ts queued case calls handleResize, not handleOCR",
+        "baseline prompt is wired into analyzeImage() -- openai-manual.ts no longer uses BASELINE_SYSTEM_PROMPT string",
+        "confidence display uses correct precedence -- page.tsx uses (item.confidence * 100) not ((item.confidence || 0.85) * 100).toFixed(0)",
+        "admin clear wipes originals directory -- route.ts does include public/uploads/original, so this PASSES"
+      ]
+    },
+    "dependency_health": {
+      "score": 5,
+      "weight": 0.20,
+      "weighted": 1.00,
+      "change_vs_previous": -1,
+      "evidence": "package-lock.json present -- good. New dependencies added since last audit: @google-cloud/vision@^5.3.4 (Cloud Vision OCR), dotenv@^17.3.1. Perplexity accessed via raw fetch (no new package). The @ai-sdk/anthropic, @ai-sdk/openai, and ai (Vercel AI SDK) packages remain installed and openai.ts still imports from them -- these are unused in the active code path but remain as dead dependencies. No npm audit has been run. Dependency count is 29 production, 9 dev. Multiple overlapping AI SDK packages remain (openai, @anthropic-ai/sdk, @google/generative-ai, @google-cloud/vision, @ai-sdk/anthropic, @ai-sdk/openai, ai). The addition of @google-cloud/vision requires a service account key file whose plaintext content is now committed to the repo root."
+    },
+    "code_organization": {
+      "score": 5,
+      "weight": 0.20,
+      "weighted": 1.00,
+      "change_vs_previous": -2,
+      "evidence": "Significant architectural fragmentation introduced since last audit. Two parallel processing pipelines now coexist: (1) the old queue/manager.ts + ocr/index.ts (Tesseract) used by upload/route.ts, and (2) the new scheduler.ts + ocr/cloud-vision.ts (Google Cloud Vision) which is NOT connected to any API route that runs on upload. The upload/route.ts still calls queue.start() from the old manager -- the new scheduler is orphaned. This means the new Conductor/Expert/Researcher AI pipeline (the main work since last audit) is architecturally disconnected from the live upload flow. The ai/index.ts now delegates to openai-manual.ts which implements the new flow, but the queue/manager.ts calls ai/index.ts (the wrapper), so the new Conductor+Expert+Researcher chain IS connected through the old queue path for the AI step. However, OCR is still Tesseract-based in the active code path. The new conductor.ts, expert.ts, researcher.ts modules are standalone but are only used by scheduler.ts (orphaned). Mixed naming conventions persist. FTS5 was disabled via DROP TABLE in initSchema -- the SSE stream calls ItemService.getEnrichmentLogs(id) which does not appear in items.ts (undefined method -- runtime crash risk on SSE calls)."
+    },
+    "documentation": {
+      "score": 3,
+      "weight": 0.15,
+      "weighted": 0.45,
+      "change_vs_previous": -1,
+      "evidence": "README.md is still the unmodified Next.js boilerplate -- the improved README from the previous audit Phase 5 was either never committed or was deleted. docs/api.md written in the previous audit is gone -- docs/ directory is empty. No .env.example exists. No CHANGELOG. The previous audit's generated documentation has been fully lost. Informal planning docs (COMPS_ROADMAP.md, SYSTEM_DOCTRINE.md, HANDOFF_GUIDE.md, VAULT_vs_PAPER_ANALYSIS.md) remain in root, none maintained. The new scheduler.ts architecture is undocumented and disconnected."
+    },
+    "security_posture": {
+      "score": 0,
+      "weight": 0.10,
+      "weighted": 0.00,
+      "change_vs_previous": -1,
+      "evidence": "CRITICAL REGRESSION: A second high-severity security issue has been introduced since the last audit. The file paper-inventory-488411-4f90bf2f1afc.json exists in the project root and contains a complete Google Cloud Platform service account private key (RSA private key with private_key_id 4f90bf2f1afc). This file is NOT listed in .gitignore (only .env* patterns are excluded, and *.json is not excluded). The GOOGLE_APPLICATION_CREDENTIALS in .env points to this file's absolute path, meaning it is the active credential used for Cloud Vision API calls. The .env file still contains a live ANTHROPIC_API_KEY (sk-ant-api03-toxj...) and PERPLEXITY_API_KEY (pplx-fXEtZZ11...). GEMINI_API_KEY is now empty string. GROQ_API_KEY is no longer present. The /api/admin/clear endpoint has NO authentication (same as last audit -- unfixed). A NEW /api/system/nuke endpoint was added with NO authentication -- this is a second unauthenticated database wipe route. Both destructive routes accept POST with no credentials. Mitigating factors remain: path traversal protection, magic-byte validation, security headers in next.config.ts."
+    },
+    "build_ci_health": {
+      "score": 3,
+      "weight": 0.10,
+      "weighted": 0.30,
+      "change_vs_previous": 0,
+      "evidence": "No CI/CD pipeline. No pre-commit hooks. No lint gate. No TypeScript type-check gate. No coverage gate. Package.json scripts unchanged: dev, build, start, lint, worker, test. The OCR production worker path placeholder remains (still says 'Placeholder for prod' in ocr/index.ts). The new scheduler.ts is not started by any API route or startup hook visible in the codebase -- it exists but is dead code from an operational standpoint. The SSE route references ItemService.getEnrichmentLogs which does not exist in items.ts (a TS compile error that would surface on build)."
+    }
+  },
+  "score_calculation": {
+    "test_coverage": 0.50,
+    "dependency_health": 1.00,
+    "code_organization": 1.00,
+    "documentation": 0.45,
+    "security_posture": 0.00,
+    "build_ci_health": 0.30,
+    "total_weighted": 3.25,
+    "normalized_to_10": 4.8,
+    "note": "Weighted sum 3.25 normalized against 10-point scale (weights sum to 1.0)"
+  }
+}

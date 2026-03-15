@@ -1,0 +1,18 @@
+[
+  {
+    "instruction": "Delete deprecated OpenAI SDK file.",
+    "action": "rm src/lib/ai/openai.ts"
+  },
+  {
+    "instruction": "Uninstall unused AI SDK packages.",
+    "action": "npm uninstall @ai-sdk/anthropic @ai-sdk/openai ai"
+  },
+  {
+    "instruction": "Clean up stale log files in root.",
+    "action": "rm ab-test-*.json *.log (selective)"
+  },
+  {
+    "instruction": "Implement retry logic in item page.",
+    "code": "async function handleRetry(id: string) { await fetch(`/api/items/${id}/retry`, { method: 'POST' }); window.location.reload(); }"
+  }
+]

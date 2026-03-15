@@ -52,7 +52,7 @@ export async function routeItemGemini(imagePath: string, ocrText: string): Promi
   const prompt = getPrompt(CONDUCTOR_PROMPT_FILE) + `\n\nOCR Hint: ${ocrText.substring(0, 1000)}`;
   const text = await callGemini("gemini-1.5-flash", prompt, imagePath, primaryKey);
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("No JSON found in Gemini response");
+  if (!jsonMatch) throw new Error("Gemini failed to return valid JSON for routing");
   return JSON.parse(jsonMatch[0]);
 }
 
@@ -61,6 +61,6 @@ export async function appraiseItemGemini(category: string, imagePath: string, oc
   const prompt = getPrompt(promptFile) + `\n\nFull OCR Text:\n${ocrText}`;
   const text = await callGemini("gemini-1.5-pro", prompt, imagePath, primaryKey);
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("No JSON found in Gemini response");
+  if (!jsonMatch) throw new Error("Gemini failed to return valid JSON for appraisal");
   return JSON.parse(jsonMatch[0]);
 }

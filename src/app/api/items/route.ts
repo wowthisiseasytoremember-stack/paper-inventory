@@ -18,47 +18,68 @@ export async function GET(req: NextRequest) {
     const s = searchParams.get('q') || '';
     const offset = (page - 1) * limit;
 
+    // Phase 6: Filtering
+    const decision = searchParams.get('decision');
+    const highValue = searchParams.get('high_value');
+    const category = searchParams.get('category');
+
     let items;
     let total;
 
+    // Dynamic WHERE clause
+    const conditions: string[] = ['i.deletedAt IS NULL'];
+    const params: (string | number)[] = [];
+
+    if (decision) {
+      conditions.push('i.purchase_decision = ?');
+      params.push(decision);
+    }
+    if (highValue === '1') {
+      conditions.push('i.is_high_value = 1');
+    }
+    if (category) {
+      conditions.push('i.category = ?');
+      params.push(category);
+    }
+
     if (s) {
-      // FTS Search
-      // Uses the 'item_fts' virtual table configured in schema.sql
-      // We join back to the main 'items' table for full data
+      // FTS Search with filters
+      const whereClause = conditions.length ? `AND ${conditions.join(' AND ')}` : '';
       const searchSql = `
         SELECT i.* 
         FROM items i
         JOIN items_fts fts ON fts.rowid = i.rowid
         WHERE items_fts MATCH ? 
-          AND i.deletedAt IS NULL
+          ${whereClause}
         ORDER BY rank
         LIMIT ? OFFSET ?
       `;
-      // FTS syntax: wrap in quotes for phrase search usually, or just pass clean string
-      // Sanitization: Escape double quotes to prevent syntax errors in FTS queries
       const safeQuery = `"${s.replace(/"/g, '""')}"*`; 
 
-      items = db.prepare(searchSql).all(safeQuery, limit, offset);
+      items = db.prepare(searchSql).all(safeQuery, ...params, limit, offset);
       
       const countSql = `
         SELECT COUNT(*) as count 
         FROM items i
         JOIN items_fts fts ON fts.rowid = i.rowid
         WHERE items_fts MATCH ?
-          AND i.deletedAt IS NULL
+          ${whereClause}
       `;
-      total = (db.prepare(countSql).get(safeQuery) as { count: number }).count;
+      total = (db.prepare(countSql).get(safeQuery, ...params) as { count: number }).count;
 
     } else {
-      // Standard Listing
-      items = db.prepare(`
-        SELECT * FROM items 
-        WHERE deletedAt IS NULL
+      // Standard Listing with filters
+      const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+      const sql = `
+        SELECT * FROM items i
+        ${whereClause}
         ORDER BY createdAt DESC 
         LIMIT ? OFFSET ?
-      `).all(limit, offset);
+      `;
+      items = db.prepare(sql).all(...params, limit, offset);
 
-      total = (db.prepare('SELECT COUNT(*) as count FROM items WHERE deletedAt IS NULL').get() as { count: number }).count;
+      const countSql = `SELECT COUNT(*) as count FROM items i ${whereClause}`;
+      total = (db.prepare(countSql).get(...params) as { count: number }).count;
     }
 
     // Parse JSON fields
@@ -76,6 +97,7 @@ export async function GET(req: NextRequest) {
       liquidity_score: item.liquidity_score,
       target_buy_price: item.target_buy_price,
       user_decision: item.user_decision || 'none',
+      analysis_history: item.analysis_history ? JSON.parse(item.analysis_history) : [],
       processingLock: Boolean(item.processingLock)
     }));
 

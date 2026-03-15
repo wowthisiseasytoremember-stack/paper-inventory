@@ -38,17 +38,17 @@ export const StorageService = {
   },
 
   /**
-   * Returns the absolute path for a resized image (WebP).
+   * Returns the absolute path for a resized image.
    */
-  getResizedPath: (id: string) => {
-    return path.join(DIRS.resized, `${id}.webp`);
+  getResizedPath: (id: string, extension: string = '.webp') => {
+    return path.join(DIRS.resized, `${id}${extension}`);
   },
 
   /**
-   * Returns the absolute path for a thumbnail (WebP).
+   * Returns the absolute path for a thumbnail.
    */
-  getThumbnailPath: (id: string) => {
-    return path.join(DIRS.thumbnails, `${id}.webp`);
+  getThumbnailPath: (id: string, extension: string = '.webp') => {
+    return path.join(DIRS.thumbnails, `${id}${extension}`);
   },
 
   /**

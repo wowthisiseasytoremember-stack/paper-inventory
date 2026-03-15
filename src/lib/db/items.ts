@@ -60,19 +60,6 @@ export interface Item {
   ebay_keywords?: string | null;
   category?: string | null;
   research_stage?: ResearchStage;
-
-  // Legacy reseller fields (kept for backward compatibility)
-  ai_category?: string;
-  identification?: string;
-  estimated_value?: string;
-  liquidity_score?: number;
-  target_buy_price?: string;
-  ebay_title?: string;
-  comp_search_keywords?: string;
-  visible_flaws?: string;
-  research_pathways?: string;
-  uncertain_fields?: string;
-  item_specifics?: string;
   user_decision?: string;
 }
 
@@ -140,7 +127,7 @@ export const ItemService = {
       const item = db.prepare(`
         SELECT * FROM items 
         WHERE processingLock = 0 
-          AND status IN ('queued', 'ocr_complete', 'resize_complete')
+          AND status IN ('queued', 'processing_ocr', 'ocr_complete', 'ocr_pending_retry', 'processing_resize', 'resize_complete', 'processing_ai')
           AND retryCount < 3
           AND deletedAt IS NULL
         ORDER BY createdAt ASC
@@ -204,12 +191,20 @@ export const ItemService = {
    * Resets all locks on startup (Crash Recovery).
    */
   resetLocks: () => {
+    // Items crashed during processing_ai go back to resize_complete so they can be retried.
+    // All other locked states are safe to restart from their entry point.
     const info = db.prepare(`
-      UPDATE items 
+      UPDATE items
       SET processingLock = 0,
           watchdogLockedAt = NULL,
-          status = 'error',
-          errorMessage = 'System crash detected during processing',
+          status = CASE
+            WHEN status = 'processing_ai' THEN 'resize_complete'
+            ELSE 'error'
+          END,
+          errorMessage = CASE
+            WHEN status = 'processing_ai' THEN NULL
+            ELSE 'System crash detected during processing'
+          END,
           statusUpdatedAt = CURRENT_TIMESTAMP
       WHERE processingLock = 1
     `).run();
@@ -254,7 +249,15 @@ export const ItemService = {
    * Strict whitelist prevents mutation of system fields.
    */
   updateMetadata: (id: string, updates: Record<string, any>) => {
-    const EDITABLE = ['title', 'guessedId', 'cleanedTranscription', 'historicalContext', 'collectorSignificance', 'tags', 'user_decision'];
+    const EDITABLE = [
+      // User-editable fields
+      'title', 'guessedId', 'cleanedTranscription', 'historicalContext',
+      'collectorSignificance', 'tags', 'user_decision',
+      // Pipeline-written fields (OCR, resize, AI stages)
+      'rawOcr', 'confidence', 'ocrDurationMs',
+      'thumbnailPath', 'resizedImagePath', 'resizeDurationMs',
+      'category',
+    ];
     const sets: string[] = [];
     const args: any[] = [];
     for (const [key, value] of Object.entries(updates)) {

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { LayoutWrapper } from "@/components/LayoutWrapper";
+import { QueryProvider } from "@/components/QueryProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -42,9 +43,11 @@ export default function RootLayout({
         className={`${inter.variable} ${playfairDisplay.variable} ${robotoMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <LayoutWrapper>
-          {children}
-        </LayoutWrapper>
+        <QueryProvider>
+          <LayoutWrapper>
+            {children}
+          </LayoutWrapper>
+        </QueryProvider>
       </body>
     </html>
   );

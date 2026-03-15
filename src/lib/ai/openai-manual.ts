@@ -19,7 +19,8 @@ const INITIAL_BACKOFF_MS = 1000;
 export async function analyzeImage(
   imagePath: string,
   ocrText: string,
-  config: AIConfig = getAIConfig()
+  config: AIConfig = getAIConfig(),
+  onRouteComplete?: (route: ConductorResponse) => void
 ): Promise<ItemMetadata> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
@@ -36,17 +37,11 @@ export async function analyzeImage(
         route = await routeItemGemini(imagePath, ocrText);
       }
 
-      // 1b. Gemini Triage — refine category using Flash (comics_1990s / drg_railroadiana / other)
-      // Runs fast and cheap; overrides broad route category when a specific match is found.
-      const triageCategory = await categorizeForDeepDive({
-        title: route.category,
-        transcription: ocrText.slice(0, 2000),
-        tags: [route.category],
-      });
-      const appraiseCategory = triageCategory !== 'other' ? triageCategory : route.category;
-      console.log(`[AI] Triage: ${route.category} → ${appraiseCategory}`);
-
-      // 2. Appraise (Sonnet for full expert analysis)
+      if (onRouteComplete) {
+        onRouteComplete(route);
+      }
+      
+      // 2. Appraise
       let appraisal: ExpertResponse;
       if (config.provider === 'anthropic' && apiKey) {
         appraisal = await appraiseItemAnthropic(appraiseCategory, imagePath, ocrText);
@@ -62,18 +57,7 @@ export async function analyzeImage(
         identifiedNames: [], 
         tags: [route.category, ...(appraisal.comp_search_keywords || [])],
         valuation: appraisal.estimated_value, 
-        ai_category: route.category,
-        identification: appraisal.identification,
-        estimated_value: appraisal.estimated_value,
-        liquidity_score: appraisal.liquidity_score,
-        target_buy_price: appraisal.target_buy_price,
-        ebay_title: appraisal.identification,
-        comp_search_keywords: appraisal.comp_search_keywords,
-        visible_flaws: appraisal.visible_flaws,
-        dealer_gut_check: appraisal.dealer_gut_check,
-        research_pathways: appraisal.research_pathways,
-        uncertain_fields: appraisal.uncertain_fields,
-        item_specifics: appraisal.item_specifics
+        ai_category: route.category
       };
 
     } catch (error: any) {

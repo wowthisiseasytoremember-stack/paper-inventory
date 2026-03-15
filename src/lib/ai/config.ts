@@ -19,12 +19,31 @@ export interface AIConfig {
   maxOcrChars: number;
 }
 
+/**
+ * Centralized Model Aliases
+ * Use these instead of hardcoded strings to ensure stability.
+ */
+export const MODELS = {
+  // Conductor: High-speed categorization (Gemini 2.0 Flash)
+  CONDUCTOR: process.env.CONDUCTOR_MODEL || 'gemini-2.0-flash',
+  
+  // Expert: Deep extraction (Claude 4.6 Sonnet)
+  EXPERT: process.env.EXPERT_MODEL || 'claude-sonnet-4-6',
+  
+  // Valuator: Pricing synthesis (Claude 4.6 Sonnet)
+  VALUATOR: process.env.VALUATOR_MODEL || 'claude-sonnet-4-6',
+  
+  // Fallbacks
+  FALLBACK_FAST: 'gemini-2.0-flash',
+  FALLBACK_DEEP: 'gemini-2.0-pro'
+};
+
 const DEFAULT_CONFIG: AIConfig = {
-  provider: 'anthropic', // Switched to Anthropic as primary
+  provider: 'anthropic', 
   fallbackProvider: 'openai',
-  routerModel: 'claude-3-haiku-20240307',
-  baselineModel: 'claude-3-haiku-20240307',
-  deepDiveModel: 'claude-3-haiku-20240307',
+  routerModel: MODELS.CONDUCTOR,
+  baselineModel: MODELS.CONDUCTOR,
+  deepDiveModel: MODELS.EXPERT,
   routerTemperature: 0,
   baselineTemperature: 0,
   deepDiveTemperature: 0.2,

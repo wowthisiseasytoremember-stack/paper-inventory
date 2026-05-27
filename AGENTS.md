@@ -140,3 +140,7 @@ Two-layer design separating routing logic from LLM work:
 2. **Atomic operations**: SQLite row-level locks prevent duplicate processing. Crash recovery resets stale locks on startup.
 3. **Worker isolation**: OCR runs in dedicated worker thread with timeout to avoid blocking main thread.
 4. **Deterministic routing**: Category assignment is pure code — no LLM involved. This means the same input always produces the same category.
+
+
+## Hardening Rules
+- **Closeout Sync (inviolable):** Always write a per-session closeout entry to `~/brain/memory/ichabod/_close-log.md` and append a matching structured JSON line to `~/brain/memory/ichabod/_close-log.jsonl` using the closeout schema. Ensure you include the correct `linear.issue_key` so the watcher syncs it to the Linear board.

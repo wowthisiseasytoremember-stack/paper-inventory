@@ -62,8 +62,6 @@ async function processingLoop() {
     }
   } catch (err: any) {
     console.error('[Scheduler] Loop error:', err.message);
-    // If we have a loop error, wait a bit longer to avoid spamming
-    await new Promise(resolve => setTimeout(resolve, 10000));
   }
 
   // Schedule next iteration
@@ -90,11 +88,14 @@ async function processItem(item: Item) {
           ? '\n\n--- Web Entities (Knowledge Graph) ---\n' + ocrResult.webEntities.map(e => `- ${e.description} (${(e.score * 100).toFixed(1)}%)`).join('\n')
           : '';
 
-        ItemService.updateStatus(item.id, 'ocr_complete', {
+        ItemService.updateMetadata(item.id, {
           rawOcr: ocrResult.text + webEntitiesText,
           confidence: ocrResult.confidence,
           ocrDurationMs: ocrResult.duration_ms
         });
+
+        db.prepare(`UPDATE items SET status = 'ocr_complete', statusUpdatedAt = ? WHERE id = ?`)
+          .run(new Date().toISOString(), item.id);
 
         console.log(`[Scheduler] ${item.id}: OCR complete (confidence: ${(ocrResult.confidence * 100).toFixed(1)}%)`);
 
@@ -105,7 +106,8 @@ async function processItem(item: Item) {
             .run(new Date().toISOString(), item.id);
         } else {
           console.error(`[Scheduler] ${item.id}: OCR failed -`, err.message);
-          ItemService.fail(item.id, err.message);
+          db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
+            .run(err.message, new Date().toISOString(), item.id);
         }
       }
       return;
@@ -125,10 +127,14 @@ async function processItem(item: Item) {
           resizeDurationMs: durationMs
         });
 
+        db.prepare(`UPDATE items SET status = 'resize_complete', statusUpdatedAt = ? WHERE id = ?`)
+          .run(new Date().toISOString(), item.id);
+
         console.log(`[Scheduler] ${item.id}: resize complete`);
       } catch (err: any) {
         console.error(`[Scheduler] ${item.id}: resize failed -`, err.message);
-        ItemService.fail(item.id, err.message);
+        db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
+          .run(err.message, new Date().toISOString(), item.id);
       }
       return;
     }
@@ -245,12 +251,13 @@ async function processItem(item: Item) {
 
       } catch (err: any) {
         console.error(`[Scheduler] ${item.id}: AI enrichment failed -`, err.message);
-        ItemService.fail(item.id, err.message);
+        db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
+          .run(err.message, new Date().toISOString(), item.id);
       }
       return;
     }
 
-    // Release lock for completed items (if they somehow get here)
+    // Release lock for completed items
     if (item.status === 'complete' || item.status === 'error') {
       db.prepare(`UPDATE items SET processingLock = 0, watchdogLockedAt = NULL WHERE id = ?`)
         .run(item.id);
@@ -258,8 +265,8 @@ async function processItem(item: Item) {
     }
 
   } catch (err: any) {
-    console.error(`[Scheduler Fatal] ${item.id}: Error -`, err.message);
-    if (err.stack) console.error(err.stack);
-    ItemService.fail(item.id, err.message);
+    console.error(`[Scheduler] ${item.id}: Error -`, err.message);
+    db.prepare(`UPDATE items SET status = 'error', errorMessage = ?, statusUpdatedAt = ? WHERE id = ?`)
+      .run(err.message, new Date().toISOString(), item.id);
   }
 }

@@ -11,7 +11,6 @@ import { AIConfig, getAIConfig } from './config';
 import { getPrompt, EXPERT_PROMPT_MAP, CONDUCTOR_PROMPT_FILE } from './prompts';
 import { routeItemAnthropic, appraiseItemAnthropic } from './anthropic-manual';
 import { routeItemGemini, appraiseItemGemini } from './gemini-manual';
-import { categorizeForDeepDive } from './gemini-triage';
 
 const MAX_RETRIES = 2;
 const INITIAL_BACKOFF_MS = 1000;
@@ -29,11 +28,12 @@ export async function analyzeImage(
     try {
       console.log(`[AI] Using ${config.provider} (Attempt ${attempt + 1})...`);
 
-      // 1. Route (fast Haiku pass — gets broad category)
+      // 1. Route
       let route: ConductorResponse;
       if (config.provider === 'anthropic' && apiKey) {
         route = await routeItemAnthropic(imagePath, ocrText);
       } else {
+        // Fallback or secondary logic (using Gemini as current active fallback)
         route = await routeItemGemini(imagePath, ocrText);
       }
 
@@ -44,9 +44,9 @@ export async function analyzeImage(
       // 2. Appraise
       let appraisal: ExpertResponse;
       if (config.provider === 'anthropic' && apiKey) {
-        appraisal = await appraiseItemAnthropic(appraiseCategory, imagePath, ocrText);
+        appraisal = await appraiseItemAnthropic(route.category, imagePath, ocrText);
       } else {
-        appraisal = await appraiseItemGemini(appraiseCategory, imagePath, ocrText);
+        appraisal = await appraiseItemGemini(route.category, imagePath, ocrText);
       }
       
       // 3. Combine

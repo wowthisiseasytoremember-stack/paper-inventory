@@ -8,8 +8,8 @@ family: automation
 what: >-
   Turns bulk photos of vintage paper collectibles and ephemera into catalogued, appraised inventory. Each upload runs OCR → keyword-based category classification (heuristic, no LLM) → LLM identification (Claude primary) → Perplexity market research → valuation with confidence score. Output is a searchable local archive with per-item research notes and export. Built for Crosslist pipeline integration.
 goal: >-
-  Wire paper-inventory output into the Crosslist ingest pipeline so appraised items flow directly to draft listings.
-status: active
+  Keep available for niche/rare paper items that Crosslist AI cannot classify well. If reviving, wire output to crosslist-ts-integration draft format.
+status: paused
 stack: [typescript, nextjs, react, sqlite, tesseract, tailwind, anthropic, perplexity, gemini]
 
 modules:

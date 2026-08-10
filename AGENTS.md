@@ -2,29 +2,33 @@
 schema: agents-md/v1
 
 project: paper-inventory
+initiative: personal-data
+family: automation
 
 what: >-
-  Turns bulk photos of vintage paper collectibles and ephemera into catalogued,
-  appraised inventory. Each upload runs OCR, then keyword-based category
-  classification (deliberately no LLM at that step, to avoid latency and cost),
-  then LLM identification, then market research and a valuation range with a
-  confidence score. Output is a searchable local archive with per-item research
-  notes, purchase decisions, and export.
-
-stack: [typescript, nextjs, react, sqlite, tesseract, tailwind]
+  Turns bulk photos of vintage paper collectibles and ephemera into catalogued, appraised inventory. Each upload runs OCR → keyword-based category classification (heuristic, no LLM) → LLM identification (Claude primary) → Perplexity market research → valuation with confidence score. Output is a searchable local archive with per-item research notes and export. Built for Crosslist pipeline integration.
+goal: >-
+  Wire paper-inventory output into the Crosslist ingest pipeline so appraised items flow directly to draft listings.
+status: active
+stack: [typescript, nextjs, react, sqlite, tesseract, tailwind, anthropic, perplexity, gemini]
 
 modules:
   - name: App
     path: src
     does: Next.js App Router UI — upload, item browser, valuation and research views.
+    status: shipped
   - name: Background worker
     path: scripts/start-worker.ts
     does: Runs the OCR / identify / research / value pipeline outside the request cycle.
+    status: shipped
   - name: Bulk ingest
     path: scripts/ingest-and-process.ts
     does: Ingests a folder of images and pushes them through the pipeline.
+    status: shipped
 
-updated: 2026-08-07 05:45 UTC
+depends_on: []
+feeds: [crosslist-ts-integration]
+updated: 2026-08-10 14:46 UTC
 ---
 # CLAUDE.md — Paper Inventory
 

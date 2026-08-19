@@ -6,7 +6,7 @@ initiative: personal-data
 family: automation
 
 what: >-
-  Turns bulk photos of vintage paper collectibles and ephemera into catalogued, appraised inventory. Each upload runs OCR → keyword-based category classification (heuristic, no LLM) → LLM identification (Claude primary) → Perplexity market research → valuation with confidence score. Output is a searchable local archive with per-item research notes and export. Built for Crosslist pipeline integration.
+  Turns bulk photos of vintage paper collectibles and ephemera into catalogued, appraised inventory. Each upload runs OCR → LLM-based category classification (conductor prompt, NOT a free heuristic router) → LLM identification (Claude primary) → Perplexity market research → valuation with confidence score. Output is a searchable local archive with per-item research notes and export. Built for Crosslist pipeline integration.
 goal: >-
   Keep available for niche/rare paper items that Crosslist AI cannot classify well. If reviving, wire output to crosslist-ts-integration draft format.
 status: paused
@@ -50,30 +50,28 @@ Last updated: 2026-05-19
 | Queue | `p-queue` with atomic SQLite locking |
 | Build | tsx/ts-node for scripts, ESLint |
 
-## AI Architecture: Heuristic + LLM Classification
+## AI Architecture: LLM Router + Appraisal (doc-accuracy warning)
 
-Two-layer design separating routing logic from LLM work:
+⚠ DOC-ACCURACY FLAG (2026-08-17): Earlier docs claimed a deterministic, free "heuristic keyword router" (`heuristicRouter()`) in `conductor.ts`. **That function does not exist.** Category routing is LLM-based. See Known Issues below.
 
-**Layer 1 — Heuristic Router (Automation Layer, pure code, no LLM cost)**
-- `heuristicRouter()` in `src/lib/ai/conductor.ts` scans OCR text against weighted keyword patterns
-- Deterministically assigns one of 8 categories: `comic_books`, `railroadiana`, `aerospace_technical`, `serial_publications`, `analog_media_electronics`, `stamps_postal`, `geographic_media`, `general_vintage_ephemera`
-- Deterministic, debuggable, zero cost per item
+**Routing (Layer 1 — LLM)**
+- `runConductor()` in `conductor.ts` (and `routeItemAnthropic` / `routeItemGemini` in `*-manual.ts`) classify each item into one of 8 categories via an LLM call using `CONDUCTOR_PROMPT.md` (or the shorter inline conductor prompt). Not free, not deterministic.
+- `categorizeForDeepDive()` in `gemini-triage.ts` is a secondary classifier (comics_1990s / drg_railroadiana / other) with a keyword fallback.
 
-**Layer 2 — LLM Identification (Action Layer)**
-- `identifyItem()` receives the **already-known** category from Layer 1
-- Extracts: title, description, features via Claude (primary)
-- Never decides the category — that's fixed by the heuristic router
+**Appraisal (Layer 2 — LLM)**
+- The LIVE pipeline (`src/lib/ai/index.ts` → `*-manual.ts`) calls `appraiseItemAnthropic/Gemini`, which loads the dealer-voice expert prompts from `docs/prompts/experts/*.md` + `EXPERT_BASE_PROMPT.md` + `EXPERT_BASE_SCHEMA.json`.
+- Two DORMANT alternate appraisal paths also exist: `expert.ts` (`runExpert`, inline prompts) and `valuator.ts` (`extractValuation`, archivist voice + `railroad-domain.ts`). They are NOT in the primary pipeline.
 
 **Research & Valuation**
-- `runResearcher()` queries Perplexity AI (primary) or Gemini with Google Search grounding
-- `runValuation()` (Claude/Gemini) synthesizes OCR + category + research into structured appraisal with estimated value range, confidence score, eBay keywords, collector significance
+- `runPerplexityResearcher()` (primary, live sold-price comps, 8 category prompts) or `runResearcher()` (Gemini grounding fallback).
+- `getGroundedResearch()` (gemini-grounding.ts) returns comps JSON.
 
 ## Key Files
 
 ### AI Pipeline (`src/lib/ai/`)
 | File | Purpose |
 |------|---------|
-| `conductor.ts` | Heuristic category router + LLM item identification. Central orchestrator. |
+| `conductor.ts` | LLM-based category router (`runConductor`) + `routeItemAnthropic/Gemini` in `*-manual.ts`. **No `heuristicRouter()` exists** (docs were wrong). |
 | `researcher.ts` | Market research via Perplexity (primary) or Gemini (fallback) |
 | `valuator.ts` | Valuation synthesis: historical context, condition, estimated value range |
 | `config.ts` | AI provider configuration and model constants |
@@ -168,11 +166,24 @@ Two-layer design separating routing logic from LLM work:
 
 ## Key Principles
 
-1. **Automation before AI**: Heuristic routing costs nothing and is deterministic. LLMs are only used for tasks requiring semantic understanding (item identification, valuation).
+1. **Automation before AI (ASPIRATIONAL, NOT CURRENT)**: Docs previously claimed heuristic routing costs nothing and is deterministic. In reality routing is LLM-based. A free deterministic `heuristicRouter()` was planned but never implemented — see Known Issues.
 2. **Atomic operations**: SQLite row-level locks prevent duplicate processing. Crash recovery resets stale locks on startup.
 3. **Worker isolation**: OCR runs in dedicated worker thread with timeout to avoid blocking main thread.
-4. **Deterministic routing**: Category assignment is pure code — no LLM involved. This means the same input always produces the same category.
+4. **Routing is LLM-based (not deterministic)**: Category assignment uses an LLM call. The same input may produce different categories across runs/models. (A deterministic keyword router was planned but does not exist in code.)
 
+
+## Known Issues — Doc Accuracy (logged 2026-08-17)
+
+- **Phantom heuristic router:** AGENTS.md/CLAUDE.md and the wiki previously claimed a free deterministic keyword router (`heuristicRouter()` in `conductor.ts`). It does not exist. Routing is LLM-based (`runConductor` / `routeItemAnthropic` / `routeItemGemini`). The "Automation before AI" / "Deterministic routing" principles were inaccurate and have been corrected above.
+- **Three overlapping appraisal prompt sets:**
+  - **(B) Dealer-voice markdown experts** in `docs/prompts/experts/*.md` — the LIVE path via `index.ts`.
+  - **(C) `expert.ts` inline prompts** (`runExpert`) — dormant.
+  - **(D) `valuator.ts` archivist prompt** (`extractValuation`) + `railroad-domain.ts` — dormant.
+  Tuning prompts without knowing which path runs will silently not apply. Pick one voice if consolidating.
+- **Two conductor versions:** `CONDUCTOR_PROMPT.md` (used by live pipeline) and the shorter inline conductor in `conductor.ts` (`runConductor`). They overlap.
+- **Research layer:** Perplegity (live, primary) + two Gemini fallbacks (`researcher.ts`, `gemini-grounding.ts`).
+- **Full prompt dump:** `~/audits/ephemera-recon/PAPER-INVENTORY-ALL-PROMPTS.md`.
+- **railroad-valuator merged in (2026-08-17):** its railroad-historian domain prompt was ported into `railroadiana` via `railroad-domain.ts`; railroad-valuator is now SUPERSEDED.
 
 ## Hardening Rules
 - **Closeout Sync (inviolable):** Always write a per-session closeout entry to `~/brain/memory/ichabod/_close-log.md` and append a matching structured JSON line to `~/brain/memory/ichabod/_close-log.jsonl` using the closeout schema. Ensure you include the correct `linear.issue_key` so the watcher syncs it to the Linear board.

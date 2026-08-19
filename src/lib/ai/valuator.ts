@@ -3,6 +3,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { getAIConfig, MODELS } from './config';
+import { RAILROAD_DOMAIN_PROMPT } from './railroad-domain';
 
 export interface ValuationOutput {
   title: string;
@@ -107,7 +108,7 @@ export async function extractValuation(
   ocrText: string,
   researchNotes?: string,
 ): Promise<ValuationOutput | null> {
-  const prompt = `${VALUATION_PROMPT}
+  let prompt = `${VALUATION_PROMPT}
 
 ## Item Details
 - Basic ID: ${title}
@@ -116,6 +117,12 @@ export async function extractValuation(
 
 ## Market Research (Perplexity Live Web Search)
 ${researchNotes || 'No market research available — use category standards.'}`;
+
+  // Category specialization: railroadiana gets the railroad-historian domain layer
+  // (ported from railroad-valuator, retired 2026-08-17).
+  if (category === 'railroadiana') {
+    prompt += `\n\n${RAILROAD_DOMAIN_PROMPT}`;
+  }
 
   try {
     const raw = await callTextAI(prompt);
